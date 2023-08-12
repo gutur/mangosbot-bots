@@ -145,7 +145,7 @@ bool QuestAction::ProcessQuests(WorldObject* questGiver)
 
     if (sServerFacade.GetDistance2d(bot, questGiver) > INTERACTION_DISTANCE && !sPlayerbotAIConfig.syncQuestWithPlayer)
     {
-        ai->TellError("Cannot talk to quest giver");
+        ai->TellError("无法与任务发布者交谈.");
         return false;
     }
 
@@ -179,18 +179,18 @@ bool QuestAction::AcceptQuest(Player* requester, Quest const* quest, uint64 ques
     uint32 questId = quest->GetQuestId();
 
     if (bot->GetQuestStatus(questId) == QUEST_STATUS_COMPLETE)
-        out << "Already completed";
+        out << "已经完成.";
     else if (! bot->CanTakeQuest(quest, false))
     {
         if (! bot->SatisfyQuestStatus(quest, false))
-            out << "Already on";
+            out << "已在进行中.";
         else
-            out << "Can't take";
+            out << "无法接取.";
     }
     else if (! bot->SatisfyQuestLog(false))
-        out << "Quest log is full";
+        out << "任务日志已满.";
     else if (! bot->CanAddQuest(quest, false))
-        out << "Bags are full";
+        out << "背包已满.";
 
     else
     {
@@ -212,7 +212,7 @@ bool QuestAction::AcceptQuest(Player* requester, Quest const* quest, uint64 ques
 
             sPlayerbotAIConfig.logEvent(ai, "AcceptQuestAction", quest->GetTitle(), to_string(quest->GetQuestId()));
 
-            out << "Accepted " << chat->formatQuest(quest);
+            out << "接受任务 " << chat->formatQuest(quest);
             ai->TellPlayer(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             return true;
         }

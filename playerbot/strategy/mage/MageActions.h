@@ -370,7 +370,7 @@ namespace ai
             bot->learnSpell(56975, false);
 
             ostringstream out;
-            out << "I learned Glyph of Fireball";
+            out << "我学会了火球术雕文.";
             ai->TellError(out.str());
 
             return true;
@@ -387,7 +387,7 @@ namespace ai
             bot->removeSpell(56975);
 
             ostringstream out;
-            out << "I removed Glyph of Fireball";
+            out << "我移除了火球术雕文.";
             ai->TellError(out.str());
 
             return true;
@@ -404,7 +404,7 @@ namespace ai
             bot->learnSpell(56370, false);
 
             ostringstream out;
-            out << "I learned Glyph of Frostbolt";
+            out << "我学会了寒冰箭雕文.";
             ai->TellError(out.str());
 
             return true;
@@ -421,7 +421,7 @@ namespace ai
             bot->removeSpell(56370);
 
             ostringstream out;
-            out << "I removed Glyph of Frostbolt";
+            out << "我移除了寒冰箭雕文.";
             ai->TellError(out.str());
 
             return true;
@@ -438,7 +438,7 @@ namespace ai
             bot->learnSpell(64275, false);
 
             ostringstream out;
-            out << "I learned Glyph of Living Bomb";
+            out << "我学会了活体炸弹雕文.";
             ai->TellError(out.str());
 
             return true;
@@ -455,7 +455,7 @@ namespace ai
             bot->removeSpell(64275);
 
             ostringstream out;
-            out << "I removed Glyph of Living Bomb";
+            out << "我移除了活体炸弹雕文.";
             ai->TellError(out.str());
 
             return true;
@@ -472,7 +472,7 @@ namespace ai
             bot->learnSpell(63093, false);
 
             ostringstream out;
-            out << "I learned Glyph of Mirror Image";
+            out << "我学会了镜像技能雕文.";
             ai->TellError(out.str());
 
             return true;
@@ -489,7 +489,7 @@ namespace ai
             bot->removeSpell(63093);
 
             ostringstream out;
-            out << "I removed Glyph of Mirror Image";
+            out << "我移除了镜像技能雕文.";
             ai->TellError(out.str());
 
             return true;
@@ -506,7 +506,7 @@ namespace ai
             bot->learnSpell(42751, false);
 
             ostringstream out;
-            out << "I learned Glyph of Molten Armor";
+            out << "我学会了熔岩护甲雕文.";
             ai->TellError(out.str());
 
             return true;
@@ -523,7 +523,7 @@ namespace ai
             bot->removeSpell(42751);
 
             ostringstream out;
-            out << "I removed Glyph of Molten Armor";
+            out << "我移除了熔岩护甲雕文.";
             ai->TellError(out.str());
 
             return true;

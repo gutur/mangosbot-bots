@@ -53,7 +53,7 @@ bool GossipHelloAction::Execute(Event& event)
 	}
 	else if (!bot->GetPlayerMenu())
 	{
-	    ai->TellPlayerNoFacing(requester, "I need to talk first");
+	    ai->TellPlayerNoFacing(requester, "我需要先交谈");
 	    return false;
 	}
 	else
@@ -111,7 +111,7 @@ bool GossipHelloAction::ProcessGossip(Player* requester, int menuToSelect)
     GossipMenu& menu = bot->GetPlayerMenu()->GetGossipMenu();
     if (menuToSelect >= 0 && (unsigned int)menuToSelect >= menu.MenuItemCount())
     {
-        ai->TellError("Unknown gossip option");
+        ai->TellError("未知的对话选项");
         return false;
     }
     GossipMenuItem const& item = menu.GetItem(menuToSelect);

@@ -21,7 +21,7 @@ bool StayActionBase::Stay()
 	if (mm.GetCurrentMovementGeneratorType() == FLIGHT_MOTION_TYPE || bot->IsFlying())
 #endif
 	{
-		if (verbose) ai->TellError("I can not stay, I'm flying!");
+		if (verbose) ai->TellError("我不能留在原地,我正在飞行中!");
 		return false;
 	} 
 

@@ -18,7 +18,7 @@ bool GuildBankAction::Execute(Event& event)
 
     if (!bot->GetGuildId() || (GetMaster() && GetMaster()->GetGuildId() != bot->GetGuildId()))
     {
-        ai->TellPlayer(GetMaster(),"I'm not in your guild!");
+        ai->TellPlayer(GetMaster(),"我不在你的公会里!");
             return false;
     }
 

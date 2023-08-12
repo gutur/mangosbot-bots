@@ -26,13 +26,13 @@ bool HireAction::Execute(Event& event)
 
     if (charCount >= 10)
     {
-        ai->TellPlayer(GetMaster(), "You already have the maximum number of characters");
+        ai->TellPlayer(GetMaster(), "你已经达到最大角色数量限制.");
         return false;
     }
 
     if ((int)bot->GetLevel() > (int)master->GetLevel())
     {
-        ai->TellPlayer(GetMaster(), "You cannot hire higher level characters than you");
+        ai->TellPlayer(GetMaster(), "你不能雇佣比你级别高的角色.");
         return false;
     }
 
@@ -42,12 +42,12 @@ bool HireAction::Execute(Event& event)
     if ((int)discount < (int)moneyReq)
     {
         ostringstream out;
-        out << "You cannot hire me - I barely know you. Make sure you have at least " << chat->formatMoney(moneyReq) << " as a trade discount";
+        out << "你不能雇佣我,我基本上都不认识你,确保你至少拥有 " << chat->formatMoney(moneyReq) << " 作为交易费用";
         ai->TellPlayer(GetMaster(), out.str());
         return false;
     }
 
-    ai->TellPlayer(GetMaster(), "I will join you at your next relogin");
+    ai->TellPlayer(GetMaster(), "我会在你下次重新登录时加入你的队伍.");
 
     bot->SetMoney(moneyReq);
     sRandomPlayerbotMgr.Remove(bot);

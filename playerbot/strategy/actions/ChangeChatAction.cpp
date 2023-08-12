@@ -10,13 +10,13 @@ bool ChangeChatAction::Execute(Event& event)
     ChatMsg parsed = chat->parseChat(text);
     if (parsed == CHAT_MSG_SYSTEM)
     {
-        ostringstream out; out << "Current chat is " << chat->formatChat(*context->GetValue<ChatMsg>("chat"));
+        ostringstream out; out << "当前聊天为 " << chat->formatChat(*context->GetValue<ChatMsg>("chat"));
         ai->TellPlayer(GetMaster(), out);
     }
     else
     {
         context->GetValue<ChatMsg>("chat")->Set(parsed);
-        ostringstream out; out << "Chat set to " << chat->formatChat(parsed);
+        ostringstream out; out << "聊天设置为 " << chat->formatChat(parsed);
         ai->TellPlayer(GetMaster(), out);
     }
     

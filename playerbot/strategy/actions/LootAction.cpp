@@ -328,7 +328,7 @@ bool StoreLootAction::Execute(Event& event)
         if (proto->Quality > ITEM_QUALITY_NORMAL && !urand(0, 50) && ai->HasStrategy("emote", BotState::BOT_STATE_NON_COMBAT)) ai->PlayEmote(TEXTEMOTE_CHEER);
         if (proto->Quality >= ITEM_QUALITY_RARE && !urand(0, 1) && ai->HasStrategy("emote", BotState::BOT_STATE_NON_COMBAT)) ai->PlayEmote(TEXTEMOTE_CHEER);
 
-        ostringstream out; out << "Looting " << chat->formatItem(itemQualifier);
+        ostringstream out; out << "拾取 " << chat->formatItem(itemQualifier);
 
         ai->TellPlayerNoFacing(GetMaster(), out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 
@@ -342,9 +342,9 @@ bool StoreLootAction::Execute(Event& event)
                 placeholders["%name"] = chat->formatItem(itemQualifier);
 
                 if (urand(0, 3))
-                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("Yay I looted %name!", placeholders), LANG_UNIVERSAL);
+                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("耶!我拾取了 %name!", placeholders), LANG_UNIVERSAL);
                 else
-                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("Guess who got a %name? Me!", placeholders), LANG_UNIVERSAL);
+                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("猜猜谁得到了 %name? 是我!", placeholders), LANG_UNIVERSAL);
             }
         }
 

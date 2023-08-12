@@ -52,7 +52,7 @@ bool EquipAction::Execute(Event& event)
 
 void EquipAction::ListItems(Player* requester)
 {
-    ai->TellPlayer(requester, "=== Equip ===");
+    ai->TellPlayer(requester, "=== 装备 ===");
 
     map<uint32, int> items;
     map<uint32, bool> soulbound;
@@ -153,7 +153,7 @@ void EquipAction::EquipItem(Player* requester, Item* item)
 
     sPlayerbotAIConfig.logEvent(ai, "EquipAction", item->GetProto()->Name1, to_string(item->GetProto()->ItemId));
 
-    ostringstream out; out << "equipping " << chat->formatItem(item);
+    ostringstream out; out << "正在装备 " << chat->formatItem(item);
 
     ai->TellPlayer(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 }

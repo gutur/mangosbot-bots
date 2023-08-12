@@ -20,7 +20,7 @@ bool PullRequestAction::Execute(Event& event)
     Unit* target = GetTarget(event);
     if (!target)
     {
-        ai->TellPlayerNoFacing(requester, "You have no target");
+        ai->TellPlayerNoFacing(requester, "你没有目标.");
         return false;
     }
 
@@ -28,19 +28,19 @@ bool PullRequestAction::Execute(Event& event)
     const float distanceToPullTarget = target->GetDistance(ai->GetBot());
     if (distanceToPullTarget > maxPullDistance)
     {
-        ai->TellPlayerNoFacing(requester, "The target is too far away");
+        ai->TellPlayerNoFacing(requester, "目标距离太远.");
         return false;
     }
 
     if (!AttackersValue::IsValid(target, bot, nullptr, false))
     {
-        ai->TellPlayerNoFacing(requester, "The target can't be pulled");
+        ai->TellPlayerNoFacing(requester, "目标不能被拉走.");
         return false;
     }
 
     if (!strategy->CanDoPullAction(target))
     {
-        ostringstream out; out << "Can't perform pull action '" << strategy->GetPullActionName() << "'";
+        ostringstream out; out << "不能执行拉怪指令 '" << strategy->GetPullActionName() << "'";
         ai->TellPlayerNoFacing(requester, out.str());
         return false;
     }

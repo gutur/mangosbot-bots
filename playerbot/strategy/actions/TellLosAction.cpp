@@ -10,8 +10,8 @@ bool TellLosAction::Execute(Event& event)
 
     if (param.empty() || param == "targets")
     {
-        ListUnits("--- Targets ---", *context->GetValue<list<ObjectGuid> >("possible targets"));
-        ListUnits("--- Targets (All) ---", *context->GetValue<list<ObjectGuid> >("all targets"));
+        ListUnits("--- 目标 ---", *context->GetValue<list<ObjectGuid> >("possible targets"));
+        ListUnits("--- 目标 (全部) ---", *context->GetValue<list<ObjectGuid> >("all targets"));
     }
 
     if (param.empty() || param == "npcs")
@@ -21,17 +21,17 @@ bool TellLosAction::Execute(Event& event)
 
     if (param.empty() || param == "corpses")
     {
-        ListUnits("--- Corpses ---", *context->GetValue<list<ObjectGuid> >("nearest corpses"));
+        ListUnits("--- 尸体 ---", *context->GetValue<list<ObjectGuid> >("nearest corpses"));
     }
 
     if (param.empty() || param == "gos" || param == "game objects")
     {
-        ListGameObjects("--- Game objects ---", *context->GetValue<list<ObjectGuid> >("nearest game objects"));
+        ListGameObjects("--- 物体 ---", *context->GetValue<list<ObjectGuid> >("nearest game objects"));
     }
 
     if (param.empty() || param == "players")
     {
-        ListUnits("--- Friendly players ---", *context->GetValue<list<ObjectGuid> >("nearest friendly players"));
+        ListUnits("--- 友善玩家 ---", *context->GetValue<list<ObjectGuid> >("nearest friendly players"));
     }
 
     return true;

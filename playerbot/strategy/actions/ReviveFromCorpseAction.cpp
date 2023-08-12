@@ -22,7 +22,7 @@ bool ReviveFromCorpseAction::Execute(Event& event)
         {
             if (!ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT))
             {
-                ai->TellPlayerNoFacing(GetMaster(), "Welcome back!", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+                ai->TellPlayerNoFacing(GetMaster(), "欢迎回来!", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
                 ai->ChangeStrategy("+follow,-stay", BotState::BOT_STATE_NON_COMBAT);
                 return true;
             }
@@ -194,7 +194,7 @@ bool SpiritHealerAction::Execute(Event& event)
     Corpse* corpse = bot->GetCorpse();
     if (!corpse)
     {
-        ai->TellPlayerNoFacing(requester, "I am not a spirit");
+        ai->TellPlayerNoFacing(requester, "我不是一个灵魂.");
         return false;
     }
 
@@ -220,7 +220,7 @@ bool SpiritHealerAction::Execute(Event& event)
         if (!foundSpiritHealer)
         {
             sLog.outBasic("Bot #%d %s:%d <%s> can't find a spirit healer", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName());
-            ai->TellPlayerNoFacing(requester, "Cannot find any spirit healer nearby");
+            ai->TellPlayerNoFacing(requester, "附近找不到任何灵魂医者.");
         }
 
 

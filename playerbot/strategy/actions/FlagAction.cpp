@@ -8,7 +8,7 @@ using namespace ai;
 
 bool FlagAction::TellUsage()
 {
-    ai->TellError("Usage: flag cloak/helm/pvp on/set/off/clear/toggle/?");
+    ai->TellError("用法: flag cloak/helm/pvp on/set/off/clear/toggle/?");
     return false;
 }
 
@@ -27,7 +27,7 @@ bool FlagAction::Execute(Event& event)
         if (setFlag) bot->SetPvP(true);
         else if (clearFlag) bot->SetPvP(false);
         else if (toggleFlag) bot->SetPvP(!bot->IsPvP());
-        ostringstream out; out << ss[0] << " flag is " << chat->formatBoolean(bot->IsPvP());
+        ostringstream out; out << ss[0] << " 标志为 " << chat->formatBoolean(bot->IsPvP());
         ai->TellPlayer(GetMaster(), out.str());
         return true;
     }
@@ -40,7 +40,7 @@ bool FlagAction::Execute(Event& event)
     else if (setFlag) bot->RemoveFlag(PLAYER_FLAGS, playerFlags);
     else if (toggleFlag && bot->HasFlag(PLAYER_FLAGS, playerFlags)) bot->RemoveFlag(PLAYER_FLAGS, playerFlags);
     else if (toggleFlag && !bot->HasFlag(PLAYER_FLAGS, playerFlags)) bot->SetFlag(PLAYER_FLAGS, playerFlags);
-    ostringstream out; out << ss[0] << " flag is " << chat->formatBoolean(!bot->HasFlag(PLAYER_FLAGS, playerFlags));
+    ostringstream out; out << ss[0] << " 标志为 " << chat->formatBoolean(!bot->HasFlag(PLAYER_FLAGS, playerFlags));
     ai->TellPlayer(GetMaster(), out.str());
     return true;
 }

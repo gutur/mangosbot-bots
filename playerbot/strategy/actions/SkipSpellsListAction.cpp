@@ -15,20 +15,20 @@ bool SkipSpellsListAction::Execute(Event& event)
     if (cmd == "reset")
     {
         skipSpells.clear();
-        ai->TellPlayer(GetMaster(), "The ignored spell list has been cleared");
+        ai->TellPlayer(GetMaster(), "已清空忽略的法术列表.");
         return true;
     }
     else if (cmd.empty() || cmd == "?")
     {   
         if (skipSpells.empty())
         {
-            ai->TellPlayer(GetMaster(), "Ignored spell list is empty");
+            ai->TellPlayer(GetMaster(), "忽略的法术列表为空.");
         }
         else
         {
             bool first = true;
             ostringstream out;
-            out << "Ignored spell list: ";
+            out << "忽略的法术列表: ";
             for (set<uint32>::iterator i = skipSpells.begin(); i != skipSpells.end(); i++)
             {
                 const SpellEntry* spellEntry = sServerFacade.LookupSpellInfo(*i);
@@ -68,14 +68,14 @@ bool SkipSpellsListAction::Execute(Event& event)
 
                 if (!spellId)
                 {
-                    ai->TellError("Unknown spell " + spell);
+                    ai->TellError("未知法术 " + spell);
                     continue;
                 }
 
                 const SpellEntry* spellEntry = sServerFacade.LookupSpellInfo(spellId);
                 if (!spellEntry)
                 {
-                    ai->TellError("Unknown spell " + spell);
+                    ai->TellError("未知法术 " + spell);
                     continue;
                 }
 
@@ -86,7 +86,7 @@ bool SkipSpellsListAction::Execute(Event& event)
                     {
                         skipSpells.erase(j);
                         ostringstream out;
-                        out << chat->formatSpell(spellEntry) << " removed from ignored spells";
+                        out << chat->formatSpell(spellEntry) << " 已从忽略的法术中移除.";
                         ai->TellPlayer(GetMaster(), out);
                     }
                 }
@@ -97,7 +97,7 @@ bool SkipSpellsListAction::Execute(Event& event)
                     {
                         skipSpells.insert(spellId);
                         ostringstream out;
-                        out << chat->formatSpell(spellEntry) << " added to ignored spells";
+                        out << chat->formatSpell(spellEntry) << " 已添加至忽略的法术列表.";
                         ai->TellPlayer(GetMaster(), out);
                     }
                 }
@@ -107,7 +107,7 @@ bool SkipSpellsListAction::Execute(Event& event)
         }
         else
         {
-            ai->TellError("Please specify one or more spells to ignore");
+            ai->TellError("请指定一个或多个要忽略的法术");
         }
     }
 

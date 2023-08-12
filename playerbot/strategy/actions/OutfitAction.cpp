@@ -13,9 +13,9 @@ bool OutfitAction::Execute(Event& event)
     if (param == "?")
     {
         List();
-        ai->TellPlayer(GetMaster(), "outfit <name> +[item] to add items");
-        ai->TellPlayer(GetMaster(), "outfit <name> -[item] to remove items");
-        ai->TellPlayer(GetMaster(), "outfit <name> equip/replace to equip items");
+        ai->TellPlayer(GetMaster(), "使用方法:outfit <名字> +[物品] 添加物品");
+        ai->TellPlayer(GetMaster(), "使用方法:outfit <名字> -[物品] 移除物品");
+        ai->TellPlayer(GetMaster(), "使用方法:outfit <名字> 装备/替换 装备物品");
     }
     else
     {
@@ -25,7 +25,7 @@ bool OutfitAction::Execute(Event& event)
         {
             Save(name, items);
             ostringstream out;
-            out << "Setting outfit " << name << " as " << param;
+            out << "已将装备方案  " << name << " 设置为 " << param;
             ai->TellPlayer(GetMaster(), out);
             return true;
         }
@@ -42,7 +42,7 @@ bool OutfitAction::Execute(Event& event)
         if (command == "equip")
         {
             ostringstream out;
-            out << "Equipping outfit " << name;
+            out << "正在装备装备方案 " << name;
             ai->TellPlayer(GetMaster(), out);
             EquipItems(GetMaster(), outfit);
             return true;
@@ -50,7 +50,7 @@ bool OutfitAction::Execute(Event& event)
         else if (command == "replace")
         {
             ostringstream out;
-            out << "Replacing current equip with outfit " << name;
+            out << "替换当前方案,使用装备方案 " << name;
             ai->TellPlayer(GetMaster(), out);
             for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; slot++)
             {
@@ -71,7 +71,7 @@ bool OutfitAction::Execute(Event& event)
         else if (command == "reset")
         {
             ostringstream out;
-            out << "Resetting outfit " << name;
+            out << "替换当前装备 " << name;
             ai->TellPlayer(GetMaster(), out);
             Save(name, ItemIds());
             return true;
@@ -79,7 +79,7 @@ bool OutfitAction::Execute(Event& event)
         else if (command == "update")
         {
             ostringstream out;
-            out << "Updating with current items outfit " << name;
+            out << "正在使用当前装备更新装备方案 " << name;
             ai->TellPlayer(GetMaster(), out);
             Update(name);
             return true;
@@ -98,12 +98,12 @@ bool OutfitAction::Execute(Event& event)
                 if (j != outfit.end())
                     outfit.erase(j);
 
-                out << " removed from ";
+                out << " 已从 ";
             }
             else
             {
                 outfit.insert(itemid);
-                out << " added to ";
+                out << " 已添加至 ";
             }
             out << name;
             ai->TellPlayer(GetMaster(), out.str());

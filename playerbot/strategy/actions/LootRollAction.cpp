@@ -60,7 +60,7 @@ bool RollAction::Execute(Event& event)
 
     if (text.empty())
     {
-        ai->TellPlayerNoFacing(GetMaster(), "Please give a roll type or item. See " + ChatHelper::formatValue("help", "action:roll", "roll help") + " for more information.");
+        ai->TellPlayerNoFacing(GetMaster(), "请提供掷骰类型或物品,参阅 " + ChatHelper::formatValue("help", "action:roll", "roll help") + " 获取更多相关信息.");
         return false;
     }
 
@@ -74,7 +74,7 @@ bool RollAction::Execute(Event& event)
 
     if (type != "need" && type != "greed" && type != "pass" && type != "auto")
     {
-        ai->TellPlayerNoFacing(GetMaster(), "Please give a correct roll type. need, greed, pass or auto. See " + ChatHelper::formatValue("help", "action:roll", "roll help") + " for more information.");
+        ai->TellPlayerNoFacing(GetMaster(), "请提供正确的掷骰类型.need(需求)、greed(贪婪)、pass(放弃)或auto(自动).有关更多信息,请参阅 " + ChatHelper::formatValue("help", "action:roll", "roll help") + " .");
         return false;
     }
 

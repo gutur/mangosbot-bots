@@ -153,7 +153,7 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         if (ai->GetMaster() == source)
         {
             ai->ChangeStrategy("-follow,+stay", BotState::BOT_STATE_NON_COMBAT);
-            ai->TellPlayerNoFacing(GetMaster(), "Fine.. I'll stay right here..", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            ai->TellPlayerNoFacing(GetMaster(), "好吧..我呆在这儿..", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         }
         break;
     case TEXTEMOTE_BECKON:
@@ -161,7 +161,7 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         if (ai->GetMaster() == source)
         {
             ai->ChangeStrategy("+follow", BotState::BOT_STATE_NON_COMBAT);
-            ai->TellPlayerNoFacing(GetMaster(), "Wherever you go, I'll follow..", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            ai->TellPlayerNoFacing(GetMaster(), "你去哪儿,我都要跟着你..", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         }
         break;
     case TEXTEMOTE_WAVE:
@@ -170,12 +170,12 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
     case TEXTEMOTE_HELLO:
     case TEXTEMOTE_WELCOME:
     case TEXTEMOTE_INTRODUCE:
-        emoteText = "Hey there!";
+        emoteText = "嘿 你好!";
         emoteId = EMOTE_ONESHOT_WAVE;
         textEmote = TEXTEMOTE_HELLO;
         break;
     case TEXTEMOTE_DANCE:
-        emoteText = "Shake what your mama gave you!";
+        emoteText = "摇起你妈妈给你的东西!";
         emoteId = EMOTE_ONESHOT_DANCE;
         textEmote = TEXTEMOTE_DANCE;
         break;
@@ -186,12 +186,12 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
     case TEXTEMOTE_SMILE:
     case TEXTEMOTE_LOVE:
         //case TEXTEMOTE_HOLDHAND:
-        emoteText = "Awwwww...";
+        emoteText = "啊呜...";
         emoteId = EMOTE_ONESHOT_SHY;
         textEmote = TEXTEMOTE_SHY;
         break;
     case TEXTEMOTE_FLEX:
-        emoteText = "Hercules! Hercules!";
+        emoteText = "大力神! 大力神!";
         emoteId = EMOTE_ONESHOT_APPLAUD;
         textEmote = TEXTEMOTE_APPLAUD;
         break;
@@ -203,7 +203,7 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         //case TEXTEMOTE_REGRET:
         //case TEXTEMOTE_SCOLD:
         //case TEXTEMOTE_CROSSARMS:
-        emoteText = "Did I do thaaaaat?";
+        emoteText = "我真的做了那个吗????";
         emoteId = EMOTE_ONESHOT_QUESTION;
         textEmote = TEXTEMOTE_SHRUG;
         break;
@@ -213,24 +213,24 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
     case TEXTEMOTE_NOSEPICK:
     case TEXTEMOTE_SNIFF:
     case TEXTEMOTE_STINK:
-        emoteText = "Wasn't me! Just sayin'..";
+        emoteText = "不是我!只是说......";
         emoteId = EMOTE_ONESHOT_POINT;
         textEmote = TEXTEMOTE_POINT;
         break;
     case TEXTEMOTE_JOKE:
         emoteId = EMOTE_ONESHOT_LAUGH;
         textEmote = TEXTEMOTE_LAUGH;
-        emoteText = "Oh.. was I not supposed to laugh so soon?";
+        emoteText = "哦... 我不应该这么快笑吗?";
         break;
     case TEXTEMOTE_CHICKEN:
-        emoteText = "We'll see who's chicken soon enough!";
+        emoteText = "很快就会知道谁是胆小鬼!";
         emoteId = EMOTE_ONESHOT_RUDE;
         textEmote = TEXTEMOTE_RUDE;
         break;
     case TEXTEMOTE_APOLOGIZE:
         emoteId = EMOTE_ONESHOT_POINT;
         textEmote = TEXTEMOTE_APOLOGIZE;
-        emoteText = "You damn right you're sorry!";
+        emoteText = "你当然应该道歉!";
         break;
     case TEXTEMOTE_APPLAUD:
     case TEXTEMOTE_CLAP:
@@ -239,14 +239,14 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         //case TEXTEMOTE_GOLFCLAP:
         emoteId = EMOTE_ONESHOT_BOW;
         textEmote = TEXTEMOTE_BOW;
-        emoteText = "Thank you.. Thank you.. I'm here all week.";
+        emoteText = "谢谢你,谢谢你,我每天都在这儿.";
         break;
     case TEXTEMOTE_BEG:
     case TEXTEMOTE_GROVEL:
     case TEXTEMOTE_PLEAD:
         emoteId = EMOTE_ONESHOT_NO;
         textEmote = TEXTEMOTE_NO;
-        emoteText = "Beg all you want.. I have nothing for you.";
+        emoteText = "你尽管乞求...我什么都不会给你.";
         break;
     case TEXTEMOTE_BITE:
     case TEXTEMOTE_POKE:
@@ -255,12 +255,12 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         //case TEXTEMOTE_PUNCH:
         emoteId = EMOTE_ONESHOT_ROAR;
         textEmote = TEXTEMOTE_ROAR;
-        emoteYell = "OUCH! Dammit, that hurt!";
+        emoteYell = "妈的,好疼!";
         break;
     case TEXTEMOTE_BORED:
         emoteId = EMOTE_ONESHOT_NO;
         textEmote = TEXTEMOTE_NO;
-        emoteText = "My job description doesn't include entertaining you..";
+        emoteText = "我的工作描述不包括娱乐你..";
         break;
     case TEXTEMOTE_BOW:
     case TEXTEMOTE_CURTSEY:
@@ -271,13 +271,13 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
     case TEXTEMOTE_SIT:
         emoteId = EMOTE_ONESHOT_EAT;
         textEmote = TEXTEMOTE_EAT;
-        emoteText = "Looks like time for an AFK break..";
+        emoteText = "看起来是时候休息一下了..";
         break;
     case TEXTEMOTE_AGREE:
     case TEXTEMOTE_NOD:
         emoteId = EMOTE_ONESHOT_EXCLAMATION;
         textEmote = TEXTEMOTE_NOD;
-        emoteText = "At least SOMEONE agrees with me!";
+        emoteText = "至少有人同意我!";
         break;
     case TEXTEMOTE_AMAZE:
     case TEXTEMOTE_COWER:
@@ -294,7 +294,7 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         //case TEXTEMOTE_PROUD:
         emoteId = EMOTE_ONESHOT_FLEX;
         textEmote = TEXTEMOTE_FLEX;
-        emoteText = "Yes, Yes. I know I'm amazing..";
+        emoteText = "是的,是的,我知道我很厉害..";
         break;
     case TEXTEMOTE_BLEED:
     case TEXTEMOTE_MOURN:
@@ -303,22 +303,22 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         //case TEXTEMOTE_PULSE:
         emoteId = EMOTE_ONESHOT_KNEEL;
         textEmote = TEXTEMOTE_KNEEL;
-        emoteText = "MEDIC! Stat!";
+        emoteText = "医生!紧急情况!";
         break;
     case TEXTEMOTE_BLINK:
         emoteId = EMOTE_ONESHOT_KICK;
-        emoteText = "What? You got something in your eye?";
+        emoteText = "怎么了?你眼睛里进了什么东西?";
         break;
     case TEXTEMOTE_BOUNCE:
     case TEXTEMOTE_BARK:
         emoteId = EMOTE_ONESHOT_POINT;
         textEmote = TEXTEMOTE_POINT;
-        emoteText = "Who's a good doggy? You're a good doggy!";
+        emoteText = "谁是个好狗狗?你是个好狗狗!!";
         break;
     case TEXTEMOTE_BYE:
         emoteId = EMOTE_ONESHOT_WAVE;
         textEmote = TEXTEMOTE_WAVE;
-        emoteText = "Umm.... wait! Where are you going?!";
+        emoteText = "嗯...等等!你要去哪儿?";
         break;
     case TEXTEMOTE_CACKLE:
     case TEXTEMOTE_LAUGH:
@@ -330,7 +330,7 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         //case TEXTEMOTE_SNORT:
         emoteId = EMOTE_ONESHOT_LAUGH;
         textEmote = TEXTEMOTE_LAUGH;
-        emoteText = "Wait... what are we laughing at again?";
+        emoteText = "等等..我们笑什么来着?";
         break;
     case TEXTEMOTE_CONFUSED:
     case TEXTEMOTE_CURIOUS:
@@ -350,7 +350,7 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
     case TEXTEMOTE_EYEBROW:
         emoteId = EMOTE_ONESHOT_QUESTION;
         textEmote = TEXTEMOTE_SHRUG;
-        emoteText = "Don't look at  me.. I just work here";
+        emoteText = "别看我..我只是在这里工作而已";
         break;
     case TEXTEMOTE_COUGH:
     case TEXTEMOTE_DROOL:
@@ -361,23 +361,23 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         //case TEXTEMOTE_SWEAT:
         emoteId = EMOTE_ONESHOT_POINT;
         textEmote = TEXTEMOTE_POINT;
-        emoteText = "Ewww! Keep your nasty germs over there!";
+        emoteText = "呸!把你的恶心细菌留在那边!";
         break;
     case TEXTEMOTE_CRY:
         emoteId = EMOTE_ONESHOT_CRY;
         textEmote = TEXTEMOTE_CRY;
-        emoteText = "Don't you start crying or it'll make me start crying!";
+        emoteText = "你别哭,不然我也会哭起来的!";
         break;
     case TEXTEMOTE_CRACK:
         emoteId = EMOTE_ONESHOT_ROAR;
         textEmote = TEXTEMOTE_ROAR;
-        emoteText = "It's clobbering time!";
+        emoteText = "现在是毁灭时间!";
         break;
     case TEXTEMOTE_EAT:
     case TEXTEMOTE_DRINK:
         emoteId = EMOTE_ONESHOT_EAT;
         textEmote = TEXTEMOTE_EAT;
-        emoteText = "I hope you brought enough for the whole class...";
+        emoteText = "我希望你带够了给全班的食物...";
         break;
     case TEXTEMOTE_GLOAT:
     case TEXTEMOTE_MOCK:
@@ -385,19 +385,19 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
     case TEXTEMOTE_EMBARRASS:
         emoteId = EMOTE_ONESHOT_CRY;
         textEmote = TEXTEMOTE_CRY;
-        emoteText = "Doesn't mean you need to be an ass about it..";
+        emoteText = "这并不意味着你要对此感到傲慢..";
         break;
     case TEXTEMOTE_HUNGRY:
         emoteId = EMOTE_ONESHOT_EAT;
         textEmote = TEXTEMOTE_EAT;
-        emoteText = "What? You want some of this?";
+        emoteText = "什么?你想要尝尝这个?";
         break;
     case TEXTEMOTE_LAYDOWN:
     case TEXTEMOTE_TIRED:
     case TEXTEMOTE_YAWN:
         emoteId = EMOTE_ONESHOT_KNEEL;
         textEmote = TEXTEMOTE_KNEEL;
-        emoteText = "Is it break time already?";
+        emoteText = "已经到休息时间了吗?";
         break;
     case TEXTEMOTE_MOAN:
     case TEXTEMOTE_MOON:
@@ -412,7 +412,7 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         //case TEXTEMOTE_CHARM:
         emoteId = EMOTE_ONESHOT_NO;
         textEmote = TEXTEMOTE_NO;
-        emoteText = "Keep it in your pants, boss..";
+        emoteText = "老板,别调戏我..";
         break;
     case TEXTEMOTE_NO:
     case TEXTEMOTE_VETO:
@@ -420,23 +420,23 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
     case TEXTEMOTE_DOUBT:
         emoteId = EMOTE_ONESHOT_QUESTION;
         textEmote = TEXTEMOTE_SHRUG;
-        emoteText = "Aww.... why not?!";
+        emoteText = "啊...为什么不?!";
         break;
     case TEXTEMOTE_PANIC:
         emoteId = EMOTE_ONESHOT_EXCLAMATION;
         textEmote = TEXTEMOTE_CALM;
-        emoteText = "Now is NOT the time to panic!";
+        emoteText = "现在不是恐慌的时候!";
         break;
     case TEXTEMOTE_POINT:
         emoteId = EMOTE_ONESHOT_POINT;
         textEmote = TEXTEMOTE_POINT;
-        emoteText = "What?! I can do that TOO!";
+        emoteText = "什么?我也可以做到!";
         break;
     case TEXTEMOTE_RUDE:
     case TEXTEMOTE_RASP:
         emoteId = EMOTE_ONESHOT_RUDE;
         textEmote = TEXTEMOTE_RASP;
-        emoteText = "Right back at you, bub!";
+        emoteText = "你这个家伙!";
         break;
     case TEXTEMOTE_ROAR:
     case TEXTEMOTE_THREATEN:
@@ -458,7 +458,7 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         //case TEXTEMOTE_SHAKEFIST:
         emoteId = EMOTE_ONESHOT_ROAR;
         textEmote = TEXTEMOTE_ROAR;
-        emoteYell = "RAWR!";
+        emoteYell = "咆哮!";
         break;
     case TEXTEMOTE_TALK:
         emoteId = EMOTE_ONESHOT_TALK;
@@ -472,12 +472,12 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
     case TEXTEMOTE_LISTEN:
         emoteId = EMOTE_ONESHOT_TALK;
         textEmote = TEXTEMOTE_TALKQ;
-        emoteText = "Blah Blah Blah Yakety Smackety..";
+        emoteText = "废话连篇,一派胡言..";
         break;
     case TEXTEMOTE_THANK:
         emoteId = EMOTE_ONESHOT_BOW;
         textEmote = TEXTEMOTE_BOW;
-        emoteText = "You are quite welcome!";
+        emoteText = "非常感谢!";
         break;
     case TEXTEMOTE_VICTORY:
     case TEXTEMOTE_CHEER:
@@ -486,7 +486,7 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         //case TEXTEMOTE_DING:
         emoteId = EMOTE_ONESHOT_CHEER;
         textEmote = TEXTEMOTE_CHEER;
-        emoteText = "Yay!";
+        emoteText = "耶!";
         break;
     case TEXTEMOTE_COLD:
     case TEXTEMOTE_SHIVER:
@@ -496,60 +496,60 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         //case TEXTEMOTE_POUT:
         emoteId = EMOTE_ONESHOT_QUESTION;
         textEmote = TEXTEMOTE_PUZZLE;
-        emoteText = "And what exactly am I supposed to do about that?";
+        emoteText = "我能对此做些什么?";
         break;
     case TEXTEMOTE_COMFORT:
     case TEXTEMOTE_SOOTHE:
     case TEXTEMOTE_PAT:
         emoteId = EMOTE_ONESHOT_CRY;
         textEmote = TEXTEMOTE_CRY;
-        emoteText = "Thanks...";
+        emoteText = "多谢...";
         break;
     case TEXTEMOTE_INSULT:
         emoteId = EMOTE_ONESHOT_CRY;
         textEmote = TEXTEMOTE_CRY;
-        emoteText = "You hurt my feelings..";
+        emoteText = "你伤害了我的感情..";
         break;
     case TEXTEMOTE_JK:
         emoteId = EMOTE_ONESHOT_POINT;
         textEmote = TEXTEMOTE_POINT;
-        emoteText = "You.....";
+        emoteText = "你个.....";
         break;
     case TEXTEMOTE_RAISE:
         emoteId = EMOTE_ONESHOT_POINT;
         textEmote = TEXTEMOTE_POINT;
-        emoteText = "Yes.. you.. at the back of the class..";
+        emoteText = "没错,就是你,在班级后面的那个..";
         break;
     case TEXTEMOTE_READY:
         emoteId = EMOTE_ONESHOT_SALUTE;
         textEmote = TEXTEMOTE_SALUTE;
-        emoteText = "Ready here, too!";
+        emoteText = "我也准备好了!";
         break;
     case TEXTEMOTE_SHOO:
         emoteId = EMOTE_ONESHOT_KICK;
         textEmote = TEXTEMOTE_SHOO;
-        emoteText = "Shoo yourself!";
+        emoteText = "你自己滚开!";
         break;
     case TEXTEMOTE_SLAP:
         //case TEXTEMOTE_SMACK:
         emoteId = EMOTE_ONESHOT_CRY;
         textEmote = TEXTEMOTE_CRY;
-        emoteText = "What did I do to deserve that?";
+        emoteText = "我做错了什么招致如此对待?";
         break;
     case TEXTEMOTE_STAND:
         emoteId = EMOTE_ONESHOT_NONE;
         textEmote = TEXTEMOTE_STAND;
-        emoteText = "What? Break time's over? Fine..";
+        emoteText = "什么?休息时间结束了?好吧..";
         break;
     case TEXTEMOTE_TICKLE:
         emoteId = EMOTE_ONESHOT_LAUGH;
         textEmote = TEXTEMOTE_GIGGLE;
-        emoteText = "Hey! Stop that!";
+        emoteText = "喂!停下!";
         break;
     case TEXTEMOTE_VIOLIN:
         emoteId = EMOTE_ONESHOT_TALK;
         textEmote = TEXTEMOTE_SIGH;
-        emoteText = "Har Har.. very funny..";
+        emoteText = "哈哈,真有意思..";
         break;
         //case TEXTEMOTE_HELPME:
         //    bot->HandleEmoteCommand(EMOTE_ONESHOT_POINT);
@@ -559,13 +559,13 @@ bool EmoteActionBase::ReceiveEmote(Player* source, uint32 emote, bool verbal)
         //case TEXTEMOTE_LUCK:
         emoteId = EMOTE_ONESHOT_TALK;
         textEmote = TEXTEMOTE_THANK;
-        emoteText = "Thanks... I'll need it..";
+        emoteText = "多谢,我需要好运..";
         break;
     case TEXTEMOTE_BRANDISH:
         //case TEXTEMOTE_MERCY:
         emoteId = EMOTE_ONESHOT_BEG;
         textEmote = TEXTEMOTE_BEG;
-        emoteText = "Please don't kill me!";
+        emoteText = "请别杀我!";
         break;
         /*case TEXTEMOTE_BADFEELING:
             bot->HandleEmoteCommand(EMOTE_ONESHOT_QUESTION);

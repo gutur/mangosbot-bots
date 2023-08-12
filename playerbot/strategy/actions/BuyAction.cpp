@@ -141,7 +141,7 @@ bool BuyAction::Execute(Event& event)
 
                 if (!result)
                 {
-                    ostringstream out; out << "Nobody sells " << ChatHelper::formatItem(proto) << " nearby";
+                    ostringstream out; out << "附近没有人卖 " << ChatHelper::formatItem(proto) << " .";
                     ai->TellPlayer(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
                 }
             }
@@ -150,7 +150,7 @@ bool BuyAction::Execute(Event& event)
 
     if (!vendored)
     {
-        ai->TellError("There are no vendors nearby");
+        ai->TellError("附近没有商人");
         return false;
     }
 
@@ -189,7 +189,7 @@ bool BuyAction::BuyItem(Player* requester, VendorItemData const* tItems, ObjectG
             {
                 sPlayerbotAIConfig.logEvent(ai, "BuyAction", proto->Name1, to_string(proto->ItemId));
 
-                ostringstream out; out << "Buying " << ChatHelper::formatItem(proto);
+                ostringstream out; out << "购买 " << ChatHelper::formatItem(proto);
                 ai->TellPlayer(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
                 return true;
             }
@@ -213,7 +213,7 @@ bool BuyBackAction::Execute(Event& event)
 
     if (found.empty())
     {
-        ai->TellError("No buyback items found");
+        ai->TellError("没有找到任何回购物品");
         return false;
     }
 
@@ -236,7 +236,7 @@ bool BuyBackAction::Execute(Event& event)
 
     if (!hasVendor)
     {
-        ai->TellError("There are no vendors nearby");
+        ai->TellError("附近没有商人");
         return false;
     }
 

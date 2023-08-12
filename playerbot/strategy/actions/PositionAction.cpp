@@ -7,15 +7,15 @@ using namespace ai;
 
 void TellPosition(PlayerbotAI* ai, string name, ai::PositionEntry pos)
 {
-    ostringstream out; out << "Position " << name;
+    ostringstream out; out << "位置 " << name;
     if (pos.isSet())
     {
         float x = pos.x, y = pos.y;
         Map2ZoneCoordinates(x, y, ai->GetBot()->GetZoneId());
-        out << " is set to " << x << "," << y;
+        out << " 已设置为 " << x << "," << y;
     }
     else
-        out << " is not set";
+        out << " 未设置.";
     ai->TellPlayer(ai->GetMaster(), out);
 }
 
@@ -43,7 +43,7 @@ bool PositionAction::Execute(Event& event)
     vector<string> params = split(param, ' ');
     if (params.size() != 2)
     {
-        ai->TellPlayer(GetMaster(), "Whisper position <name> ?/set/reset");
+        ai->TellPlayer(GetMaster(), "私聊位置 <name> ?/set/reset");
         return false;
     }
 
@@ -62,7 +62,7 @@ bool PositionAction::Execute(Event& event)
         pos.Set(atoi(coords[0].c_str()), atoi(coords[1].c_str()), atoi(coords[2].c_str()), ai->GetBot()->GetMapId());
         posMap[name] = pos;
 
-        ostringstream out; out << "Position " << name << " is set";
+        ostringstream out; out << "位置 " << name << " 已设置.";
         ai->TellPlayer(GetMaster(), out);
         return true;
     }
@@ -72,7 +72,7 @@ bool PositionAction::Execute(Event& event)
         pos.Set(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), ai->GetBot()->GetMapId());
 	    posMap[name] = pos;
 
-	    ostringstream out; out << "Position " << name << " is set";
+	    ostringstream out; out << "位置 " << name << " 已设置.";
 	    ai->TellPlayer(GetMaster(), out);
 	    return true;
 	}
@@ -82,7 +82,7 @@ bool PositionAction::Execute(Event& event)
 	    pos.Reset();
 	    posMap[name] = pos;
 
-	    ostringstream out; out << "Position " << name << " is reset";
+	    ostringstream out; out << "位置 " << name << " 已重置.";
 	    ai->TellPlayer(GetMaster(), out);
 	    return true;
 	}
@@ -95,7 +95,7 @@ bool MoveToPositionAction::Execute(Event& event)
 	ai::PositionEntry pos = context->GetValue<ai::PositionMap&>("position")->Get()[qualifier];
     if (!pos.isSet())
     {
-        ostringstream out; out << "Position " << qualifier << " is not set";
+        ostringstream out; out << "位置 " << qualifier << " 尚未设置.";
         ai->TellPlayer(GetMaster(), out);
         return false;
     }
@@ -180,7 +180,7 @@ bool ReturnToStayPositionAction::isPossible()
         const float distance = bot->GetDistance(stayPosition.x, stayPosition.y, stayPosition.z);
         if (distance > sPlayerbotAIConfig.reactDistance)
         {
-            ai->TellError("The stay position is too far to return. I am going to stay where I am now");
+            ai->TellError("待命位置太远无法返回.我将保持当前位置.");
             
             // Set the stay position to current position
             stayPosition.Set(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetMapId());
@@ -210,7 +210,7 @@ bool ReturnToPullPositionAction::isPossible()
                     const float distance = bot->GetDistance(stayPosition.x, stayPosition.y, stayPosition.z);
                     if (distance > sPlayerbotAIConfig.reactDistance)
                     {
-                        ai->TellError("The pull position is too far to return. I am going to pull where I am now");
+                        ai->TellError("拉怪位置太远无法返回.我将在当前位置拉怪.");
 
                         // Set the stay position to current position
                         stayPosition.Set(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetMapId());

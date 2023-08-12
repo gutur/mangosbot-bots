@@ -104,7 +104,7 @@ bool CastCustomSpellAction::Execute(Event& event)
     ostringstream msg;
     if (!spell)
     {
-        msg << "Unknown spell " << text;
+        msg << "未知法术 " << text;
         ai->TellPlayerNoFacing(requester, msg.str());
         return false;
     }
@@ -112,7 +112,7 @@ bool CastCustomSpellAction::Execute(Event& event)
     SpellEntry const* pSpellInfo = sServerFacade.LookupSpellInfo(spell);
     if (!pSpellInfo)
     {
-        msg << "Unknown spell " << text;
+        msg << "未知法术 " << text;
         ai->TellPlayerNoFacing(requester, msg.str());
         return false;
     }
@@ -164,7 +164,7 @@ bool CastCustomSpellAction::Execute(Event& event)
 
     if (!bot->GetTrader() && !ai->CanCastSpell(spell, target, 0, true, itemTarget, false))
     {
-        msg << "Cannot cast " << spellName.str();
+        msg << "不能释放 " << spellName.str();
         ai->TellPlayerNoFacing(requester, msg.str());
         return false;
     }
@@ -178,9 +178,9 @@ bool CastCustomSpellAction::Execute(Event& event)
     {
         SetDuration(spellDuration);
         if (!pSpellInfo->EffectItemType[0])
-            msg << "Casting " << spellName.str();
+            msg << "释放 " << spellName.str();
         else
-            msg << "Crafting " << spellName.str();
+            msg << "制造 " << spellName.str();
 
         if (castCount > 1)
         {
@@ -193,7 +193,7 @@ bool CastCustomSpellAction::Execute(Event& event)
     }
     else
     {
-        msg << "Cast " << spellName.str() << " is failed";
+        msg << "释放 " << spellName.str() << " 失败";
         ai->TellPlayerNoFacing(requester, msg.str());
     }
 
@@ -307,24 +307,24 @@ bool CastCustomSpellAction::CastSummonPlayer(Player* requester, std::string comm
                         }
 
                         ostringstream msg;
-                        msg << "Summoning " << target->GetName();
+                        msg << "召唤中 " << target->GetName();
                         ai->TellPlayerNoFacing(requester, msg.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
                         SetDuration(sPlayerbotAIConfig.globalCoolDown);
                         return true;
                     }
                     else
                     {
-                        ai->TellPlayerNoFacing(requester, "I don't have enough party members around to cast a summon");
+                        ai->TellPlayerNoFacing(requester, "我周围没有足够的队伍成员来进行召唤.");
                     }
                 }
                 else
                 {
-                    ai->TellPlayerNoFacing(requester, "Failed to find the summon target");
+                    ai->TellPlayerNoFacing(requester, "未找到召唤目标.");
                 }
             }
             else
             {
-                ai->TellPlayerNoFacing(requester, "I can't summon because I'm in combat");
+                ai->TellPlayerNoFacing(requester, "我不能召唤,因为我在战斗中.");
             }
         }
     }
@@ -439,7 +439,7 @@ bool CastRandomSpellAction::castSpell(uint32 spellId, WorldObject* wo)
     {
         if (ai->CastSpell(spellId, nullptr, spellItem, false, &spellDuration))
         {
-            ai->TellPlayer(GetMaster(), "Casting " + ChatHelper::formatSpell(pSpellInfo) + " on " + ChatHelper::formatItem(spellItem), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            ai->TellPlayer(GetMaster(), "施放 " + ChatHelper::formatSpell(pSpellInfo) + " 在... " + ChatHelper::formatItem(spellItem), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             executed = true;
         }
     }
@@ -450,7 +450,7 @@ bool CastRandomSpellAction::castSpell(uint32 spellId, WorldObject* wo)
         {
             if (ai->CastSpell(spellId, (Unit*)(wo), nullptr, false, &spellDuration))
             {
-                ai->TellPlayer(GetMaster(), "Casting " + ChatHelper::formatSpell(pSpellInfo) + " on " + ChatHelper::formatWorldobject(wo), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+                ai->TellPlayer(GetMaster(), "施放 " + ChatHelper::formatSpell(pSpellInfo) + " 在... " + ChatHelper::formatWorldobject(wo), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
                 executed = true;
             }
         }
@@ -459,7 +459,7 @@ bool CastRandomSpellAction::castSpell(uint32 spellId, WorldObject* wo)
         {
             if (ai->CastSpell(spellId, wo->GetPositionX(), wo->GetPositionY(), wo->GetPositionZ(), nullptr, false, &spellDuration))
             {
-                ai->TellPlayer(GetMaster(), "Casting " + ChatHelper::formatSpell(pSpellInfo) + " on " + ChatHelper::formatWorldobject(wo), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+                ai->TellPlayer(GetMaster(), "施放 " + ChatHelper::formatSpell(pSpellInfo) + " 在... " + ChatHelper::formatWorldobject(wo), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
                 executed = true;
             }
         }
@@ -468,7 +468,7 @@ bool CastRandomSpellAction::castSpell(uint32 spellId, WorldObject* wo)
     if (!executed)
         if (ai->CastSpell(spellId, nullptr, nullptr, false, &spellDuration))
         {
-            ai->TellPlayer(GetMaster(), "Casting " + ChatHelper::formatSpell(pSpellInfo), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            ai->TellPlayer(GetMaster(), "施法 " + ChatHelper::formatSpell(pSpellInfo), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             executed = true;
         }
 
@@ -577,7 +577,7 @@ bool DisenchantRandomItemAction::Execute(Event& event)
         bool didCast = CastCustomSpellAction::Execute(disenchantEvent);
 
         if(didCast)
-            ai->TellPlayer(GetMaster(), "Disenchanting " + chat->formatQItem(item), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            ai->TellPlayer(GetMaster(), "分解 " + chat->formatQItem(item), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 
         return didCast;
     }

@@ -227,7 +227,7 @@ bool DebugAction::Execute(Event& event)
 
         string motionName = motionBot->GetName();
 
-        ai->TellPlayer(GetMaster(), motionName + " :" + sType + " (" + cTargetName + " a:" + to_string(cAngle) + " o:" + to_string(cOffset) + ")");
+        ai->TellPlayer(GetMaster(), motionName + " :" + sType + " (" + cTargetName + " 角度:" + to_string(cAngle) + " 偏移:" + to_string(cOffset) + ")");
 
 
         if (!masterTarget)
@@ -266,7 +266,7 @@ bool DebugAction::Execute(Event& event)
             }
 
             string sType = "TODO"; // GetMoveTypeStr(type);
-            ai->TellPlayer(GetMaster(), "new:" + sType);
+            ai->TellPlayer(GetMaster(), "新:" + sType);
         }
         return true;
     }
@@ -275,9 +275,9 @@ bool DebugAction::Execute(Event& event)
         {
             GameObjectInfo const* data = sGOStorage.LookupEntry<GameObjectInfo>(trans->GetEntry());
             if (WorldPosition(bot).isOnTransport(trans))
-                ai->TellPlayer(GetMaster(), "On transport " + string(data->name));
+                ai->TellPlayer(GetMaster(), "在交通工具 " + string(data->name));
             else
-                ai->TellPlayer(GetMaster(), "Not on transport " + string(data->name));
+                ai->TellPlayer(GetMaster(), "不在交通工具 " + string(data->name));
         }
     }
     else if (text.find("ontrans") == 0 && isMod) {
@@ -312,7 +312,7 @@ bool DebugAction::Execute(Event& event)
 
         if (path.empty())
         {
-            ai->TellPlayer(GetMaster(), "No path.");
+            ai->TellPlayer(GetMaster(), "无路径.");
             bot->SetTransport(nullptr);
             return false;
         }
@@ -340,7 +340,7 @@ bool DebugAction::Execute(Event& event)
                     ai->AddAura(wpCreature, 1130);
             }
 
-            ai->TellPlayer(GetMaster(), "No path on boat.");
+            ai->TellPlayer(GetMaster(), "船上没有路径.");
             bot->SetTransport(nullptr);
             return false;
         }
@@ -392,7 +392,7 @@ bool DebugAction::Execute(Event& event)
 
         if (path.empty())
         {
-            ai->TellPlayer(GetMaster(), "No path.");
+            ai->TellPlayer(GetMaster(), "无路径.");
             return false;
         }
 
@@ -400,7 +400,7 @@ bool DebugAction::Execute(Event& event)
 
         if (exitPos.isOnTransport(transport))
         {
-            ai->TellPlayer(GetMaster(), "Path still on boat.");
+            ai->TellPlayer(GetMaster(), "路径仍在船上.");
             return false;
         }
         
@@ -527,7 +527,7 @@ bool DebugAction::Execute(Event& event)
 
         if (!corpse)
         {
-            ai->TellPlayerNoFacing(GetMaster(), "no corpse");
+            ai->TellPlayerNoFacing(GetMaster(), "没有尸体");
             return true;
         }
 
@@ -545,7 +545,7 @@ bool DebugAction::Execute(Event& event)
 
         WorldPosition(corpse).printWKT(out);
 
-        out << "time: " << corpse->GetGhostTime();
+        out << "时间: " << corpse->GetGhostTime();
 
         ai->TellPlayerNoFacing(GetMaster(), out);
 
@@ -569,7 +569,7 @@ bool DebugAction::Execute(Event& event)
 
         ostringstream out;
 
-        out << "Logout in: " << hr << ":" << min << ":" << time;
+        out << "登出时间: " << hr << ":" << min << ":" << time;
 
         bot->Whisper(out.str().c_str(), LANG_UNIVERSAL, event.getOwner()->GetObjectGuid());
 
@@ -611,21 +611,21 @@ bool DebugAction::Execute(Event& event)
         out << " (e:" << guidP.GetEntry();
         
         if (guidP.GetUnit())
-            out << ",level:" << guidP.GetUnit()->GetLevel();
+            out << ",等级:" << guidP.GetUnit()->GetLevel();
             
         out << ") ";
 
         guidP.printWKT(out);
 
-        out << "[a:" << guidP.getArea()->area_name[0]; 
+        out << "[区域:" << guidP.getArea()->area_name[0]; 
 
         if (guidP.getArea() && guidP.getAreaLevel())
-            out << " level: " << guidP.getAreaLevel();
+            out << " 等级: " << guidP.getAreaLevel();
         if (guidP.getArea()->zone && GetAreaEntryByAreaID(guidP.getArea()->zone))
         {
-            out << " z:" << GetAreaEntryByAreaID(guidP.getArea()->zone)->area_name[0];
+            out << " 区域:" << GetAreaEntryByAreaID(guidP.getArea()->zone)->area_name[0];
             if (sTravelMgr.getAreaLevel(guidP.getArea()->zone))
-                out << " level: " << sTravelMgr.getAreaLevel(guidP.getArea()->zone);
+                out << " 等级: " << sTravelMgr.getAreaLevel(guidP.getArea()->zone);
         }
 
         out << "] ";
@@ -633,12 +633,12 @@ bool DebugAction::Execute(Event& event)
         uint16 event_id = sGameEventMgr.GetGameEventId<Creature>(guidP.GetCounter());
 
         if (event_id)
-            out << " event:" << event_id << (sGameEventMgr.IsActiveEvent(event_id) ? " active" : " inactive");
+            out << " 事件:" << event_id << (sGameEventMgr.IsActiveEvent(event_id) ? " active" : " inactive");
 
         uint16 topPoolId = sPoolMgr.IsPartOfTopPool<Creature>(guidP.GetCounter());
 
         if (topPoolId)
-            out << " pool:" << topPoolId << (sGameEventMgr.GetGameEventId<Pool>(topPoolId) ? " event" : " nonevent");
+            out << " 池:" << topPoolId << (sGameEventMgr.GetGameEventId<Pool>(topPoolId) ? " event" : " nonevent");
 
         ai->TellPlayerNoFacing(GetMaster(), out);
 
@@ -692,18 +692,18 @@ bool DebugAction::Execute(Event& event)
         if (guidP.GetUnit())
         {
             ostringstream out;
-            out << "unit to bot:" << reaction[guidP.GetUnit()->GetReactionTo(bot)];
+            out << "单位对机器人的反应:" << reaction[guidP.GetUnit()->GetReactionTo(bot)];
 
             Unit* ubot = bot;
-            out << " bot to unit:" << reaction[ubot->GetReactionTo(guidP.GetUnit())];
+            out << " 机器人对单位的反应:" << reaction[ubot->GetReactionTo(guidP.GetUnit())];
 
-            out << " npc to bot:" << reaction[guidP.GetReactionTo(bot)];
-            out << " bot to npc:" << reaction[GuidPosition(bot).GetReactionTo(guidP)];
+            out << " NPC对机器人的反应:" << reaction[guidP.GetReactionTo(bot)];
+            out << " 机器人对NPC的反应:" << reaction[GuidPosition(bot).GetReactionTo(guidP)];
 
             if (GuidPosition(HIGHGUID_UNIT, guidP.GetEntry()).IsHostileTo(bot))
-                out << "[hostile]";
+                out << "[敌对]";
             if (GuidPosition(HIGHGUID_UNIT, guidP.GetEntry()).IsFriendlyTo(bot))
-                out << "[friendly]";
+                out << "[敌对]";
 
             ai->TellPlayerNoFacing(GetMaster(), out);
         }
@@ -746,7 +746,7 @@ bool DebugAction::Execute(Event& event)
         out << " (e:" << guidP.GetEntry();
 
         if (guidP.GetUnit())
-            out << ",level:" << guidP.GetUnit()->GetLevel();
+            out << ",等级:" << guidP.GetUnit()->GetLevel();
 
         out << ") ";
 
@@ -808,7 +808,7 @@ bool DebugAction::Execute(Event& event)
 
             ostringstream out;
 
-            out << "state:";
+            out << "数据:";
 
             if (state == GO_STATE_ACTIVE)
                 out << "GO_STATE_ACTIVE";
@@ -817,11 +817,11 @@ bool DebugAction::Execute(Event& event)
             if (state == GO_STATE_ACTIVE_ALTERNATIVE)
                 out << "GO_STATE_ACTIVE_ALTERNATIVE";
 
-            out << (object->IsInUse() ? ", in use" : ", not in use");
+            out << (object->IsInUse() ? ", 使用中." : ", 未使用.");
 
             LootState lootState = object->GetLootState();
 
-            out << " lootState:";
+            out << " 掉落数据:";
 
             if (lootState == GO_NOT_READY)
                 out << "GO_NOT_READY";
@@ -854,7 +854,7 @@ bool DebugAction::Execute(Event& event)
             vector<WorldPosition> beginPath, endPath;
             TravelNodeRoute route = sTravelNodeMap.getRoute(botPos, *points.front(), beginPath, bot);
 
-            ostringstream out; out << "Traveling to " << dest->getTitle() << ": ";
+            ostringstream out; out << "前往 " << dest->getTitle() << ": ";
 
             for (auto node : route.getNodes())
             {
@@ -867,7 +867,7 @@ bool DebugAction::Execute(Event& event)
         }
         else
         {
-            ai->TellPlayerNoFacing(GetMaster(), "Destination " + destination + " not found.");
+            ai->TellPlayerNoFacing(GetMaster(), "地点 " + destination + " 未找到.");
             return true;
         }
     }
@@ -880,7 +880,7 @@ bool DebugAction::Execute(Event& event)
 
         if (!quest || sTravelMgr.getQuests().find(questId) == sTravelMgr.getQuests().end())
         {
-            ai->TellPlayerNoFacing(GetMaster(), "Quest " + text.substr(6) + " not found.");
+            ai->TellPlayerNoFacing(GetMaster(), "任务 " + text.substr(6) + " 未找到.");
             return false;
         }
 
@@ -904,11 +904,11 @@ bool DebugAction::Execute(Event& event)
             ostringstream out;
 
             if (g->isActive(bot))
-                out << "(ACTIVE)";
+                out << "(进行中)";
 
             out << g->getTitle().c_str();
 
-            out << " (" << g->distanceTo(botPos) << "y)";
+            out << " (" << g->distanceTo(botPos) << "码)";
 
             ai->TellPlayerNoFacing(GetMaster(), out);
 
@@ -938,7 +938,7 @@ bool DebugAction::Execute(Event& event)
                 ostringstream out;
 
                 if (g->isActive(bot))
-                    out << "(ACTIVE)";
+                    out << "(激活中)";
 
                 out << g->getTitle().c_str();
 
@@ -947,7 +947,7 @@ bool DebugAction::Execute(Event& event)
                 if (d->getEntry())
                     out << "[" << ObjectMgr::GetCreatureTemplate(d->getEntry())->MaxLevel << "]";
 
-                out << " (" << g->distanceTo(botPos) << "y)";
+                out << " (" << g->distanceTo(botPos) << "码)";
 
                 ai->TellPlayerNoFacing(GetMaster(), out);
 
@@ -970,11 +970,11 @@ bool DebugAction::Execute(Event& event)
             ostringstream out;
 
             if (g->isActive(bot))
-                out << "(ACTIVE)";
+                out << "(激活中)";
 
             out << g->getTitle().c_str();
 
-            out << " (" << g->distanceTo(botPos) << "y)";
+            out << " (" << g->distanceTo(botPos) << "码)";
 
             ai->TellPlayerNoFacing(GetMaster(), out);
 
@@ -989,7 +989,7 @@ bool DebugAction::Execute(Event& event)
     else if (text.find("quest") == 0)
     {
         ostringstream out;
-        out << sTravelMgr.getQuests().size() << " quests ";
+        out << sTravelMgr.getQuests().size() << " 个任务 ";
 
         uint32 noT = 0, noG = 0, noO = 0;
 
@@ -1005,7 +1005,7 @@ bool DebugAction::Execute(Event& event)
                 noO++;
         }
 
-        out << noG << "|" << noT << "|" << noO << " bad.";
+        out << noG << "|" << noT << "|" << noO << " 错误.";
 
         ai->TellPlayerNoFacing(GetMaster(), out);
 
@@ -1014,7 +1014,7 @@ bool DebugAction::Execute(Event& event)
     else if (text.find("bquest") == 0)
     {
         ostringstream out;
-        out << "bad quests:";
+        out << "错误任务:";
 
         uint32 noT = 0, noG = 0, noO = 0;
 
@@ -1024,7 +1024,7 @@ bool DebugAction::Execute(Event& event)
 
             if (!quest)
             {
-                out << " " << q.first << " does not exists";
+                out << " " << q.first << " 不存在.";
                 continue;
             }
 
@@ -1032,13 +1032,13 @@ bool DebugAction::Execute(Event& event)
                 out << quest->GetTitle() << " ";
 
             if (q.second->questGivers.empty())
-                out << " no G";
+                out << " 无接取者.";
 
             if (q.second->questTakers.empty())
-                out << " no T";
+                out << " 无完成者.";
 
             if (q.second->questObjectives.empty())
-                out << " no O";
+                out << " 无目标.";
         }
         ai->TellPlayerNoFacing(GetMaster(), out);
 
@@ -1058,9 +1058,9 @@ bool DebugAction::Execute(Event& event)
             list<int32> entries = GAI_VALUE2(list<int32>, "item drop list", itemId);
 
             if (entries.empty())
-                out << chat->formatItem(sObjectMgr.GetItemPrototype(itemId), 0, 0) << " no sources found.";
+                out << chat->formatItem(sObjectMgr.GetItemPrototype(itemId), 0, 0) << " 没有来源.";
             else
-                out << chat->formatItem(sObjectMgr.GetItemPrototype(itemId), 0, 0) << " " << to_string(entries.size()) << " sources found:";
+                out << chat->formatItem(sObjectMgr.GetItemPrototype(itemId), 0, 0) << " " << to_string(entries.size()) << " 处来源:";
 
             ai->TellPlayerNoFacing(GetMaster(), out);
             out.str("");
@@ -1096,9 +1096,9 @@ bool DebugAction::Execute(Event& event)
     bool doAction = ai->DoSpecificAction("add all loot", Event(), true);
 
     if (doAction)
-        ai->TellPlayerNoFacing(GetMaster(), "Added new loot");
+        ai->TellPlayerNoFacing(GetMaster(), "添加新的战利品.");
     else
-        ai->TellPlayerNoFacing(GetMaster(), "No new loot");
+        ai->TellPlayerNoFacing(GetMaster(), "没有新的战利品.");
 
     LootObjectStack* loots = AI_VALUE(LootObjectStack*, "available loot");
 
@@ -1112,16 +1112,16 @@ bool DebugAction::Execute(Event& event)
         WorldObject* wo = ai->GetWorldObject(loot.guid);
 
         if (wo)
-            ai->TellPlayerNoFacing(GetMaster(), chat->formatWorldobject(wo) + " " + (loot.IsLootPossible(bot) ? "can loot" : "can not loot"));
+            ai->TellPlayerNoFacing(GetMaster(), chat->formatWorldobject(wo) + " " + (loot.IsLootPossible(bot) ? "可拾取." : "无法拾取."));
         else
-            ai->TellPlayerNoFacing(GetMaster(), to_string(loot.guid) + " " + (loot.IsLootPossible(bot) ? "can loot" : "can not loot") + " " + to_string(loot.guid.GetEntry()));
+            ai->TellPlayerNoFacing(GetMaster(), to_string(loot.guid) + " " + (loot.IsLootPossible(bot) ? "可拾取." : "无法拾取.") + " " + to_string(loot.guid.GetEntry()));
 
         if (loot.guid.IsGameObject())
         {
             GameObject* go = ai->GetGameObject(loot.guid);
 
             if (go->ActivateToQuest(bot))
-                ai->TellPlayerNoFacing(GetMaster(), to_string(go->GetGoType()) + " for quest");
+                ai->TellPlayerNoFacing(GetMaster(), to_string(go->GetGoType()) + " 用于任务");
             else
                 ai->TellPlayerNoFacing(GetMaster(), to_string(go->GetGoType()));
         }
@@ -1142,9 +1142,9 @@ bool DebugAction::Execute(Event& event)
         list<uint32> itemIds = GAI_VALUE2(list<uint32>, "entry loot list", entry);
 
         if (itemIds.empty())
-            out << chat->formatWorldEntry(entry) << " no drops found.";
+            out << chat->formatWorldEntry(entry) << " 没有掉落物品.";
         else
-            out << chat->formatWorldEntry(entry) << " " << to_string(itemIds.size()) << " drops found:";
+            out << chat->formatWorldEntry(entry) << "找到 " << to_string(itemIds.size()) << " 处掉落物品:";
 
         ai->TellPlayerNoFacing(GetMaster(), out);
         out.str("");
@@ -1198,7 +1198,7 @@ bool DebugAction::Execute(Event& event)
     {
         WorldPosition pos(bot);
 
-        string name = "USER:" + text.substr(9);
+        string name = "用户:" + text.substr(9);
 
         TravelNode* startNode = sTravelNodeMap.addNode(pos, name, false, false);
 
@@ -1207,7 +1207,7 @@ bool DebugAction::Execute(Event& event)
             endNode->setLinked(false);
         }
 
-        ai->TellPlayerNoFacing(GetMaster(), "Node " + name + " created.");
+        ai->TellPlayerNoFacing(GetMaster(), "已创建节点." + name + " .");
         
         sTravelNodeMap.setHasToGen();
 
@@ -1224,11 +1224,11 @@ bool DebugAction::Execute(Event& event)
 
         if (startNode->isImportant())
         {
-            ai->TellPlayerNoFacing(GetMaster(), "Node can not be removed.");
+            ai->TellPlayerNoFacing(GetMaster(), "无法移除该节点.");
         }
         sTravelNodeMap.m_nMapMtx.lock();
         sTravelNodeMap.removeNode(startNode);
-        ai->TellPlayerNoFacing(GetMaster(), "Node removed.");
+        ai->TellPlayerNoFacing(GetMaster(), "节点已移除.");
         sTravelNodeMap.m_nMapMtx.unlock();
 
         sTravelNodeMap.setHasToGen();

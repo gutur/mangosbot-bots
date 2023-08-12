@@ -22,7 +22,7 @@ bool SetCraftAction::Execute(Event& event)
     if (link == "reset")
     {
         data.Reset();
-        ai->TellPlayer(GetMaster(), "I will not craft anything");
+        ai->TellPlayer(GetMaster(), "我不会给你制造任何东西.");
         return true;
     }
 
@@ -35,7 +35,7 @@ bool SetCraftAction::Execute(Event& event)
     ItemIds itemIds = chat->parseItems(link);
     if (itemIds.empty())
     {
-        ai->TellPlayer(GetMaster(), "Usage: 'craft [itemId]' or 'craft reset'");
+        ai->TellPlayer(GetMaster(), "用法: 'craft [物品ID]' or 'craft reset'");
         return false;
     }
 
@@ -97,7 +97,7 @@ bool SetCraftAction::Execute(Event& event)
 
     if (data.required.empty())
     {
-        ai->TellPlayer(GetMaster(), "I cannot craft this");
+        ai->TellPlayer(GetMaster(), "我不能制造这个物品.");
         return false;
     }
 
@@ -112,7 +112,7 @@ void SetCraftAction::TellCraft()
     CraftData& data = AI_VALUE(CraftData&, "craft");
     if (data.IsEmpty())
     {
-        ai->TellPlayer(GetMaster(), "I will not craft anything");
+        ai->TellPlayer(GetMaster(), "我不会制造任何东西.");
         return;
     }
 
@@ -121,7 +121,7 @@ void SetCraftAction::TellCraft()
         return;
 
     ostringstream out;
-    out << "I will craft " << chat->formatItem(proto) << " using reagents: ";
+    out << "我将制作 " << chat->formatItem(proto) << " 所需材料: ";
     bool first = true;
     for (map<uint32, int>::iterator i = data.required.begin(); i != data.required.end(); ++i)
     {
@@ -135,12 +135,12 @@ void SetCraftAction::TellCraft()
             uint32 given = data.obtained[item];
             if (given)
             {
-                out << "|cffffff00(x" << given << " given)|r ";
+                out << "|cffffff00(已获得 x" << given << " )|r ";
             }
         }
     }
 
-    out << " (craft fee: " << chat->formatMoney(GetCraftFee(data)) << ")";
+    out << " (制作费用: " << chat->formatMoney(GetCraftFee(data)) << ")";
     ai->TellPlayer(GetMaster(), out.str());
 }
 

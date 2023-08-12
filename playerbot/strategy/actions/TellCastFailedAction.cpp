@@ -22,26 +22,26 @@ bool TellCastFailedAction::Execute(Event& event)
     switch (result)
     {
     case SPELL_FAILED_NOT_READY:
-        out << "not ready";
+        out << "未准备好.";
         break;
     case SPELL_FAILED_REQUIRES_SPELL_FOCUS:
-        out << "requires spell focus";
+        out << "需要法术焦点.";
         break;
     case SPELL_FAILED_REQUIRES_AREA:
-        out << "cannot cast here";
+        out << "无法在此处施放.";
         break;
     case SPELL_FAILED_EQUIPPED_ITEM_CLASS:
-        out << "requires item";
+        out << "需要物品.";
         break;
     case SPELL_FAILED_EQUIPPED_ITEM_CLASS_MAINHAND:
     case SPELL_FAILED_EQUIPPED_ITEM_CLASS_OFFHAND:
-        out << "requires weapon";
+        out << "需要武器.";
         break;
     case SPELL_FAILED_PREVENTED_BY_MECHANIC:
-        out << "interrupted";
+        out << "已被打断.";
         break;
     default:
-        out << "cannot cast";
+        out << "无法施放.";
     }
     int32 castTime = GetSpellCastTime(pSpellInfo
 #ifdef CMANGOS

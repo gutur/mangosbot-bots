@@ -39,7 +39,7 @@ void UnequipAction::UnequipItem(Player* requester, Item* item)
     packet << bagIndex << slot << dstBag;
     bot->GetSession()->HandleAutoStoreBagItemOpcode(packet);
 
-    ostringstream out; out << chat->formatItem(item) << " unequipped";
+    ostringstream out; out << chat->formatItem(item) << " 已卸下.";
 
     ai->TellPlayer(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 }

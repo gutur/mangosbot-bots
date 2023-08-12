@@ -56,7 +56,7 @@ bool WhoAction::Execute(Event& event)
     if (ai->GetMaster())
     {
         if (!out.str().empty()) out << ", ";
-        out << "playing with " << ai->GetMaster()->GetName();
+        out << "和它一起玩: " << ai->GetMaster()->GetName();
     }
 
     string tell = out.str();
@@ -83,7 +83,7 @@ string WhoAction::QueryTrade(string text)
         if (!sellPrice)
             continue;
 
-        out << "Selling " << chat->formatItem(sell, sell->GetCount()) << " for " << chat->formatMoney(sellPrice);
+        out << "出售 " << chat->formatItem(sell, sell->GetCount()) << " 售价: " << chat->formatMoney(sellPrice);
         return out.str();
     }
 
@@ -108,7 +108,7 @@ string WhoAction::QuerySkill(string text)
 #endif
     ObjectGuid guid = bot->GetObjectGuid();
     string data = "0";
-    out << "|cFFFFFF00|Htrade:" << spellId << ":" << value << ":" << maxSkill << ":"
+    out << "|cFFFFFF00|H交易:" << spellId << ":" << value << ":" << maxSkill << ":"
             << std::hex << std::uppercase << guid.GetRawValue()
             << std::nouppercase << std::dec << ":" << data
             << "|h[" << skillName << "]|h|r"
@@ -124,8 +124,8 @@ string WhoAction::QuerySpec(string text)
 
     int spec = AiFactory::GetPlayerSpecTab(bot);
     out << "|h|cffffffff" << chat->formatClass(bot, spec);
-    out << " (|h|cff00ff00" << (uint32)bot->GetLevel() << "|h|cffffffff lvl), ";
-    out << "|h|cff00ff00" << ai->GetEquipGearScore(bot, false, false) << "|h|cffffffff GS (";
+    out << " (|h|cff00ff00" << (uint32)bot->GetLevel() << "|h|cffffffff 等级), ";
+    out << "|h|cff00ff00" << ai->GetEquipGearScore(bot, false, false) << "|h|cffffffff 装备评分 (";
 
     ItemCountByQuality visitor;
     ai->InventoryIterateItems(&visitor, IterateItemsMask::ITERATE_ITEMS_IN_EQUIP);

@@ -592,7 +592,7 @@ bool SetFormationAction::Execute(Event& event)
     FormationValue* value = (FormationValue*)context->GetValue<Formation*>("formation");
     if (formation == "?" || formation.empty())
     {
-        ostringstream str; str << "Formation: |cff00ff00" << value->Get()->getName();
+        ostringstream str; str << "编队形式: |cff00ff00" << value->Get()->getName();
         ai->TellPlayer(GetMaster(), str);
         return true;
     }
@@ -608,13 +608,13 @@ bool SetFormationAction::Execute(Event& event)
 
     if (!value->Load(formation))
     {
-        ostringstream str; str << "Invalid formation: |cffff0000" << formation;
+        ostringstream str; str << "无效的编队形式: |cffff0000" << formation;
         ai->TellPlayer(GetMaster(), str);
-        ai->TellPlayer(GetMaster(), "Please set to any of:|cffffffff near (default), queue, chaos, circle, line, shield, arrow, melee, far");
+        ai->TellPlayer(GetMaster(), "请设置以下任意一种编队形式:|cffffffff 靠近(默认)、排队、混乱、圆形、直线、护盾、箭头、近战、远程.");
         return false;
     }
 
-    ostringstream str; str << "Formation set to: " << formation;
+    ostringstream str; str << "编队形式已设置为: " << formation;
     ai->TellPlayer(GetMaster(), str);
     return true;
 }

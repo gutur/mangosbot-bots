@@ -79,7 +79,7 @@ void ChooseTravelTargetAction::getNewTarget(TravelTarget* newTarget, TravelTarge
                 target->setTarget(dest, points.front());
                 target->setForced(true);
 
-                ostringstream out; out << "Traveling to " << dest->getTitle();
+                ostringstream out; out << "前往 " << dest->getTitle();
                 ai->TellPlayerNoFacing(GetMaster(), out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
                 foundTarget = true;
             }
@@ -196,7 +196,7 @@ void ChooseTravelTargetAction::setNewTarget(TravelTarget* newTarget, TravelTarge
     if (oldTarget->isForced() && oldTarget->getStatus() == TravelStatus::TRAVEL_STATUS_COOLDOWN && ai->HasStrategy("travel once", BotState::BOT_STATE_NON_COMBAT))
     {
         ai->ChangeStrategy("-travel once", BotState::BOT_STATE_NON_COMBAT);
-        ai->TellPlayerNoFacing(GetMaster(), "Arrived at " + oldTarget->getDestination()->getTitle());
+        ai->TellPlayerNoFacing(GetMaster(), "到达 " + oldTarget->getDestination()->getTitle());
         SetNullTarget(newTarget);
     }
 
@@ -244,7 +244,7 @@ void ChooseTravelTargetAction::ReportTravelTarget(TravelTarget* newTarget, Trave
     ostringstream out;
 
     if (newTarget->isForced())
-        out << "(Forced) ";
+        out << "(被迫) ";
 
     if (destination->getName() == "QuestRelationTravelDestination" || destination->getName() == "QuestObjectiveTravelDestination")
     {
@@ -262,17 +262,17 @@ void ChooseTravelTargetAction::ReportTravelTarget(TravelTarget* newTarget, Trave
         string Sub;
 
         if (newTarget->isGroupCopy())
-            out << "Following group ";
+            out << "跟随团队 ";
         else if(oldDestination && oldDestination == destination)
-            out << "Continuing ";
+            out << "继续前进 ";
         else
-            out << "Traveling ";
+            out << "前进 ";
 
-        out << round(newTarget->getDestination()->distanceTo(botLocation)) << "y";
+        out << round(newTarget->getDestination()->distanceTo(botLocation)) << "码.";
 
-        out << " for " << chat->formatQuest(quest);
+        out << " 当前任务: " << chat->formatQuest(quest);
 
-        out << " to " << QuestDestination->getTitle();
+        out << " 详情: " << QuestDestination->getTitle();
     }
     else if (destination->getName() == "RpgTravelDestination")
     {
@@ -281,15 +281,15 @@ void ChooseTravelTargetAction::ReportTravelTarget(TravelTarget* newTarget, Trave
         WorldPosition botLocation(bot);
 
         if (newTarget->isGroupCopy())
-            out << "Following group ";
+            out << "跟随团队 ";
         else if (oldDestination && oldDestination == destination)
-            out << "Continuing ";
+            out << "继续前进 ";
         else
-            out << "Traveling ";
+            out << "前进 ";
 
-        out << round(newTarget->getDestination()->distanceTo(botLocation)) << "y";
+        out << round(newTarget->getDestination()->distanceTo(botLocation)) << "码";
 
-        out << " for ";
+        out << " 为了 ";
 
         if (RpgDestination->getEntry() > 0)
         {
@@ -298,16 +298,16 @@ void ChooseTravelTargetAction::ReportTravelTarget(TravelTarget* newTarget, Trave
             if (cInfo)
             {
                 if ((cInfo->NpcFlags & UNIT_NPC_FLAG_VENDOR ) && AI_VALUE2(bool, "group or", "should sell,can sell"))
-                    out << "selling items";
+                    out << "出售物品.";
                 else if ((cInfo->NpcFlags & UNIT_NPC_FLAG_REPAIR) && AI_VALUE2(bool, "group or", "should repair,can repair"))
-                    out << "repairing";
+                    out << "修理装备.";
                 else if ((cInfo->NpcFlags & UNIT_NPC_FLAG_AUCTIONEER) && AI_VALUE2(bool, "group or", "should sell,can ah sell"))
-                    out << "posting items on the auctionhouse";
+                    out << "在拍卖行寄售物品.";
                 else
-                    out << "rpg";
+                    out << "角色扮演.";
             }
             else
-                out << "rpg";
+                out << "角色扮演";
         }
         else
         {
@@ -316,15 +316,15 @@ void ChooseTravelTargetAction::ReportTravelTarget(TravelTarget* newTarget, Trave
             if (gInfo)
             {
                 if (gInfo->type == GAMEOBJECT_TYPE_MAILBOX && AI_VALUE(bool, "can get mail"))
-                    out << "getting mail";
+                    out << "收取邮件.";
                 else
-                    out << "rpg";
+                    out << "角色扮演.";
             }
             else
-                out << "rpg";
+                out << "角色扮演.";
         }
 
-        out << " to " << RpgDestination->getTitle();        
+        out << " 前往 " << RpgDestination->getTitle();        
     }
     else if (destination->getName() == "ExploreTravelDestination")
     {
@@ -333,17 +333,17 @@ void ChooseTravelTargetAction::ReportTravelTarget(TravelTarget* newTarget, Trave
         WorldPosition botLocation(bot);
 
         if (newTarget->isGroupCopy())
-            out << "Following group ";
+            out << "跟随团队 ";
         else if (oldDestination && oldDestination == destination)
-            out << "Continuing ";
+            out << "继续 ";
         else
-            out << "Traveling ";
+            out << "前往 ";
 
         out << round(newTarget->getDestination()->distanceTo(botLocation)) << "y";
 
-        out << " for exploration";
+        out << " 为了探索";
 
-        out << " to " << ExploreDestination->getTitle();
+        out << " 去 " << ExploreDestination->getTitle();
     }
     else if (destination->getName() == "GrindTravelDestination")
     {
@@ -352,17 +352,17 @@ void ChooseTravelTargetAction::ReportTravelTarget(TravelTarget* newTarget, Trave
         WorldPosition botLocation(bot);
 
         if (newTarget->isGroupCopy())
-            out << "Following group ";
+            out << "跟随团队 ";
         else if (oldDestination && oldDestination == destination)
-            out << "Continuing ";
+            out << "继续 ";
         else
-            out << "Traveling ";
+            out << "前往 ";
 
         out << round(newTarget->getDestination()->distanceTo(botLocation)) << "y";
 
-        out << " for grinding money";
+        out << " 为了挣钱";
 
-        out << " to " << GrindDestination->getTitle();
+        out << " 去 " << GrindDestination->getTitle();
     }
     else if (destination->getName() == "BossTravelDestination")
     {
@@ -371,24 +371,24 @@ void ChooseTravelTargetAction::ReportTravelTarget(TravelTarget* newTarget, Trave
         WorldPosition botLocation(bot);
 
         if (newTarget->isGroupCopy())
-            out << "Following group ";
+            out << "跟随团队 ";
         else if (oldDestination && oldDestination == destination)
-            out << "Continuing ";
+            out << "继续 ";
         else
-            out << "Traveling ";
+            out << "前往 ";
 
         out << round(newTarget->getDestination()->distanceTo(botLocation)) << "y";
 
-        out << " for good loot";
+        out << " 为了更多好东西.";
 
-        out << " to " << BossDestination->getTitle();
+        out << " 去 " << BossDestination->getTitle();
     }
     else if (destination->getName() == "NullTravelDestination")
     {
         if (!oldTarget->getDestination() || oldTarget->getDestination()->getName() != "NullTravelDestination")
         {
             out.clear();
-            out << "No where to travel. Idling a bit.";
+            out << "没有地方可去了,休息一下.";
         }
     }
 
@@ -571,7 +571,7 @@ bool ChooseTravelTargetAction::SetBestTarget(TravelTarget* target, vector<Travel
     }
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(GetMaster(), to_string(travelPoints.size()) + " points total.");
+        ai->TellPlayerNoFacing(GetMaster(), to_string(travelPoints.size()) + " 个地点.");
 
     if (travelPoints.empty()) //No targets or no points.
         return false;
@@ -588,7 +588,7 @@ bool ChooseTravelTargetAction::SetBestTarget(TravelTarget* target, vector<Travel
         return false;
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(GetMaster(), to_string(travelPoints.size()) + " points in reasonable range.");
+        ai->TellPlayerNoFacing(GetMaster(), to_string(travelPoints.size()) + " 个在合理范围内的点.");
 
     travelPoints = sTravelMgr.getNextPoint(&botLocation, travelPoints); //Pick a good point.
 
@@ -604,7 +604,7 @@ bool ChooseTravelTargetAction::SetBestTarget(TravelTarget* target, vector<Travel
     target->setTarget(TravelDestinations.front(), travelPoints.front());
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(GetMaster(), "Point at " + to_string(floor(target->distance(bot))) + "y selected.");
+        ai->TellPlayerNoFacing(GetMaster(), "选定距离目标 " + to_string(floor(target->distance(bot))) + "码.");
 
     return target->isActive();
 }
@@ -665,7 +665,7 @@ bool ChooseTravelTargetAction::SetGroupTarget(TravelTarget* target)
     }
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(GetMaster(), to_string(activeDestinations.size()) + " group targets found.");
+        ai->TellPlayerNoFacing(GetMaster(), to_string(activeDestinations.size()) + " 个小队目标已找到.");
 
     bool hasTarget = SetBestTarget(target, activeDestinations);
 
@@ -713,7 +713,7 @@ bool ChooseTravelTargetAction::SetQuestTarget(TravelTarget* target, bool newQues
     }
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " new quest destinations found.");
+        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " 个新任务目标地点已找到.");
 
     if (activeQuests || completedQuests)
     {
@@ -755,7 +755,7 @@ bool ChooseTravelTargetAction::SetQuestTarget(TravelTarget* target, bool newQues
     }
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " quest destinations found.");
+        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " 个任务目标地点已找到.");
 
     return SetBestTarget(target, TravelDestinations);
 }
@@ -766,7 +766,7 @@ bool ChooseTravelTargetAction::SetRpgTarget(TravelTarget* target)
     vector<TravelDestination*> TravelDestinations = sTravelMgr.getRpgTravelDestinations(bot, true, false);
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " rpg destinations found.");
+        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " 个角色扮演目标地点已找到.");
 
     return SetBestTarget(target, TravelDestinations);
 }
@@ -777,7 +777,7 @@ bool ChooseTravelTargetAction::SetGrindTarget(TravelTarget* target)
     vector<TravelDestination*> TravelDestinations = sTravelMgr.getGrindTravelDestinations(bot, true, false, 600+bot->GetLevel()*400);
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " grind destinations found.");
+        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " 个打怪目标地点已找到.");
 
     return SetBestTarget(target, TravelDestinations);
 }
@@ -788,7 +788,7 @@ bool ChooseTravelTargetAction::SetBossTarget(TravelTarget* target)
     vector<TravelDestination*> TravelDestinations = sTravelMgr.getBossTravelDestinations(bot, true);
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " boss destinations found.");
+        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " 个Boss目标地点已找到.");
 
     return SetBestTarget(target, TravelDestinations);
 }
@@ -799,7 +799,7 @@ bool ChooseTravelTargetAction::SetExploreTarget(TravelTarget* target)
     vector<TravelDestination*> TravelDestinations = sTravelMgr.getExploreTravelDestinations(bot, true, false);
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " explore destinations found.");
+        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " 个探索目标地点已找到.");
 
     return SetBestTarget(target, TravelDestinations);
 }
@@ -888,7 +888,7 @@ bool ChooseTravelTargetAction::SetNpcFlagTarget(TravelTarget* target, vector<NPC
     }
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " npc flag targets found.");
+        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " 个探索目标地点已找到.");
 
     bool isActive = SetBestTarget(target, TravelDestinations);
 
@@ -934,7 +934,7 @@ bool ChooseTravelTargetAction::SetGOTypeTarget(TravelTarget* target, GameobjectT
     }
 
     if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " go type targets found.");
+        ai->TellPlayerNoFacing(GetMaster(), to_string(TravelDestinations.size()) + " 个探索目标地点已找到.");
 
     bool isActive = SetBestTarget(target, TravelDestinations);
 

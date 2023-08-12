@@ -14,7 +14,7 @@ class TellMailProcessor : public MailProcessor
 public:
     virtual bool Before(PlayerbotAI* ai)
     {
-        ai->TellPlayer(ai->GetMaster(), "=== Mailbox ===", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+        ai->TellPlayer(ai->GetMaster(), "=== 邮箱 ===", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         tells.clear();
         return true;
     }
@@ -50,7 +50,7 @@ public:
                 }
             }
         }
-        out  << ", |cff00ff00" << days << " day(s)";
+        out  << ", |cff00ff00" << days << " 天.";
         tells.push_front(out.str());
         return true;
     }
@@ -77,7 +77,7 @@ public:
         Player* bot = ai->GetBot();
         if (!CheckBagSpace(bot))
         {
-            ai->TellError("Not enough bag space");
+            ai->TellError("背包空间不足");
             return false;
         }
 
@@ -85,7 +85,7 @@ public:
         if (mail->money)
         {
             ostringstream out;
-            out << mail->subject << ", |cffffff00" << ChatHelper::formatMoney(mail->money) << "|cff00ff00 processed";
+            out << mail->subject << ", |cffffff00" << ChatHelper::formatMoney(mail->money) << "|cff00ff00 处理完毕";
             ai->TellPlayer(ai->GetMaster(), out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 
             WorldPacket packet;
@@ -114,7 +114,7 @@ public:
 #endif
                 Item* item = bot->GetMItem(*i);
                 ostringstream out;
-                out << mail->subject << ", " << ChatHelper::formatItem(item) << "|cff00ff00 processed";
+                out << mail->subject << ", " << ChatHelper::formatItem(item) << "|cff00ff00 处理完毕";
 
                 bot->GetSession()->HandleMailTakeItem(packet);
                 ai->TellPlayer(ai->GetMaster(), out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
@@ -158,7 +158,7 @@ public:
     virtual bool Process(int index, Mail* mail, PlayerbotAI* ai)
     {
         ostringstream out;
-        out << "|cffffffff" << mail->subject << "|cffff0000 deleted";
+        out << "|cffffffff" << mail->subject << "|cffff0000 删除";
         RemoveMail(ai->GetBot(), mail->messageID, FindMailbox(ai));
         ai->TellPlayer(ai->GetMaster(), out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         return true;
@@ -202,7 +202,7 @@ bool MailAction::Execute(Event& event)
 
     if (!MailProcessor::FindMailbox(ai))
     {
-        ai->TellError("There is no mailbox nearby");
+        ai->TellError("附近没有邮箱");
         return false;
     }
 
@@ -217,7 +217,7 @@ bool MailAction::Execute(Event& event)
     string text = event.getParam();
     if (text.empty())
     {
-        ai->TellPlayer(GetMaster(), "whisper 'mail ?' to query mailbox, 'mail take/delete/read filter' to take/delete/read mails by filter");
+        ai->TellPlayer(GetMaster(), "发送密语 'mail ?' 发送密语, 'mail take/delete/read filter' 使用过滤器拿取/删除/阅读邮件");
         return false;
     }
 
@@ -227,7 +227,7 @@ bool MailAction::Execute(Event& event)
     MailProcessor* processor = processors[action];
     if (!processor)
     {
-        ostringstream out; out << action << ": I don't know how to do that";
+        ostringstream out; out << action << ": 我不知道该怎么做.";
         ai->TellPlayer(GetMaster(), out.str());
         return false;
     }

@@ -304,9 +304,9 @@ bool RpgTradeUsefulAction::Execute(Event& event)
         if (IsTradingItem(item->GetEntry())) //Did we manage to add the item to the trade?
         {
             if (bot->GetGroup() && bot->GetGroup()->IsMember(guidP))
-                ai->TellPlayerNoFacing(GetMaster(), "You can use this " + chat->formatItem(item) + " better than me, " + player->GetName() + ".", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+                ai->TellPlayerNoFacing(GetMaster(), "拿着 " + chat->formatItem(item) + " 你比我更适合他, " + player->GetName() + ".", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             else
-                bot->Say("You can use this " + chat->formatItem(item) + " better than me, " + player->GetName() + ".", (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+                bot->Say("拿着" + chat->formatItem(item) + " 吧, " + player->GetName() + ",你比我更适合他.", (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
 
             if (!urand(0, 4) || items.size() < 2) //Complete the trade if we have no more items to trade.
             {

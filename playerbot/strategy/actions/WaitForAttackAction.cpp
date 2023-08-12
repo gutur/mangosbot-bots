@@ -18,23 +18,23 @@ bool WaitForAttackSetTimeAction::Execute(Event& event)
             if (newTime <= 99)
             {
                 ai->GetAiObjectContext()->GetValue<uint8>("wait for attack time")->Set(newTime);
-                ostringstream out; out << "Wait for attack time set to " << newTime << " seconds";
+                ostringstream out; out << "等待攻击时间已设置为 " << newTime << " 秒.";
                 ai->TellPlayerNoFacing(requester, out);
                 return true;
             }
             else
             {
-                ai->TellPlayerNoFacing(requester, "Please provide valid time to set (in seconds) between 1 and 99");
+                ai->TellPlayerNoFacing(requester, "请提供有效的时间(秒),范围在1到99之间.");
             }
         }
         else
         {
-            ai->TellPlayerNoFacing(requester, "Please provide valid time to set (in seconds) between 1 and 99");
+            ai->TellPlayerNoFacing(requester, "请提供有效的时间(秒),范围在1到99之间.");
         }
     }
     else
     {
-        ai->TellPlayerNoFacing(requester, "Please provide a time to set (in seconds)");
+        ai->TellPlayerNoFacing(requester, "请提供要设置的时间(秒)");
     }
 
     return false;   

@@ -121,9 +121,9 @@ string QuestRelationTravelDestination::getTitle() {
     ostringstream out;
 
     if (relation == 0)
-        out << "questgiver";
+        out << "任务发布";
     else
-        out << "questtaker";
+        out << "提交任务";
 
     out << " " << ChatHelper::formatWorldEntry(entry);
     return out.str();
@@ -214,14 +214,14 @@ bool QuestObjectiveTravelDestination::isActive(Player* bot) {
 string QuestObjectiveTravelDestination::getTitle() {
     ostringstream out;
 
-    out << "objective " << objective;
+    out << "数量需求: " << objective;
 
     if (GetQuestTemplate()->ReqItemCount[objective] > 0)
-        out << " loot " << ChatHelper::formatItem(sObjectMgr.GetItemPrototype(GetQuestTemplate()->ReqItemId[objective]), 0, 0) << " from";
+        out << " 去拾取 " << ChatHelper::formatItem(sObjectMgr.GetItemPrototype(GetQuestTemplate()->ReqItemId[objective]), 0, 0) << " ---来自";
     else if (entry > 0)
-        out << " to kill";
+        out << " 去击杀";
     else
-        out << " to use";
+        out << " 去使用";
 
     out << " " << ChatHelper::formatWorldEntry(entry);
     return out.str();
@@ -356,7 +356,7 @@ bool GrindTravelDestination::isActive(Player* bot)
 string GrindTravelDestination::getTitle() {
     ostringstream out;
 
-    out << "grind mob ";
+    out << "刷怪 ";
 
     out << " " << ChatHelper::formatWorldEntry(entry);
 

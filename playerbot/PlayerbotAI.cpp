@@ -4893,40 +4893,40 @@ void PlayerbotAI::InventoryTellItems(Player* player, map<uint32, int> itemMap, m
             switch (proto->Class)
             {
             case ITEM_CLASS_CONSUMABLE:
-                TellPlayer(player, "--- consumable ---");
+                TellPlayer(player, "--- 消耗品 ---");
                 break;
             case ITEM_CLASS_CONTAINER:
-                TellPlayer(player, "--- container ---");
+                TellPlayer(player, "--- 容器 ---");
                 break;
             case ITEM_CLASS_WEAPON:
-                TellPlayer(player, "--- weapon ---");
+                TellPlayer(player, "--- 武器 ---");
                 break;
             case ITEM_CLASS_ARMOR:
-                TellPlayer(player, "--- armor ---");
+                TellPlayer(player, "--- 护甲 ---");
                 break;
             case ITEM_CLASS_REAGENT:
-                TellPlayer(player, "--- reagent ---");
+                TellPlayer(player, "--- 药剂 ---");
                 break;
             case ITEM_CLASS_PROJECTILE:
-                TellPlayer(player, "--- projectile ---");
+                TellPlayer(player, "--- 远程 ---");
                 break;
             case ITEM_CLASS_TRADE_GOODS:
-                TellPlayer(player, "--- trade goods ---");
+                TellPlayer(player, "--- 商品 ---");
                 break;
             case ITEM_CLASS_RECIPE:
-                TellPlayer(player, "--- recipe ---");
+                TellPlayer(player, "--- 配方 ---");
                 break;
             case ITEM_CLASS_QUIVER:
-                TellPlayer(player, "--- quiver ---");
+                TellPlayer(player, "--- 箭袋 ---");
                 break;
             case ITEM_CLASS_QUEST:
-                TellPlayer(player, "--- quest items ---");
+                TellPlayer(player, "--- 任务物品 ---");
                 break;
             case ITEM_CLASS_KEY:
-                TellPlayer(player, "--- keys ---");
+                TellPlayer(player, "--- 钥匙 ---");
                 break;
             case ITEM_CLASS_MISC:
-                TellPlayer(player, "--- other ---");
+                TellPlayer(player, "--- 其他 ---");
                 break;
             }
         }

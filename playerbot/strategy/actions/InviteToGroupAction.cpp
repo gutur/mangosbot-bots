@@ -191,9 +191,9 @@ namespace ai
             placeholders["%spotsleft"] = to_string(allowedRoles[role] - 1);
 
             if(allowedRoles[role] > 1)
-                ai->TellPlayer(GetMaster(), BOT_TEXT2("Joining as %role, %spotsleft %role spots left.", placeholders));
+                ai->TellPlayer(GetMaster(), BOT_TEXT2("以 %role 参加, %spotsleft 个 %role 名额.", placeholders));
             else
-                ai->TellPlayer(GetMaster(), BOT_TEXT2("Joining as %role.", placeholders));
+                ai->TellPlayer(GetMaster(), BOT_TEXT2("作为%role加入.", placeholders));
 
             return true;
         }
@@ -266,9 +266,9 @@ namespace ai
                 placeholders["%name"] = player->GetName();
 
                 if(group && group->IsRaidGroup())
-                    bot->Say(BOT_TEXT2("Hey %name do you want join my raid?", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));                    
+                    bot->Say(BOT_TEXT2("嘿 %name 你想加入我的团队吗?", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));                    
                 else
-                    bot->Say(BOT_TEXT2("Hey %name do you want join my group?", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+                    bot->Say(BOT_TEXT2("嘿 %name 你想加入我的小队吗?", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
             }
 
             return Invite(bot, player);
@@ -396,16 +396,16 @@ namespace ai
                 if (group && group->IsRaidGroup())
                 {
                     if (urand(0, 3))
-                        guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("Hey anyone want to raid in %place", placeholders), LANG_UNIVERSAL);
+                        guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("嘿,有人想一起在 %place 下副本吗", placeholders), LANG_UNIVERSAL);
                     else
-                        guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("Hey %name I'm raiding in %place do you wan to join me?", placeholders), LANG_UNIVERSAL);
+                        guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("嘿,%name,我在 %place 下副本,你想加入吗?", placeholders), LANG_UNIVERSAL);
                 }
                 else
                 {
                     if (urand(0, 3))
-                        guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("Hey anyone wanna group up in %place?", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+                        guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("嘿,有人想在 %place 组队吗?", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
                     else
-                        guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("Hey %name do you want join my group? I'm heading for %place", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+                        guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("嘿,%name,你想加入我的队伍吗?我正前往 %place", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
                 }
             }
 

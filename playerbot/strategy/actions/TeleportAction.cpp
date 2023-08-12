@@ -24,7 +24,7 @@ bool TeleportAction::Execute(Event& event)
         if (pSpellInfo->Effect[0] != SPELL_EFFECT_TELEPORT_UNITS && pSpellInfo->Effect[1] != SPELL_EFFECT_TELEPORT_UNITS && pSpellInfo->Effect[2] != SPELL_EFFECT_TELEPORT_UNITS)
             continue;
 
-        ostringstream out; out << "Teleporting using " << goInfo->name;
+        ostringstream out; out << "进行传送: " << goInfo->name;
         ai->TellPlayerNoFacing(GetMaster(), out.str());
 
         ai->ChangeStrategy("-follow,+stay", BotState::BOT_STATE_NON_COMBAT);
@@ -55,6 +55,6 @@ bool TeleportAction::Execute(Event& event)
         return true;
     }
 
-    ai->TellError("Cannot find any portal to teleport");
+    ai->TellError("找不到任何传送门可供传送.");
     return false;
 }

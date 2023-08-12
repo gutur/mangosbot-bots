@@ -12,7 +12,7 @@ bool ResetAiAction::Execute(Event& event)
 
     if (fullReset)
     {
-        ai->TellError("AI was reset to defaults");
+        ai->TellError("AI已重置为默认设置");
     }
 
     return true;
@@ -68,7 +68,7 @@ bool ResetStratsAction::Execute(Event& event)
    
     if (fullReset)
     {
-        ai->TellError("Strategies reset to defaults");
+        ai->TellError("策略已重置为默认设置");
     }
 
     return true;
@@ -80,7 +80,7 @@ bool ResetValuesAction::Execute(Event& event)
 
     if (fullReset)
     {
-        ai->TellError("Settings reset to defaults");
+        ai->TellError("设置已重置为默认设置");
     }
 
     return true;

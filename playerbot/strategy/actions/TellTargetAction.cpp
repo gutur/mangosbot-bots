@@ -14,7 +14,7 @@ bool TellTargetAction::Execute(Event& event)
     if (target)
     {
         ostringstream out;
-		out << "Attacking " << target->GetName();
+		out << "正在攻击 " << target->GetName();
         ai->TellPlayer(requester, out);
 
         context->GetValue<Unit*>("old target")->Set(target);
@@ -26,7 +26,7 @@ bool TellAttackersAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
 
-    ai->TellPlayer(requester, "--- Attackers ---");
+    ai->TellPlayer(requester, "--- 攻击者列表 ---");
 
     list<ObjectGuid> attackers = context->GetValue<list<ObjectGuid>>("attackers")->Get();
     for (list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); i++)
@@ -38,7 +38,7 @@ bool TellAttackersAction::Execute(Event& event)
         ai->TellPlayer(requester, unit->GetName());
     }
 
-    ai->TellPlayer(requester, "--- Threat ---");
+    ai->TellPlayer(requester, "--- 威胁值 ---");
     HostileReference* ref = sServerFacade.GetHostileRefManager(bot).getFirst();
     if (!ref)
         return true;
@@ -60,7 +60,7 @@ bool TellAttackersAction::Execute(Event& event)
 bool TellPossibleAttackTargetsAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    ai->TellPlayer(requester, "--- Attack Targets ---");
+    ai->TellPlayer(requester, "--- 攻击目标列表 ---");
 
     list<ObjectGuid> attackers = context->GetValue<list<ObjectGuid>>("possible attack targets")->Get();
     for (list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); i++)
@@ -72,7 +72,7 @@ bool TellPossibleAttackTargetsAction::Execute(Event& event)
         ai->TellPlayer(requester, unit->GetName());
     }
 
-    ai->TellPlayer(requester, "--- Threat ---");
+    ai->TellPlayer(requester, "--- 威胁值 ---");
     HostileReference *ref = sServerFacade.GetHostileRefManager(bot).getFirst();
     if (!ref)
         return true;

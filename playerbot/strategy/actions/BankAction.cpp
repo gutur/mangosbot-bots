@@ -21,7 +21,7 @@ bool BankAction::Execute(Event& event)
         return ExecuteCommand(requester, text, npc);
     }
 
-    ai->TellError("Cannot find banker nearby");
+    ai->TellError("附近找不到银行.");
     return false;
 }
 
@@ -80,7 +80,7 @@ bool BankAction::Withdraw(Player* requester, const uint32 itemid)
     bot->StoreItem(dest, pItem, true);
 
     std::ostringstream out;
-    out << "got " << chat->formatItem(pItem, pItem->GetCount()) << " from bank";
+    out << "在银行拿取 " << chat->formatItem(pItem, pItem->GetCount()) << " .";
     ai->TellPlayer(requester, out.str());
     return true;
 }
@@ -100,14 +100,14 @@ bool BankAction::Deposit(Player* requester, Item* pItem)
     bot->RemoveItem(pItem->GetBagSlot(), pItem->GetSlot(), true);
     bot->BankItem(dest, pItem, true);
 
-    out << "put " << chat->formatItem(pItem, pItem->GetCount()) << " to bank";
+    out << "在银行存储 " << chat->formatItem(pItem, pItem->GetCount()) << " .";
     ai->TellPlayer(requester, out.str());
 	return true;
 }
 
 void BankAction::ListItems(Player* requester)
 {
-    ai->TellPlayer(requester, "=== Bank ===");
+    ai->TellPlayer(requester, "=== 银行 ===");
 
     map<uint32, int> items;
     map<uint32, bool> soulbound;

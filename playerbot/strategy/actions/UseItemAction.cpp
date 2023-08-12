@@ -188,7 +188,7 @@ bool UseItemAction::Execute(Event& event)
         }
     }
 
-    ai->TellPlayer(requester, "No items (or game objects) available");
+    ai->TellPlayer(requester, "没有可用的物品.");
     return false;
 }
 
@@ -208,7 +208,7 @@ bool UseItemAction::UseGameObject(Player* requester, ObjectGuid guid)
         return false;
 
    go->Use(bot);
-   ostringstream out; out << "Using " << chat->formatGameobject(go);
+   ostringstream out; out << "正在使用 " << chat->formatGameobject(go);
    ai->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
    return true;
 }
@@ -256,7 +256,7 @@ bool UseItemAction::UseItemAuto(Player* requester, Item* item)
             packet << questid;
             packet << uint32(0);
             bot->GetSession()->HandleQuestgiverAcceptQuestOpcode(packet);
-            ostringstream out; out << "Got quest " << chat->formatQuest(qInfo);
+            ostringstream out; out << "获得任务 " << chat->formatQuest(qInfo);
             ai->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             return true;
         }
@@ -427,7 +427,7 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
         targetFlag = TARGET_FLAG_GAMEOBJECT;
         packet << targetFlag;
         packet.appendPackGUID(goGuid.GetRawValue());
-        out << " on " << chat->formatGameobject(go);
+        out << " 对它使用: " << chat->formatGameobject(go);
         targetSelected = true;
     }
 
@@ -438,7 +438,7 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
         {
             bool fit = SocketItem(requester, itemTarget, item) || SocketItem(requester, itemTarget, item, true);
             if (!fit)
-                ai->TellPlayer(requester, "Socket does not fit", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+                ai->TellPlayer(requester, "插槽不匹配", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 
             return fit;
         }
@@ -448,7 +448,7 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
             targetFlag = TARGET_FLAG_ITEM;
             packet << targetFlag;
             packet.appendPackGUID(itemTarget->GetObjectGuid());
-            out << " on " << chat->formatItem(itemTarget);
+            out << " 对它使用: " << chat->formatItem(itemTarget);
             targetSelected = true;
 #ifndef MANGOSBOT_ZERO
         }
@@ -463,7 +463,7 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
             {
                 targetFlag = TARGET_FLAG_UNIT;
                 packet << targetFlag << unitTarget->GetObjectGuid().WriteAsPacked();
-                out << " on " << unitTarget->GetName();
+                out << " 对它使用: " << unitTarget->GetName();
                 targetSelected = true;
             }
         }
@@ -479,7 +479,7 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
                     {
                         targetFlag = TARGET_FLAG_UNIT;
                         packet << targetFlag << requesterSelection.WriteAsPacked();
-                        out << " on " << unit->GetName();
+                        out << " 对它使用: " << unit->GetName();
                         targetSelected = true;
                     }
                 }
@@ -546,7 +546,7 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
             packet << questid;
             packet << uint32(0);
             bot->GetSession()->HandleQuestgiverAcceptQuestOpcode(packet);
-            ostringstream out; out << "Got quest " << chat->formatQuest(qInfo);
+            ostringstream out; out << "得到任务 " << chat->formatQuest(qInfo);
             ai->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             return true;
         }
@@ -605,7 +605,7 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
                 targetFlag = TARGET_FLAG_TRADE_ITEM;
                 packet << targetFlag << (uint8)1 << (uint64)TRADE_SLOT_NONTRADED;
                 targetSelected = true;
-                out << " on traded item";
+                out << " 对交易中的物品使用.";
             }
             else
             {
@@ -613,7 +613,7 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
                 packet << targetFlag;
                 packet.appendPackGUID(itemForSpell->GetObjectGuid());
                 targetSelected = true;
-                out << " on " << chat->formatItem(itemForSpell);
+                out << " 对它使用: " << chat->formatItem(itemForSpell);
             }
 
             Spell *spell = new Spell(bot, pSpellInfo, false);
@@ -629,7 +629,7 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
         packet << targetFlag;
         packet.appendPackGUID(bot->GetObjectGuid());
         targetSelected = true;
-        out << " on self";
+        out << " 对自己使用.";
     }
 
     if (!spellId)
@@ -700,8 +700,8 @@ bool UseItemAction::SocketItem(Player* requester, Item* item, Item* gem, bool re
 
    if (fits)
    {
-      ostringstream out; out << "Socketing " << chat->formatItem(item);
-      out << " with " << chat->formatItem(gem);
+      ostringstream out; out << "给 " << chat->formatItem(item);
+      out << " 插上 " << chat->formatItem(gem);
       ai->TellPlayer(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 
       bot->GetSession()->HandleSocketOpcode(*packet);

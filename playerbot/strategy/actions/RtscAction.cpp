@@ -17,15 +17,15 @@ bool RTSCAction::Execute(Event& event)
 	if (command != "reset" && !master->HasSpell(RTSC_MOVE_SPELL))
 	{
 		master->learnSpell(RTSC_MOVE_SPELL, false);
-		ai->TellPlayerNoFacing(GetMaster(), "RTS control enabled.");
-		ai->TellPlayerNoFacing(GetMaster(), "Aedm (Awesome energetic do move) spell trained.");
+		ai->TellPlayerNoFacing(GetMaster(), "RTS控制已启用.");
+		ai->TellPlayerNoFacing(GetMaster(), "已学会Aedm(超赞充满活力的移动)法术.");
 	}
 	else if (command == "reset")
 	{
 		if (master->HasSpell(RTSC_MOVE_SPELL))
 		{
 			master->removeSpell(RTSC_MOVE_SPELL);
-			ai->TellPlayerNoFacing(GetMaster(), "RTS control spell removed.");
+			ai->TellPlayerNoFacing(GetMaster(), "已移除RTS控制法术.");
 		}
 
 		RESET_AI_VALUE(bool, "RTSC selected");
@@ -110,7 +110,7 @@ bool RTSCAction::Execute(Event& event)
 	}
 	if (command.find("show") != std::string::npos)
 	{
-		ostringstream out; out << "saved: ";
+		ostringstream out; out << "已保存的位置: ";
 
 		for (auto value : ai->GetAiObjectContext()->GetValues())
 			if (value.find("RTSC saved location::") != std::string::npos)

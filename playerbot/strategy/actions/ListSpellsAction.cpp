@@ -270,7 +270,7 @@ bool ListSpellsAction::Execute(Event& event)
 
     list<pair<uint32, string> > spells = GetSpellList(filter);
 
-    ai->TellPlayer(GetMaster(), "=== Spells ===");
+    ai->TellPlayer(GetMaster(), "=== 技能 ===");
     spells.sort(CompareSpells);
 
     int count = 0;
@@ -279,7 +279,7 @@ bool ListSpellsAction::Execute(Event& event)
         ai->TellPlayerNoFacing(GetMaster(), i->second);
         if (++count >= 50)
         {
-            ostringstream msg; msg << (spells.size() - 50) << " more...";
+            ostringstream msg; msg << (spells.size() - 50) << " 更多...";
             ai->TellPlayerNoFacing(GetMaster(), msg.str());
             break;
         }

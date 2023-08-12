@@ -18,7 +18,7 @@ bool AutoLearnSpellAction::Execute(Event& event)
     {
         const std::string& temp = out.str();
         out.seekp(0);
-        out << "Learned spells: ";
+        out << "已经学习的技能.";
         out << temp;
         out.seekp(-2, out.cur);
         out << ".";
@@ -42,9 +42,9 @@ void AutoLearnSpellAction::LearnSpells(ostringstream* out)
             placeholders["%level"] = to_string(bot->GetLevel());
 
             if (urand(0, 3))
-                guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("Ding!", placeholders), LANG_UNIVERSAL);
+                guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("叮!", placeholders), LANG_UNIVERSAL);
             else
-                guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("Yay level %level!", placeholders), LANG_UNIVERSAL);
+                guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("现在等级 %level!", placeholders), LANG_UNIVERSAL);
         }
     }
 

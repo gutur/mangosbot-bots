@@ -36,7 +36,7 @@ bool RewardAction::Execute(Event& event)
     if (requester && Reward(requester, itemId, requester))
        return true;    
 
-    ai->TellError("Cannot talk to quest giver");
+    ai->TellError("无法和任务发布者交谈.");
     return false;
 }
 

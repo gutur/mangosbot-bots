@@ -66,7 +66,7 @@ bool FocusHealSetTargetAction::Execute(Event& event)
                     ai->ChangeStrategy("+focus heal target", BotState::BOT_STATE_COMBAT);
                 }
 
-                std::stringstream message; message << "Set heal focus target to " << targetName;
+                std::stringstream message; message << "将治疗焦点目标设为 " << targetName;
                 ai->TellPlayerNoFacing(requester, message.str());  
                 return true;
             }
@@ -74,11 +74,11 @@ bool FocusHealSetTargetAction::Execute(Event& event)
             {
                 if (removeTarget)
                 {
-                    ai->TellPlayerNoFacing(requester, "Removed heal focus target");
+                    ai->TellPlayerNoFacing(requester, "已移除治疗焦点目标.");
                 }
                 else
                 {
-                    std::stringstream message; message << "I'm not in a group with " << targetName;
+                    std::stringstream message; message << "我没和这人组队: " << targetName;
                     ai->TellPlayerNoFacing(requester, message.str());
                 }
 
@@ -91,12 +91,12 @@ bool FocusHealSetTargetAction::Execute(Event& event)
         }
         else
         {
-            ai->TellPlayerNoFacing(requester, "Please provide a target name");
+            ai->TellPlayerNoFacing(requester, "请提供目标名称.");
         }
     }
     else
     {
-        ai->TellPlayerNoFacing(requester, "I'm not a healer or offhealer (please change my strats to heal or offheal)");
+        ai->TellPlayerNoFacing(requester, "我不是治疗师或辅助治疗师(请将我的战略设为治疗或辅助治疗)");
     }
 
     return false;   

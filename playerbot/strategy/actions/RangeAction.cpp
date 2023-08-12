@@ -28,9 +28,9 @@ bool RangeAction::Execute(Event& event)
     {
         float curVal = AI_VALUE2(float, "range", qualifier);
         ostringstream out;
-        out << qualifier << " range: ";
+        out << qualifier << " 范围: ";
         if (abs(curVal) >= 0.1f) out << curVal;
-        else out << ai->GetRange(qualifier) << " (default)";
+        else out << ai->GetRange(qualifier) << " (默认)";
         ai->TellPlayer(GetMaster(), out.str());
         PrintRange(qualifier);
         return true;
@@ -39,7 +39,7 @@ bool RangeAction::Execute(Event& event)
     float newVal = (float) atof(value.c_str());
     context->GetValue<float>("range", qualifier)->Set(newVal);
     ostringstream out;
-    out << qualifier << " range set to: " << newVal;
+    out << qualifier << " 范围设置为: " << newVal;
     ai->TellPlayer(GetMaster(), out.str());
     return true;
 }
@@ -49,9 +49,9 @@ void RangeAction::PrintRange(string type)
     float curVal = AI_VALUE2(float, "range", type);
 
     ostringstream out;
-    out << type << " range: ";
+    out << type << " 范围: ";
     if (abs(curVal) >= 0.1f) out << curVal;
-    else out << ai->GetRange(type) << " (default)";
+    else out << ai->GetRange(type) << " (默认)";
 
     ai->TellPlayer(GetMaster(), out.str());
 }

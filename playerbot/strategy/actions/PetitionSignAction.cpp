@@ -46,7 +46,7 @@ bool PetitionSignAction::Execute(Event& event)
         if (bot->GetArenaTeamId(slot))
         {
             // player is already in an arena team
-            ai->TellError("Sorry, I am already in such team");
+            ai->TellError("抱歉,我已经在一个队伍中了.");
             accept = false;
         }
 #endif
@@ -55,13 +55,13 @@ bool PetitionSignAction::Execute(Event& event)
     {
         if (bot->GetGuildId())
         {
-            ai->TellError("Sorry, I am in a guild already");
+            ai->TellError("抱歉,我已经加入了一个公会.");
             accept = false;
         }
 
         if (bot->GetGuildIdInvited())
         {
-            ai->TellError("Sorry, I am invited to a guild already");
+            ai->TellError("抱歉,我已经被邀请加入了一个公会.");
             accept = false;
         }
 
@@ -70,7 +70,7 @@ bool PetitionSignAction::Execute(Event& event)
 
         if (result)
         {
-            ai->TellError("Sorry, I already signed this pettition");
+            ai->TellError("抱歉,我已经签署了这份请愿");
             accept = false;
         }
         delete result;*/
@@ -96,8 +96,8 @@ bool PetitionSignAction::Execute(Event& event)
         WorldPacket data(CMSG_PETITION_SIGN, 20);
         data << petitionGuid << unk;
         bot->GetSession()->HandlePetitionSignOpcode(data);
-        bot->Say("Thanks for the invite!", LANG_UNIVERSAL);
-        sLog.outBasic("Bot #%d <%s> accepts %s invite", bot->GetGUIDLow(), bot->GetName(), isArena ? "Arena" : "Guild");
+        bot->Say("谢谢邀请!", LANG_UNIVERSAL);
+        sLog.outBasic("机器人 #%d <%s> 接受 %s 的邀请.", bot->GetGUIDLow(), bot->GetName(), isArena ? "Arena" : "Guild");
         return true;
     }
     return false;

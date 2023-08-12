@@ -42,7 +42,7 @@ bool TellItemCountAction::Execute(Event& event)
 
         if (hasEquip)
         {
-            ai->TellPlayer(requester, "=== Equipment ===");
+            ai->TellPlayer(requester, "=== 装备 ===");
             for (map<uint32, uint32>::iterator i = itemMap.begin(); i != itemMap.end(); ++i)
             {
                 if (!equiped[i->first])
@@ -53,7 +53,7 @@ bool TellItemCountAction::Execute(Event& event)
             }
         }
 
-        ai->TellPlayer(requester, "=== Inventory ===");
+        ai->TellPlayer(requester, "=== 背包 ===");
         for (map<uint32, uint32>::iterator i = itemMap.begin(); i != itemMap.end(); ++i)
         {
             if (equiped[i->first] && i->second == 1)

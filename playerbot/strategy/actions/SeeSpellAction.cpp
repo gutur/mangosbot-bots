@@ -91,26 +91,26 @@ bool SeeSpellAction::Execute(Event& event)
         ostringstream out;
 
         if (spellPosition.isOutside())
-            out << "[outside]";
+            out << "[室外]";
 
-        out << " area = ";
+        out << " 室外 = ";
 
         out << path.getArea(bot->GetMapId(), x, y, z);
 
         unsigned short flags = path.getFlags(bot->GetMapId(), x, y, z);
 
-        out << " flags = " << flags;
+        out << " 标志 = " << flags;
 
         if (flags & NAV_GROUND)
-            out << ", ground";
+            out << ", 地面.";
         if (flags & NAV_EMPTY)
-            out << ", empty";
+            out << ", 空地.";
         if (flags & NAV_GROUND_STEEP)
-            out << ", slope";
+            out << ", 坡度.";
         if (flags & NAV_WATER)
-            out << ", water";
+            out << ", 水域.";
         if (flags & NAV_MAGMA_SLIME)
-            out << ", magma slime";
+            out << ", 岩浆或黏液.";
 
         ai->TellPlayer(GetMaster(), out);
     }

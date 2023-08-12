@@ -73,7 +73,7 @@ void StatsAction::ListPower(ostringstream& out)
     char color[32];
     sprintf(color, "%x", ItemQualityColors[mostQuality]);
 
-    out << "|h|c" << color << "|h" << to_string(totalPower) << "|h|cffffffff|h Pwr";
+    out << "|h|c" << color << "|h" << to_string(totalPower) << "|h|cffffffff|h 战斗力";
 }
 
 void StatsAction::ListBagSlots(ostringstream &out)
@@ -108,7 +108,7 @@ void StatsAction::ListBagSlots(ostringstream &out)
 		color = "ffffff00";
 	if (totalfree < total / 4)
 		color = "ffff0000";
-    out << "|h|c" << color << totalfree << "/" << total << "|h|cffffffff Bag";
+    out << "|h|c" << color << totalfree << "/" << total << "|h|cffffffff 背包";
 }
 
 void StatsAction::ListXP( ostringstream &out )
@@ -124,7 +124,7 @@ void StatsAction::ListXP( ostringstream &out )
     if (restXP && nextLevelXP)
         restPercent = 2 * (100 * restXP / nextLevelXP);
 
-    out << "|cff00ff00" << xpPercent << "|cffffd333/|cff00ff00" << restPercent << "%|cffffffff XP";
+    out << "|cff00ff00" << xpPercent << "|cffffd333/|cff00ff00" << restPercent << "%|cffffffff 经验值";
 }
 
 void StatsAction::ListRepairCost(ostringstream &out)
@@ -150,7 +150,7 @@ void StatsAction::ListRepairCost(ostringstream &out)
         color = "ffffff00";
     if (repairPercent < 25)
         color = "ffff0000";
-    out << "|c" << color << (uint32)ceil(repairPercent) << "% (" << chat->formatMoney(totalCost) << ")|cffffffff Dur";
+    out << "|c" << color << (uint32)ceil(repairPercent) << "% (" << chat->formatMoney(totalCost) << ")|cffffffff 装备耐久";
 }
 
 uint32 StatsAction::EstRepair(uint16 pos)

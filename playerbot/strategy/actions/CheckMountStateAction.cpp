@@ -51,7 +51,7 @@ bool CheckMountStateAction::Execute(Event& event)
                 if (CanMountInBg())
                 {
                     if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && !IsMounted)
-                        ai->TellPlayerNoFacing(GetMaster(), "Mount in bg. No attackers or far from target and not in combat.");
+                        ai->TellPlayerNoFacing(GetMaster(), "在战场内骑乘.没有攻击者,或者距离目标较远且不在战斗中.");
 
                     return Mount();
                 }
@@ -63,7 +63,7 @@ bool CheckMountStateAction::Execute(Event& event)
     if (canAttackTarget)
     {
         if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && IsMounted)
-            ai->TellPlayerNoFacing(GetMaster(), "Unmount. Able to attack target.");
+            ai->TellPlayerNoFacing(GetMaster(), "解除骑乘,可以攻击目标.");
         return UnMount();
     }
 
@@ -75,7 +75,7 @@ bool CheckMountStateAction::Execute(Event& event)
     if (!canAttackTarget && (farFromTarget || shouldChaseTarget))
     {
         if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && !IsMounted)
-            ai->TellPlayerNoFacing(GetMaster(), "Mount. Unable to attack target and target is far or chasable.");
+            ai->TellPlayerNoFacing(GetMaster(), "骑乘中.无法攻击目标,目标较远或可追击.");
         return Mount();
     }
 
@@ -83,7 +83,7 @@ bool CheckMountStateAction::Execute(Event& event)
     if (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && groupMaster && groupMaster != bot && !farFromMaster && !IsLeaderMounted)
     {
         if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && IsMounted)
-            ai->TellPlayerNoFacing(GetMaster(), "Unmount. Near umounted group master.");
+            ai->TellPlayerNoFacing(GetMaster(), "解除骑乘.靠近未骑乘的队长.");
         return UnMount();
     }
 
@@ -98,7 +98,7 @@ bool CheckMountStateAction::Execute(Event& event)
         if (guardPosition.isSet() && distance < ai->GetRange("follow"))
         {
             if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && IsMounted)
-                ai->TellPlayerNoFacing(GetMaster(), "Unmount. Near umounted guard position.");
+                ai->TellPlayerNoFacing(GetMaster(), "解除骑乘.靠近未骑乘的守卫位置.");
             return UnMount();
         }
     }
@@ -114,7 +114,7 @@ bool CheckMountStateAction::Execute(Event& event)
         if (stayPosition.isSet() && distance < ai->GetRange("follow"))
         {
             if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && IsMounted)
-                ai->TellPlayerNoFacing(GetMaster(), "Unmount. Near stay location.");
+                ai->TellPlayerNoFacing(GetMaster(), "解除骑乘.靠近停留地点..");
             return UnMount();
         }
     }
@@ -123,7 +123,7 @@ bool CheckMountStateAction::Execute(Event& event)
     if (travelTarget->isWorking())
     {
         if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && IsMounted)
-            ai->TellPlayerNoFacing(GetMaster(), "Unmount. Near travel target.");
+            ai->TellPlayerNoFacing(GetMaster(), "解除骑乘.靠近旅行目标.");
         return UnMount();
     }
 
@@ -131,7 +131,7 @@ bool CheckMountStateAction::Execute(Event& event)
     if (AI_VALUE(GuidPosition, "rpg target") && sServerFacade.IsDistanceLessThan(AI_VALUE2(float, "distance", "rpg target"), sPlayerbotAIConfig.farDistance))
     {
         if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && IsMounted)
-            ai->TellPlayerNoFacing(GetMaster(), "Unmount. Near rpg target.");
+            ai->TellPlayerNoFacing(GetMaster(), "解除骑乘.靠近互动目标.");
         return UnMount();
     }
 
@@ -141,7 +141,7 @@ bool CheckMountStateAction::Execute(Event& event)
         if (IsLeaderMounted && !hasAttackers)
         {
             if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && !IsMounted)
-                ai->TellPlayerNoFacing(GetMaster(), "Mount. Group master mounted and no attackers.");
+                ai->TellPlayerNoFacing(GetMaster(), "骑乘中.队长已骑乘且没有攻击者.");
             return Mount();
         }
 
@@ -149,7 +149,7 @@ bool CheckMountStateAction::Execute(Event& event)
         if (farFromMaster && !bot->IsInCombat())
         {
             if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && !IsMounted)
-                ai->TellPlayerNoFacing(GetMaster(), "Mount. Far from group master and not in combat.");
+                ai->TellPlayerNoFacing(GetMaster(), "骑乘中.距离队长较远且不在战斗中.");
             return Mount();
         }
     }
@@ -160,7 +160,7 @@ bool CheckMountStateAction::Execute(Event& event)
         if (travelTarget->isTraveling() && AI_VALUE(bool, "can move around"))
         {
             if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && !IsMounted)
-                ai->TellPlayerNoFacing(GetMaster(), "Mount. Traveling some place.");
+                ai->TellPlayerNoFacing(GetMaster(), "骑乘中.前往某个地方.");
             return Mount();
         }
         else if (!hasAttackers)
@@ -169,7 +169,7 @@ bool CheckMountStateAction::Execute(Event& event)
             if (AI_VALUE(GuidPosition, "rpg target") && sServerFacade.IsDistanceGreaterThan(AI_VALUE2(float, "distance", "rpg target"), sPlayerbotAIConfig.sightDistance))
             {
                 if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && !IsMounted)
-                    ai->TellPlayerNoFacing(GetMaster(), "Mount. Rpg target far away.");
+                    ai->TellPlayerNoFacing(GetMaster(), "骑乘中.角色扮演目标较远.");
                 return Mount();
             }
 
@@ -177,7 +177,7 @@ bool CheckMountStateAction::Execute(Event& event)
             if (!ai->HasStrategy("guard", ai->GetState()) && !ai->HasStrategy("stay", ai->GetState()) && !AI_VALUE(list<ObjectGuid>, "possible rpg targets").empty() && urand(0, 100) > 50)
             {
                 if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && !IsMounted)
-                    ai->TellPlayerNoFacing(GetMaster(), "Mount. Near rpg targets.");
+                    ai->TellPlayerNoFacing(GetMaster(), "骑乘中.靠近角色扮演目标.");
                 return Mount();
             }
         }
@@ -193,7 +193,7 @@ bool CheckMountStateAction::Execute(Event& event)
             if (guardPosition.isSet() && distance > 40.0f)
             {
                 if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && !IsMounted)
-                    ai->TellPlayerNoFacing(GetMaster(), "Mount. Move to guard.");
+                    ai->TellPlayerNoFacing(GetMaster(), "骑乘中.前往守卫地点.");
                 return Mount();
             }
         }
@@ -209,7 +209,7 @@ bool CheckMountStateAction::Execute(Event& event)
             if (guardPosition.isSet() && distance > 40.0f)
             {
                 if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && !IsMounted)
-                    ai->TellPlayerNoFacing(GetMaster(), "Mount. Move to stay.");
+                    ai->TellPlayerNoFacing(GetMaster(), "骑乘中.前往停留地点.");
                 return Mount();
             }
         }
@@ -383,12 +383,12 @@ bool CheckMountStateAction::Mount()
     for (auto& mount : mountList)
     {
         if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT))
-            ai->TellPlayerNoFacing(GetMaster(), "Try to mount with " + chat->formatSpell(mount.GetSpellId()));
+            ai->TellPlayerNoFacing(GetMaster(), "尝试骑乘 " + chat->formatSpell(mount.GetSpellId()));
 
         if (currentSpeed >= mount.GetSpeed(canFly))
         {
             if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayerNoFacing(GetMaster(), "Speed not faster than current.");
+                ai->TellPlayerNoFacing(GetMaster(), "速度不比当前速度快.");
 
             return false;
         }
@@ -396,7 +396,7 @@ bool CheckMountStateAction::Mount()
         if (currentSpeed) //Already mounted
         {
             if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayerNoFacing(GetMaster(), "Mounted, unmount to mount faster next time.");
+                ai->TellPlayerNoFacing(GetMaster(), "已骑乘,解除骑乘以在下次更快地骑乘.");
             return UnMount();
         }
 
@@ -412,7 +412,7 @@ bool CheckMountStateAction::Mount()
         if (!mount.IsValidLocation())
         {
             if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayerNoFacing(GetMaster(), "Bot can not use this mount here.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+                ai->TellPlayerNoFacing(GetMaster(), "机器人无法在此处使用此坐骑.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
             continue;
         }
 
@@ -421,7 +421,7 @@ bool CheckMountStateAction::Mount()
             if (!mount.GetItem())
             {
                 if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT))
-                    ai->TellPlayerNoFacing(GetMaster(), "Bot does not have this mount.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+                    ai->TellPlayerNoFacing(GetMaster(), "机器人没有此坐骑.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
                 continue;
             }
 
@@ -433,7 +433,7 @@ bool CheckMountStateAction::Mount()
             else
             {
                 if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT))
-                    ai->TellPlayerNoFacing(GetMaster(), "Mounting failed.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+                    ai->TellPlayerNoFacing(GetMaster(), "骑乘失败.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
             }
         }
         else
@@ -441,7 +441,7 @@ bool CheckMountStateAction::Mount()
             if (!ai->HasSpell(mount.GetSpellId()))
             {
                 if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT))
-                    ai->TellPlayerNoFacing(GetMaster(), "Bot does not have this mount spell.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+                    ai->TellPlayerNoFacing(GetMaster(), "机器人没有该坐骑对应法术.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
                 continue;
             }
 
@@ -454,14 +454,14 @@ bool CheckMountStateAction::Mount()
             else
             {
                 if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT))
-                    ai->TellPlayerNoFacing(GetMaster(), "Mounting spell failed.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+                    ai->TellPlayerNoFacing(GetMaster(), "使用骑乘法术失败.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
             }
         }
 
         if (didMount)
         {
             if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayerNoFacing(GetMaster(), "Mounting.");
+                ai->TellPlayerNoFacing(GetMaster(), "正在骑乘中.");
 
             return didMount;
         }

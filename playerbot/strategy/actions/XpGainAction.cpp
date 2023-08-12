@@ -48,9 +48,9 @@ bool XpGainAction::Execute(Event& event)
                 placeholders["%name"] = creature->GetName();
 
                 if(urand(0,3))
-                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("Wow I just killed %name!", placeholders), LANG_UNIVERSAL);
+                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("我刚刚杀了谁? %name!", placeholders), LANG_UNIVERSAL);
                 else
-                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("Awesome that %name went down quickly!", placeholders), LANG_UNIVERSAL);
+                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("太棒了 %name 死的真快!", placeholders), LANG_UNIVERSAL);
             }
         }
     }

@@ -42,7 +42,7 @@ bool MoveToRpgTargetAction::Execute(Event& event)
 
                 if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
                 {
-                    ai->TellPlayerNoFacing(GetMaster(), "Rpg player target is targeting me. Drop target");
+                    ai->TellPlayerNoFacing(GetMaster(), "Rpg玩家目标正在瞄准我.取消目标");
                 }
                 return false;
             }
@@ -57,7 +57,7 @@ bool MoveToRpgTargetAction::Execute(Event& event)
 
         if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
         {
-            ai->TellPlayerNoFacing(GetMaster(), "Rpg target is moving. Random drop target.");
+            ai->TellPlayerNoFacing(GetMaster(), "Rpg目标正在移动.随机取消目标.");
         }
         return false;
     }
@@ -70,7 +70,7 @@ bool MoveToRpgTargetAction::Execute(Event& event)
 
         if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
         {
-            ai->TellPlayerNoFacing(GetMaster(), "Rpg target is far from mater. Random drop target.");
+            ai->TellPlayerNoFacing(GetMaster(), "Rpg目标远离主人.随机取消目标.");
         }
         return false;
     }
@@ -83,7 +83,7 @@ bool MoveToRpgTargetAction::Execute(Event& event)
 
         if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
         {
-            ai->TellPlayerNoFacing(GetMaster(), "Rpg target is beyond react distance. Drop target");
+            ai->TellPlayerNoFacing(GetMaster(), "Rpg目标超出反应距离.取消目标");
         }
         return false;
     }
@@ -96,7 +96,7 @@ bool MoveToRpgTargetAction::Execute(Event& event)
 
         if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
         {
-            ai->TellPlayerNoFacing(GetMaster(), "Under/above object drop rpg target");
+            ai->TellPlayerNoFacing(GetMaster(), "在对象上方/下方取消Rpg目标");
         }
         return false;
     }
@@ -109,7 +109,7 @@ bool MoveToRpgTargetAction::Execute(Event& event)
 
         if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
         {
-            ai->TellPlayerNoFacing(GetMaster(), "Random drop rpg target");
+            ai->TellPlayerNoFacing(GetMaster(), "随机取消Rpg目标");
         }
         return false;
     }
@@ -172,7 +172,7 @@ bool MoveToRpgTargetAction::Execute(Event& event)
 
         if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
         {
-            ai->TellPlayerNoFacing(GetMaster(), "Could not move to rpg target. Drop rpg target");
+            ai->TellPlayerNoFacing(GetMaster(), "无法移动到Rpg目标.取消Rpg目标");
         }
 
         return false;
@@ -183,14 +183,14 @@ bool MoveToRpgTargetAction::Execute(Event& event)
         if (couldMove)
         {
             ostringstream out;
-            out << "Heading to: ";
+            out << "前往: ";
             out << chat->formatWorldobject(guidP.GetWorldObject());
             ai->TellPlayerNoFacing(GetMaster(), out);
         }
         else
         {
             ostringstream out;
-            out << "Near: ";
+            out << "靠近: ";
             out << chat->formatWorldobject(guidP.GetWorldObject());
             ai->TellPlayerNoFacing(GetMaster(), out);
         }
@@ -214,7 +214,7 @@ bool MoveToRpgTargetAction::isUseful()
 
         if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
         {
-            ai->TellPlayerNoFacing(GetMaster(), "Target could not be found. Drop rpg target");
+            ai->TellPlayerNoFacing(GetMaster(), "无法找到目标.取消Rpg目标");
         }
     }
 

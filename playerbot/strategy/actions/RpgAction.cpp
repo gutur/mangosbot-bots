@@ -133,7 +133,7 @@ bool RpgAction::SetNextRpgAction()
     if ((ai->HasStrategy("debug", BotState::BOT_STATE_NON_COMBAT) || ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT)))
     {
         ostringstream out;
-        out << "do: ";
+        out << "做: ";
         out << chat->formatWorldobject(AI_VALUE(GuidPosition, "rpg target").GetWorldObject());
 
         out << " " << action->getName();

@@ -36,7 +36,7 @@ bool SendMailAction::Execute(Event& event)
     ItemIds ids = chat->parseItems(text);
     if (ids.size() > 1)
     {
-        bot->Whisper("You can not request more than one item", LANG_UNIVERSAL, tellTo->GetObjectGuid());
+        bot->Whisper("你不能请求超过一个物品.", LANG_UNIVERSAL, tellTo->GetObjectGuid());
         return false;
     }
 
@@ -48,44 +48,44 @@ bool SendMailAction::Execute(Event& event)
 
         if (randomBot)
         {
-            bot->Whisper("I cannot send money", LANG_UNIVERSAL, tellTo->GetObjectGuid());
+            bot->Whisper("我不能送钱.", LANG_UNIVERSAL, tellTo->GetObjectGuid());
             return false;
         }
 
         if (bot->GetMoney() < money)
         {
-            ai->TellError("I don't have enough money");
+            ai->TellError("我身上的钱不够.");
             return false;
         }
 
         ostringstream body;
-        body << "Hello, " << receiver->GetName() << ",\n";
+        body << "你好, " << receiver->GetName() << ",\n";
         body << "\n";
-        body << "Here is the money you asked for";
+        body << "这是你需要的金币";
         body << "\n";
-        body << "Thanks,\n";
+        body << "谢谢,\n";
         body << bot->GetName() << "\n";
 
 
-        MailDraft draft("Money you asked for", body.str());
+        MailDraft draft("你请求的金币", body.str());
         draft.SetMoney(money);
         bot->SetMoney(bot->GetMoney() - money);
         draft.SendMailTo(MailReceiver(receiver), MailSender(bot));
 
-        ostringstream out; out << "Sending mail to " << receiver->GetName();
+        ostringstream out; out << "寄邮件给 " << receiver->GetName();
         ai->TellPlayer(GetMaster(), out.str());
         return true;
     }
 
     ostringstream body;
-    body << "Hello, " << receiver->GetName() << ",\n";
+    body << "你好, " << receiver->GetName() << ",\n";
     body << "\n";
-    body << "Here are the item(s) you asked for";
+    body << "这是你想要的东西.";
     body << "\n";
-    body << "Thanks,\n";
+    body << "多谢,\n";
     body << bot->GetName() << "\n";
 
-    MailDraft draft("Item(s) you asked for", body.str());
+    MailDraft draft("你要的东西.", body.str());
     for (ItemIds::iterator i =ids.begin(); i != ids.end(); i++)
     {
         FindItemByIdVisitor visitor(*i);
@@ -98,7 +98,7 @@ bool SendMailAction::Execute(Event& event)
             if (item->IsSoulBound() || item->IsConjuredConsumable())
             {
                 ostringstream out;
-                out << "Cannot send " << ChatHelper::formatItem(item);
+                out << "不能邮给 " << ChatHelper::formatItem(item);
                 bot->Whisper(out.str(), LANG_UNIVERSAL, tellTo->GetObjectGuid());
                 continue;
             }
@@ -115,7 +115,7 @@ bool SendMailAction::Execute(Event& event)
                 if (!price)
                 {
                     ostringstream out;
-                    out << ChatHelper::formatItem(item) << ": it is not for sale";
+                    out << ChatHelper::formatItem(item) << ": 这东西不卖.";
                     bot->Whisper(out.str(), LANG_UNIVERSAL, tellTo->GetObjectGuid());
                     return false;
                 }
@@ -123,7 +123,7 @@ bool SendMailAction::Execute(Event& event)
             }
             draft.SendMailTo(MailReceiver(receiver), MailSender(bot));
 
-            ostringstream out; out << "Sent mail to " << receiver->GetName();
+            ostringstream out; out << "邮寄给:" << receiver->GetName();
             bot->Whisper(out.str(), LANG_UNIVERSAL, tellTo->GetObjectGuid());
             return true;
         }

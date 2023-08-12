@@ -23,7 +23,7 @@ bool CustomStrategyEditAction::Execute(Event& event)
 
 bool CustomStrategyEditAction::PrintHelp()
 {
-    ai->TellPlayer(GetMaster(), "=== Custom strategies ===");
+    ai->TellPlayer(GetMaster(), "=== 自定义策略 ===");
 
     uint32 owner = (uint32)ai->GetBot()->GetGUIDLow();
     QueryResult* results = PlayerbotDatabase.PQuery("SELECT distinct name FROM ai_playerbot_custom_strategy WHERE owner = '%u'",
@@ -39,7 +39,7 @@ bool CustomStrategyEditAction::PrintHelp()
 
         delete results;
     }
-    ai->TellPlayer(GetMaster(), "Usage: cs <name> <idx> <command>");
+    ai->TellPlayer(GetMaster(), "使用方法: cs <name> <idx> <command>");
     return false;
 }
 

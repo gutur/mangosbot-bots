@@ -13,7 +13,7 @@ bool SaveManaAction::Execute(Event& event)
 
     if (text == "?")
     {
-        ostringstream out; out << "Mana save level: " << format(value);
+        ostringstream out; out << "法力保存等级: " << format(value);
         ai->TellPlayer(GetMaster(), out);
         return true;
     }
@@ -51,7 +51,7 @@ bool SaveManaAction::Execute(Event& event)
 
     ai->GetAiObjectContext()->GetValue<double>("mana save level")->Set(value);
 
-    ostringstream out; out << "Mana save level set: " << format(value);
+    ostringstream out; out << "法力保存等级设为: " << format(value);
     ai->TellPlayer(GetMaster(), out);
 
     return true;

@@ -6,7 +6,7 @@ namespace ai
     class PassLeadershipToMasterAction : public ChatCommandAction
     {
     public:
-        PassLeadershipToMasterAction(PlayerbotAI* ai, string name = "leader", string message = "Passing leader to you!") : ChatCommandAction(ai, name), message(message) {}
+        PassLeadershipToMasterAction(PlayerbotAI* ai, string name = "队长", string message = "把队长传给你了!") : ChatCommandAction(ai, name), message(message) {}
 
         virtual bool Execute(Event& event) override
         {

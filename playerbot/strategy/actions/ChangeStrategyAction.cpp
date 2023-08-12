@@ -42,7 +42,7 @@ bool ChangeNonCombatStrategyAction::Execute(Event& event)
     {
         if (text.find("loot") != string::npos || text.find("gather") != string::npos)
         {
-            ai->TellError("You can change any strategy except loot and gather");
+            ai->TellError("你可以更改任何策略,除了拾取和采集.");
             return false;
         }
     }
@@ -95,7 +95,7 @@ bool ChangeAllStrategyAction::Execute(Event& event)
     {
         if (strategyName.find("loot") != string::npos || strategyName.find("gather") != string::npos)
         {
-            ai->TellError("You can change any strategy except loot and gather");
+            ai->TellError("你可以更改任何策略,除了拾取和采集.");
             return false;
         }
     }

@@ -26,7 +26,7 @@ void DestroyItemAction::DestroyItem(FindItemVisitor* visitor)
 	for (list<Item*>::iterator i = items.begin(); i != items.end(); ++i)
     {
 		Item* item = *i;
-        ostringstream out; out << chat->formatItem(item) << " destroyed";
+        ostringstream out; out << chat->formatItem(item) << " 被摧毁.";
         bot->DestroyItem(item->GetBagSlot(),item->GetSlot(), true);
         ai->TellPlayer(GetMaster(), out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
     }

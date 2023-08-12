@@ -19,14 +19,14 @@ bool LootStrategyAction::Execute(Event& event)
     {
         {
             ostringstream out;
-            out << "Loot strategy: ";
+            out << "拾取策略: ";
             out << AI_VALUE(string, "loot strategy");
             ai->TellPlayer(GetMaster(), out);
         }
 
         {
             ostringstream out;
-            out << "Always loot items: ";
+            out << "拾取策略: ";
 
             for (set<uint32>::iterator i = alwaysLootItems.begin(); i != alwaysLootItems.end(); i++)
             {
@@ -50,7 +50,7 @@ bool LootStrategyAction::Execute(Event& event)
             string lootStrategy = AI_VALUE(string, "loot strategy");
 
             ostringstream out;
-            out << "Loot strategy set to " << lootStrategy;
+            out << "拾取策略已设置为 " << lootStrategy;
             ai->TellPlayer(GetMaster(), out);
             return true;
         }
@@ -65,7 +65,7 @@ bool LootStrategyAction::Execute(Event& event)
                 if (itemQualifier.GetProto())
                 {
                     ostringstream out;
-                    out << (StoreLootAction::IsLootAllowed(itemQualifier, ai) ? "|cFF000000Will loot " : "|c00FF0000Won't loot ") << ChatHelper::formatItem(itemQualifier);
+                    out << (StoreLootAction::IsLootAllowed(itemQualifier, ai) ? "|cFF000000将会被拾取 " : "|c00FF0000不会被拾取 ") << ChatHelper::formatItem(itemQualifier);
                     ai->TellPlayer(GetMaster(), out.str());
                 }
             }
@@ -75,12 +75,12 @@ bool LootStrategyAction::Execute(Event& event)
                 if (j != alwaysLootItems.end())
                     alwaysLootItems.erase(j);
 
-                ai->TellPlayer(GetMaster(), "Item(s) removed from always loot list");
+                ai->TellPlayer(GetMaster(), "物品已从始终拾取列表中移除.");
             }
             else
             {
                 alwaysLootItems.insert(itemQualifier.GetId());
-                ai->TellPlayer(GetMaster(), "Item(s) added to always loot list");
+                ai->TellPlayer(GetMaster(), "物品已添加到始终拾取列表中.");
             }
         }
     }

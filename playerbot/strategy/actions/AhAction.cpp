@@ -31,7 +31,7 @@ bool AhAction::Execute(Event& event)
         return doneAuction;
     }
 
-    ai->TellError("Cannot find auctioneer nearby");
+    ai->TellError("附近找不到拍卖师");
     return false;
 }
 
@@ -126,7 +126,7 @@ bool AhAction::PostItem(Item* item, uint32 price, Unit* auctioneer, uint32 time)
     sPlayerbotAIConfig.logEvent(ai, "AhAction", proto->Name1, to_string(proto->ItemId));
 
     ostringstream out;
-    out << "Posting " << ChatHelper::formatItem(itemQualifier, cnt) << " for " << ChatHelper::formatMoney(price) << " to the AH";
+    out << "把 " << ChatHelper::formatItem(itemQualifier, cnt) << " 以 " << ChatHelper::formatMoney(price) << " 挂到拍卖行.";
     ai->TellPlayerNoFacing(GetMaster(), out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
     return true;
 }
@@ -363,7 +363,7 @@ bool AhBidAction::BidItem(AuctionEntry* auction, uint32 price, Unit* auctioneer)
     {
         sPlayerbotAIConfig.logEvent(ai, "AhBidAction", proto->Name1, to_string(proto->ItemId));
         ostringstream out;
-        out << "Bidding " << ChatHelper::formatMoney(price) << " on " << ChatHelper::formatItem(itemQualifier, count) << " on the AH";
+        out << "在拍卖行出价 " << ChatHelper::formatMoney(price) << " 买 " << ChatHelper::formatItem(itemQualifier, count) << " .";
         ai->TellPlayerNoFacing(GetMaster(), out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         return true;
     }

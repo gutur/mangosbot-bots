@@ -28,7 +28,7 @@ bool RtiAction::Execute(Event& event)
     }
 
     context->GetValue<string>(type)->Set(text);
-    ostringstream out; out << type << " set to: ";
+    ostringstream out; out << type << " 设置为: ";
     AppendRti(out, type);
     ai->TellPlayer(GetMaster(), out);
     return true;

@@ -107,7 +107,7 @@ bool AddGatheringLootAction::AddLoot(ObjectGuid guid)
         if (!targets.empty())
         {
             ostringstream out;
-            out << "Kill that " << targets.front()->GetName() << " so I can loot freely";
+            out << "杀了那个 " << targets.front()->GetName() << " 我好捡点东西";
             ai->TellError(out.str());
             return false;
         }

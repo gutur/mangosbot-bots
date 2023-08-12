@@ -72,7 +72,7 @@ void CheatAction::ListCheats()
     {
         BotCheatMask cheatMask = BotCheatMask(1 << i);
        if ((uint32)cheatMask & (uint32)sPlayerbotAIConfig.botCheatMask)
-           out << "[conf:" << GetCheatName(BotCheatMask(cheatMask)) << "]";
+           out << "[配置:" << GetCheatName(BotCheatMask(cheatMask)) << "]";
        else if (ai->HasCheat(cheatMask))
            out << "[" << GetCheatName(BotCheatMask(cheatMask)) << "]";
     }

@@ -80,7 +80,7 @@ void SellAction::Sell(Player* requester, Item* item)
             bot->SetMoney(botMoney);
         }
 
-        out << "Selling " << chat->formatItem(item);
+        out << "出售 " << chat->formatItem(item);
         if (sPlayerbotAIConfig.globalSoundEffects)
             bot->PlayDistanceSound(120);
 

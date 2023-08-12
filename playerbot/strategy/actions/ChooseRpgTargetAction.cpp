@@ -292,10 +292,10 @@ bool ChooseRpgTargetAction::Execute(Event& event)
         if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
         {
             ostringstream out;
-            out << "found: no targets, " << checked << " checked.";
+            out << "查询: 没有目标, " << checked << " 检查完毕.";
             ai->TellPlayerNoFacing(GetMaster(), out);
         }
-        sLog.outDetail("%s can't choose RPG target: all %zu are not available", bot->GetName(), possibleTargets.size());
+        sLog.outDetail("%s 不能选择交互目标: 所有 %zu 都不可用", bot->GetName(), possibleTargets.size());
         RESET_AI_VALUE(set<ObjectGuid>&,"ignore rpg target");
         RESET_AI_VALUE(GuidPosition, "rpg target");
         return false;
@@ -330,7 +330,7 @@ bool ChooseRpgTargetAction::Execute(Event& event)
             if (checked >= 10)
             {
                 ostringstream out;
-                out << "and " << (sortedTargets.size()-checked) << " more...";
+                out << "和 " << (sortedTargets.size()-checked) << " 更多...";
                 ai->TellPlayerNoFacing(GetMaster(), out);
                 break;
             }
@@ -365,7 +365,7 @@ bool ChooseRpgTargetAction::Execute(Event& event)
     if ((ai->HasStrategy("debug", BotState::BOT_STATE_NON_COMBAT) || ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT)) && guidP.GetWorldObject())
     {
         ostringstream out;
-        out << "found: ";
+        out << "查询: ";
         out << chat->formatWorldobject(guidP.GetWorldObject());
 
         out << " " << rgpActionReason[guidP] << " " << targets[guidP];

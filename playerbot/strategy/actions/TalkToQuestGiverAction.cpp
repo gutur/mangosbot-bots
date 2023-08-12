@@ -42,14 +42,14 @@ bool TalkToQuestGiverAction::ProcessQuest(Player* requester, Quest const* quest,
         isCompleted |= TurnInQuest(requester, quest, questGiver, out);
         break;
     case QUEST_STATUS_INCOMPLETE:
-        out << "|cffff0000Incompleted|r";
+        out << "|cffff0000未完成|r";
         break;
     case QUEST_STATUS_AVAILABLE:
     case QUEST_STATUS_NONE:
-        out << "|cff00ff00Available|r";
+        out << "|cff00ff00可接受|r";
         break;
     case QUEST_STATUS_FAILED:
-        out << "|cffff0000Failed|r";
+        out << "|cffff0000失败|r";
         break;
     }
 
@@ -87,11 +87,11 @@ void TalkToQuestGiverAction::RewardNoItem(Quest const* quest, WorldObject* quest
     if (bot->CanRewardQuest(quest, false))
     {
         bot->RewardQuest(quest, 0, questGiver, false);
-        out << "Completed";
+        out << "已完成.";
     }
     else
     {
-        out << "|cffff0000Unable to turn in|r";
+        out << "|cffff0000无法提交任务|r";
     }
 }
 
@@ -103,11 +103,11 @@ void TalkToQuestGiverAction::RewardSingleItem(Quest const* quest, WorldObject* q
     {
         bot->RewardQuest(quest, index, questGiver, true);
 
-        out << "Rewarded " << chat->formatItem(item);
+        out << "奖励物品 " << chat->formatItem(item);
     }
     else
     {
-        out << "|cffff0000Unable to turn in:|r, reward: " << chat->formatItem(item);
+        out << "|cffff0000无法提交任务:|r, 奖励物品: " << chat->formatItem(item);
     }
 }
 
@@ -152,7 +152,7 @@ void TalkToQuestGiverAction::RewardMultipleItem(Player* requester, Quest const* 
         bestIds = BestRewards(quest);
         ItemPrototype const* proto = sObjectMgr.GetItemPrototype(quest->RewChoiceItemId[*bestIds.begin()]);
         if(proto)
-            out << "Rewarded " << chat->formatItem(proto);
+            out << "奖励物品 " << chat->formatItem(proto);
         bot->RewardQuest(quest, *bestIds.begin(), questGiver, true);
     }
     else if (sPlayerbotAIConfig.autoPickReward == "no")
@@ -171,7 +171,7 @@ void TalkToQuestGiverAction::RewardMultipleItem(Player* requester, Quest const* 
             //Pick the first item
             ItemPrototype const* proto = sObjectMgr.GetItemPrototype(quest->RewChoiceItemId[*bestIds.begin()]);
             if (proto)
-                out << "Rewarded " << chat->formatItem(proto);
+                out << "奖励物品 " << chat->formatItem(proto);
             bot->RewardQuest(quest, *bestIds.begin(), questGiver, true);
         }
     }
@@ -180,7 +180,7 @@ void TalkToQuestGiverAction::RewardMultipleItem(Player* requester, Quest const* 
 void TalkToQuestGiverAction::AskToSelectReward(Player* requester, Quest const* quest, ostringstream& out, bool forEquip)
 {
     ostringstream msg;
-    msg << "Choose reward: ";
+    msg << "请选择奖励: ";
     for (uint8 i=0; i < quest->GetRewChoiceItemsCount(); ++i)
     {
         ItemPrototype const* item = sObjectMgr.GetItemPrototype(quest->RewChoiceItemId[i]);
@@ -193,5 +193,5 @@ void TalkToQuestGiverAction::AskToSelectReward(Player* requester, Quest const* q
     }
     ai->TellPlayer(requester, msg, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 
-    out << "Reward pending";
+    out << "奖励待领取.";
 }

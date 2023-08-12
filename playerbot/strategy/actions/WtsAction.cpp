@@ -50,7 +50,7 @@ bool WtsAction::Execute(Event& event)
             continue;
 
         ostringstream tell;
-        tell << "I'll buy " << chat->formatItem(proto) << " for " << chat->formatMoney(buyPrice);
+        tell << "我要买 " << chat->formatItem(proto) << " 价格: " << chat->formatMoney(buyPrice);
 
         // ignore random bot chat filter
         bot->Whisper(tell.str(), LANG_UNIVERSAL, owner->GetObjectGuid());

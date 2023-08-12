@@ -202,9 +202,9 @@ bool PetitionOfferNearbyAction::Execute(Event& event)
             placeholders["%name"] = player->GetName();
 
             if(urand(0,3))
-                bot->Say(BOT_TEXT2("Hey %name do you want create a guild together?", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+                bot->Say(BOT_TEXT2("嘿, %name ,你想一起创建一个公会吗?", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
             else
-                bot->Say(BOT_TEXT2("Hey do you want to form a guild?", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+                bot->Say(BOT_TEXT2("嘿, 你想组建一个公会吗?", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
         }
 
         //Parse rpg target to quest action.

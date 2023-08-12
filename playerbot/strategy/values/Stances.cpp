@@ -226,7 +226,7 @@ bool SetStanceAction::Execute(Event& event)
     StanceValue* value = (StanceValue*)context->GetValue<Stance*>("stance");
     if (stance == "?" || stance.empty())
     {
-        ostringstream str; str << "Stance: |cff00ff00" << value->Get()->getName();
+        ostringstream str; str << "姿态: |cff00ff00" << value->Get()->getName();
         ai->TellPlayer(GetMaster(), str);
         return true;
     }
@@ -242,13 +242,13 @@ bool SetStanceAction::Execute(Event& event)
 
     if (!value->Load(stance))
     {
-        ostringstream str; str << "Invalid stance: |cffff0000" << stance;
+        ostringstream str; str << "无效的姿态: |cffff0000" << stance;
         ai->TellPlayer(GetMaster(), str);
-        ai->TellPlayer(GetMaster(), "Please set to any of:|cffffffff near (default), tank, turnback, behind");
+        ai->TellPlayer(GetMaster(), "请设置以下任意一种姿态:|cffffffff 近战(默认)、坦克、转身、背后.");
         return false;
     }
 
-    ostringstream str; str << "Stance set to: " << stance;
+    ostringstream str; str << "姿态已设置为: " << stance;
     ai->TellPlayer(GetMaster(), str);
     return true;
 }

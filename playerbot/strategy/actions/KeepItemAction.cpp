@@ -16,7 +16,7 @@ bool KeepItemAction::Execute(Event& event)
     if (text.empty()) //No param = help feedback
     {
         ostringstream out;
-        out << "Please specify the items that should be kept. See " << ChatHelper::formatValue("help", "action:keep", "keep help") << " for more information.";
+        out << "请指定要保留的物品.请参阅 " << ChatHelper::formatValue("help", "action:keep", "keep help") << " 获取更多信息.";
         ai->TellPlayer(GetMaster(), out.str());
         return false;
     }
@@ -43,9 +43,9 @@ bool KeepItemAction::Execute(Event& event)
         ostringstream out;
 
         if (type == "keep")
-            out << "Please specify the items that should be kept. See " << ChatHelper::formatValue("help", "action:keep", "keep help") << " for more information.";
+            out << "请指定要保留的物品.请参阅 " << ChatHelper::formatValue("help", "action:keep", "keep help") << " 获取更多信息.";
         else
-            out << "No items found.";
+            out << "未找到物品.";
 
         ai->TellPlayer(GetMaster(), out.str());
         return true;
@@ -88,7 +88,7 @@ bool KeepItemAction::Execute(Event& event)
 
     ostringstream out;
     out << changed;
-    out << " items changed to: " << keepName[usage] << " the item.";
+    out << " 件物品更改为: " << keepName[usage] << " 该物品.";
     ai->TellPlayer(GetMaster(), out.str());
 
     sPlayerbotDbStore.Save(ai);

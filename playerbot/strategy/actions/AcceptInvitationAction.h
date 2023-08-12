@@ -57,9 +57,9 @@ namespace ai
                     placeholders["%name"] = master->GetName();
                     string reply;
                     if (urand(0, 3))
-                        reply = BOT_TEXT2("Send me an invite %name!", placeholders);
+                        reply = BOT_TEXT2("邀请我 %name!", placeholders);
                     else
-                        reply = BOT_TEXT2("Sure I will join you.", placeholders);
+                        reply = BOT_TEXT2("好吧,我入队.", placeholders);
 
                     Guild* guild = sGuildMgr.GetGuildById(bot->GetGuildId());
 

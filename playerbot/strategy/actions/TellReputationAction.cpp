@@ -34,31 +34,31 @@ bool TellReputationAction::Execute(Event& event)
     ReputationRank rank = bot->GetReputationMgr().GetRank(entry);
     switch (rank) {
         case REP_HATED:
-            out << "cc2222hated";
+            out << "cc2222仇恨";
             break;
         case REP_HOSTILE:
-            out << "ff0000hostile";
+            out << "ff0000敌对";
             break;
         case REP_UNFRIENDLY:
-            out << "ee6622unfriendly";
+            out << "ee6622敌对";
             break;
         case REP_NEUTRAL:
-            out << "ffff00neutral";
+            out << "ffff00中立";
             break;
         case REP_FRIENDLY:
-            out << "00ff00friendly";
+            out << "00ff00友好";
             break;
         case REP_HONORED:
-            out << "00ff88honored";
+            out << "00ff88尊敬";
             break;
         case REP_REVERED:
-            out << "00ffccrevered";
+            out << "00ffcc尊敬";
             break;
         case REP_EXALTED:
-            out << "00ffffexalted";
+            out << "00ffff尊敬";
             break;
         default:
-            out << "808080unknown";
+            out << "808080未知";
             break;
     }
 

@@ -80,16 +80,16 @@ bool HelpAction::Execute(Event& event)
 void HelpAction::TellChatCommands()
 {
     ostringstream out;
-    out << "Whisper any of: ";
+    out << "私聊时以下任意一项: ";
     out << CombineSupported(chatContext->supports());
-    out << ", [item], [quest] or [object] link";
+    out << ", [物品], [任务] 或者 [对象] 链接";
     ai->TellError(out.str());
 }
 
 void HelpAction::TellStrategies()
 {
     ostringstream out;
-    out << "Possible strategies (co/nc/dead commands): ";
+    out << "可能的策略 (co/nc/dead commands): ";
     out << CombineSupported(ai->GetAiObjectContext()->GetSupportedStrategies());
     ai->TellError(out.str());
 }

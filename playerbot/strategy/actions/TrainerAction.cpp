@@ -12,7 +12,7 @@ void TrainerAction::Learn(uint32 cost, TrainerSpell const* tSpell, ostringstream
     {
         if (AI_VALUE2(uint32, "free money for", (uint32)NeedMoneyFor::spells) < cost)
         {
-            msg << " - too expensive";
+            msg << " - 太贵了.";
             return;
         }
 
@@ -60,7 +60,7 @@ void TrainerAction::Learn(uint32 cost, TrainerSpell const* tSpell, ostringstream
 
     sPlayerbotAIConfig.logEvent(ai, "TrainerAction", proto->SpellName[0], to_string(proto->Id));
 
-    msg << " - learned";
+    msg << " - 已经学习";
 }
 
 void TrainerAction::Iterate(Creature* creature, TrainerSpellAction action, SpellIds& spells)
@@ -175,7 +175,7 @@ bool TrainerAction::Execute(Event& event)
             
     if (!creature->IsTrainerOf(bot, false))
     {
-        ai->TellError("This trainer cannot teach me");
+        ai->TellError("这个训练师无法教授我.");
         return false;
     }
 
@@ -184,7 +184,7 @@ bool TrainerAction::Execute(Event& event)
     TrainerSpellData const* tSpells = creature->GetTrainerTemplateSpells();
     if (!cSpells && !tSpells)
     {
-        ai->TellError("No spells can be learned from this trainer");
+        ai->TellError("这个训练师没有可以学习的技能.");
         return false;
     }
 
@@ -203,7 +203,7 @@ bool TrainerAction::Execute(Event& event)
 
 void TrainerAction::TellHeader(Creature* creature)
 {
-    ostringstream out; out << "--- Can learn from " << creature->GetName() << " ---";
+    ostringstream out; out << "--- 可以从 " << creature->GetName() << " 处学习的技能---";
     ai->TellPlayer(GetMaster(), out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 }
 
@@ -211,7 +211,7 @@ void TrainerAction::TellFooter(uint32 totalCost)
 {
     if (totalCost)
     {
-        ostringstream out; out << "Total cost: " << chat->formatMoney(totalCost);
+        ostringstream out; out << "总费用: " << chat->formatMoney(totalCost);
         ai->TellPlayer(GetMaster(), out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
     }
 }

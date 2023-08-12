@@ -24,17 +24,17 @@ bool GuildAcceptAction::Execute(Event& event)
     uint32 guildId = inviter->GetGuildId();
     if (!guildId)
     {
-        ai->TellError("You are not in a guild!");
+        ai->TellError("你不在公会里!");
         accept = false;
     }
     else if (bot->GetGuildId())
     {
-        ai->TellError("Sorry, I am in a guild already");
+        ai->TellError("对不起,我已经加入了一个公会.");
         accept = false;
     }
     else if (!ai->GetSecurity()->CheckLevelFor(PlayerbotSecurityLevel::PLAYERBOT_SECURITY_INVITE, false, inviter, true))
     {
-        ai->TellError("Sorry, I don't want to join your guild :(");
+        ai->TellError("对不起,我不想加入你的公会 :(");
         accept = false;
     }
 
@@ -42,7 +42,7 @@ bool GuildAcceptAction::Execute(Event& event)
 
     if(guild && guild->GetMemberSize() > 1000)
     {
-        ai->TellError("This guild has over 1000 members. To stop it from reaching the 1064 member limit I refuse to join it.");
+        ai->TellError("该公会成员已经达到1000人以上.为了防止达到1064人的限制,我拒绝加入.");
         accept = false;
     }
 
@@ -52,9 +52,9 @@ bool GuildAcceptAction::Execute(Event& event)
         placeholders["%name"] = inviter->GetName();
 
         if (urand(0, 3))
-            bot->Say(BOT_TEXT2("Sounds good %name sign me up!", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+            bot->Say(BOT_TEXT2("听起来不错,%name,带我一个!", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
         else
-            bot->Say(BOT_TEXT2("I would love to join!", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+            bot->Say(BOT_TEXT2("我很乐意加入!", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
     }
 
     WorldPacket packet;

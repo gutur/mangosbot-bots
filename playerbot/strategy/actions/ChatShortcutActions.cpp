@@ -229,6 +229,6 @@ bool MaxDpsChatShortcutAction::Execute(Event& event)
 
     ai->Reset();
     ai->ChangeStrategy("-threat,-conserve mana,-cast time,+dps debuff,+boost", BotState::BOT_STATE_COMBAT);
-    ai->TellPlayerNoFacing(requester, "Max DPS!");
+    ai->TellPlayerNoFacing(requester, "最大DPS!");
     return true;
 }

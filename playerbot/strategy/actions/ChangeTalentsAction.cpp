@@ -133,14 +133,14 @@ bool ChangeTalentsAction::Execute(Event& event)
                 specName = specPath->name;
         }
 
-        out << "My current talent spec is: " << "|h|cffffffff";
+        out << "我当前的天赋专精是: " << "|h|cffffffff";
 
         if (specName != "")
             out << specName << " (" << botSpec.formatSpec(bot) << ")";
         else
             out << chat->formatClass(bot, botSpec.highestTree());
 
-        out << " Link: ";
+        out << " 链接: ";
         out << botSpec.GetTalentLink();
     }
 

@@ -70,7 +70,7 @@ bool RepairAllAction::Execute(Event& event)
         if (totalCost > 0)
         {
             ostringstream out;
-            out << "Repair: " << chat->formatMoney(totalCost) << " (" << unit->GetName() << ")";
+            out << "维修: " << chat->formatMoney(totalCost) << " (" << unit->GetName() << ")";
             ai->TellPlayerNoFacing(GetMaster(), out.str(),PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             if (sPlayerbotAIConfig.globalSoundEffects)
                 bot->PlayDistanceSound(1116);
@@ -83,6 +83,6 @@ bool RepairAllAction::Execute(Event& event)
         return durability < 100 && AI_VALUE(uint8, "durability") > durability;
     }
 
-    ai->TellError("Cannot find any npc to repair at");
+    ai->TellError("没有找到任何可以维修的npc");
     return false;
 }

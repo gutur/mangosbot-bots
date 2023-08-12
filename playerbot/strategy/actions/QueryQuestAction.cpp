@@ -33,12 +33,12 @@ bool QueryQuestAction::Execute(Event& event)
         out << "--- " << chat->formatQuest(sObjectMgr.GetQuestTemplate(questId)) << " ";
         if (bot->GetQuestStatus(questId) == QUEST_STATUS_COMPLETE)
         {
-            out << "|c0000FF00completed|r ---";
+            out << "|c0000FF00已完成|r ---";
             ai->TellPlayer(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         }
         else
         {
-            out << "|c00FF0000not completed|r ---";
+            out << "|c00FF0000未完成|r ---";
             ai->TellPlayer(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             TellObjectives(requester, questId);
         }
@@ -61,17 +61,17 @@ bool QueryQuestAction::Execute(Event& event)
                 uint32 apoints = dest->getPoints().size();
 
 
-                out << round(dest->distanceTo(botPos));
+                out << "距离" << round(dest->distanceTo(botPos));
 
-                out << " to " << dest->getTitle();
+                out << " 到达" << dest->getTitle();
 
                 out << " " << apoints;
                 if (apoints < tpoints)
                     out << "/" << tpoints;
-                out << " points.";
+                out << " 点.";
 
                 if (!dest->isActive(bot))
-                    out << " not active";
+                    out << " 未激活.";
 
                 ai->TellPlayer(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 

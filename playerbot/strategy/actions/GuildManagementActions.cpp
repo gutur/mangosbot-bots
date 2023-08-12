@@ -96,7 +96,7 @@ bool GuildManageNearbyAction::Execute(Event& event)
                     map<string, string> placeholders;
                     placeholders["%name"] = player->GetName();
 
-                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("Good job %name. You deserver this.", placeholders), LANG_UNIVERSAL);
+                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("干得好,%name.你值得这个奖励.", placeholders), LANG_UNIVERSAL);
                 }
 
                 ai->DoSpecificAction("guild promote", Event("guild management", guid), true);
@@ -110,7 +110,7 @@ bool GuildManageNearbyAction::Execute(Event& event)
                     map<string, string> placeholders;
                     placeholders["%name"] = player->GetName();
 
-                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("That was awefull %name. I hate to do this but...", placeholders), LANG_UNIVERSAL);
+                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("真糟糕,%name.我很不愿意这样做,但是...", placeholders), LANG_UNIVERSAL);
                 }
 
                 ai->DoSpecificAction("guild demote", Event("guild management", guid), true);
@@ -164,45 +164,45 @@ bool GuildManageNearbyAction::Execute(Event& event)
             switch ((urand(0, 10)* urand(0, 10))/10)
             {
             case 0:
-                lines.push_back(BOT_TEXT2("Hey %name do you want to join my guild?", placeholders));
+                lines.push_back(BOT_TEXT2("嘿,%name,你想加入我的公会吗?", placeholders));
                 break;
             case 1:
-                lines.push_back(BOT_TEXT2("Hey man you wanna join my guild %name?", placeholders));
+                lines.push_back(BOT_TEXT2("嘿,伙计,你想加入我的公会 %name 吗?", placeholders));
                 break;
             case 2:
-                lines.push_back(BOT_TEXT2("I think you would be a good contribution to %guildname. Would you like to join %name?", placeholders));
+                lines.push_back(BOT_TEXT2("我觉得你会是 %guildname 的一份子.你想加入 %name 吗?", placeholders));
                 break;
             case 3:
-                lines.push_back(BOT_TEXT2("My guild %guildname has %members quality members. Would you like to make it 1 more %name?", placeholders));
+                lines.push_back(BOT_TEXT2("我的公会 %guildname 有 %members 名优秀成员.你想成为第 %name 吗?", placeholders));
                 break;
             case 4:
-                lines.push_back(BOT_TEXT2("Hey %name do you want to join %guildname? We have %members members and looking to become number 1 of the server.", placeholders));
+                lines.push_back(BOT_TEXT2("嘿,%name,你想加入 %guildname 吗?我们有 %members 名成员,力争成为服务器第一.", placeholders));
                 break;
             case 5:
-                lines.push_back(BOT_TEXT2("I'm not really good at smalltalk. Do you wanna join my guild %name/r?", placeholders));
+                lines.push_back(BOT_TEXT2("我不太擅长闲聊.你想加入我的公会 %name 吗/r?", placeholders));
                 break;
             case 6:
-                lines.push_back(BOT_TEXT2("Welcome to %place.... do you want to join my guild %name?", placeholders));
+                lines.push_back(BOT_TEXT2("欢迎来到 %place... 你想加入我的公会 %name 吗?", placeholders));
                 break;
             case 7:
-                lines.push_back(BOT_TEXT2("%name, you should join my guild!", placeholders));
+                lines.push_back(BOT_TEXT2("%name,你应该加入我的公会!", placeholders));
                 break;
             case 8:
-                lines.push_back(BOT_TEXT2("%name, I got this guild....", placeholders));
+                lines.push_back(BOT_TEXT2("%name,我有个公会....", placeholders));
                 break;
             case 9:
-                lines.push_back(BOT_TEXT2("You are actually going to join my guild %name?", placeholders));
-                lines.push_back(BOT_TEXT2("Haha.. you are the man! We are going to raid Molten...", placeholders));
+                lines.push_back(BOT_TEXT2("你真的要加入我的公会 %name 吗?", placeholders));
+                lines.push_back(BOT_TEXT2("哈哈,你真爽快!我们将去开荒熔火之心...", placeholders));
                 break;
             case 10:
-                lines.push_back(BOT_TEXT2("Hey Hey! do you guys wanna join my gild????", placeholders));
-                lines.push_back(BOT_TEXT2("We've got a bunch of high levels and we are really super friendly..", placeholders));
-                lines.push_back(BOT_TEXT2("..and watch your dog and do your homework...", placeholders));
-                lines.push_back(BOT_TEXT2("..and we raid once a week and are working on MC raids...", placeholders));
-                lines.push_back(BOT_TEXT2("..and we have more members than just me...", placeholders));
-                lines.push_back(BOT_TEXT2("..and please stop I'm lonenly and we can get a ride the whole time...", placeholders));
-                lines.push_back(BOT_TEXT2("..and it's really beautifull and I feel like crying...", placeholders));
-                lines.push_back(BOT_TEXT2("So what do you guys say are you going to join are you going to join?", placeholders));
+                lines.push_back(BOT_TEXT2("嘿嘿!你们想加入我的公会吗????", placeholders));
+                lines.push_back(BOT_TEXT2("我们有一群高等级玩家,而且我们非常友好..", placeholders));
+                lines.push_back(BOT_TEXT2("..而且会照顾你的狗,帮你做家庭作业...", placeholders));
+                lines.push_back(BOT_TEXT2("..我们每周进行一次团队副本,并且正在进行熔火之心的团队副本...", placeholders));
+                lines.push_back(BOT_TEXT2("..而且我们工会不只是我一个成员...", placeholders));
+                lines.push_back(BOT_TEXT2("..别说了,我很孤独,整天都可以坐一辆载具...", placeholders));
+                lines.push_back(BOT_TEXT2("..这真的太美了,我感觉要哭了...", placeholders));
+                lines.push_back(BOT_TEXT2("那么,你们说呢?你们会加入吗?", placeholders));
                 break;
             }
 
@@ -244,7 +244,7 @@ bool GuildLeaveAction::Execute(Event& event)
     Player* owner = event.getOwner();
     if (owner && !ai->GetSecurity()->CheckLevelFor(PlayerbotSecurityLevel::PLAYERBOT_SECURITY_INVITE, false, owner, true))
     {
-        ai->TellError("Sorry, I am happy in my guild :)");
+        ai->TellError("对不起,我很高兴待在我的公会 :)");
         return false;
     }
 
