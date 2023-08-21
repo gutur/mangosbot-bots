@@ -285,6 +285,52 @@ void RetributionPaladinBuffRaidStrategy::InitNonCombatTriggers(std::list<Trigger
     PaladinBuffRaidStrategy::InitNonCombatTriggers(triggers);
 }
 
+void RetributionPaladinBoostStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    PaladinBoostStrategy::InitCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    PaladinBoostStrategy::InitNonCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostPveStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitCombatTriggers(triggers);
+    PaladinBoostPveStrategy::InitCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostPveStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitNonCombatTriggers(triggers);
+    PaladinBoostPveStrategy::InitNonCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostPvpStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitCombatTriggers(triggers);
+    PaladinBoostPvpStrategy::InitCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostPvpStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitNonCombatTriggers(triggers);
+    PaladinBoostPvpStrategy::InitNonCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostRaidStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitCombatTriggers(triggers);
+    PaladinBoostRaidStrategy::InitCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostRaidStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitNonCombatTriggers(triggers);
+    PaladinBoostRaidStrategy::InitNonCombatTriggers(triggers);
+}
+
 void RetributionPaladinCcStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     PaladinCcStrategy::InitCombatTriggers(triggers);
@@ -722,6 +768,52 @@ void RetributionPaladinBuffRaidStrategy::InitNonCombatTriggers(std::list<Trigger
     PaladinBuffRaidStrategy::InitNonCombatTriggers(triggers);
 }
 
+void RetributionPaladinBoostStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    PaladinBoostStrategy::InitCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    PaladinBoostStrategy::InitNonCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostPveStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitCombatTriggers(triggers);
+    PaladinBoostPveStrategy::InitCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostPveStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitNonCombatTriggers(triggers);
+    PaladinBoostPveStrategy::InitNonCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostPvpStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitCombatTriggers(triggers);
+    PaladinBoostPvpStrategy::InitCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostPvpStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitNonCombatTriggers(triggers);
+    PaladinBoostPvpStrategy::InitNonCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostRaidStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitCombatTriggers(triggers);
+    PaladinBoostRaidStrategy::InitCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostRaidStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitNonCombatTriggers(triggers);
+    PaladinBoostRaidStrategy::InitNonCombatTriggers(triggers);
+}
+
 void RetributionPaladinCcStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     PaladinCcStrategy::InitCombatTriggers(triggers);
@@ -949,11 +1041,7 @@ void RetributionPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& tri
 
     triggers.push_back(new TriggerNode(
         "art of war",
-        NextAction::array(0, new NextAction("exorcism", ACTION_HIGH + 3), NULL)));
-
-    triggers.push_back(new TriggerNode(
-        "art of war",
-        NextAction::array(0, new NextAction("flash of light", ACTION_HIGH + 2), NULL)));
+        NextAction::array(0, new NextAction("exorcism", ACTION_HIGH + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
         "low mana",
@@ -1173,6 +1261,52 @@ void RetributionPaladinBuffRaidStrategy::InitNonCombatTriggers(std::list<Trigger
 {
     RetributionPaladinBuffStrategy::InitNonCombatTriggers(triggers);
     PaladinBuffRaidStrategy::InitNonCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    PaladinBoostStrategy::InitCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    PaladinBoostStrategy::InitNonCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostPveStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitCombatTriggers(triggers);
+    PaladinBoostPveStrategy::InitCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostPveStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitNonCombatTriggers(triggers);
+    PaladinBoostPveStrategy::InitNonCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostPvpStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitCombatTriggers(triggers);
+    PaladinBoostPvpStrategy::InitCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostPvpStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitNonCombatTriggers(triggers);
+    PaladinBoostPvpStrategy::InitNonCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostRaidStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitCombatTriggers(triggers);
+    PaladinBoostRaidStrategy::InitCombatTriggers(triggers);
+}
+
+void RetributionPaladinBoostRaidStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
+{
+    RetributionPaladinBoostStrategy::InitNonCombatTriggers(triggers);
+    PaladinBoostRaidStrategy::InitNonCombatTriggers(triggers);
 }
 
 void RetributionPaladinCcStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)

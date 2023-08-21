@@ -76,7 +76,9 @@ list<ObjectGuid> NearestGameObjects::Calculate()
 list<ObjectGuid> NearestDynamicObjects::Calculate()
 {
     list<DynamicObject*> targets;
-#ifdef MANGOSBOT_ZERO
+
+    // Remove this when updating wotlk core
+#ifndef MANGOSBOT_TWO
     AnyDynamicObjectInObjectRangeCheck u_check(bot, range);
     MaNGOS::DynamicObjectListSearcher<AnyDynamicObjectInObjectRangeCheck> searcher(targets, u_check);
     Cell::VisitAllObjects((const WorldObject*)bot, searcher, range);
