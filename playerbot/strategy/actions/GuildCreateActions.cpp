@@ -147,7 +147,7 @@ bool PetitionOfferAction::Execute(Event& event)
     data << petitions.front()->GetObjectGuid();
     data << guid;
 
-    QueryResult* result = CharacterDatabase.PQuery("SELECT playerguid FROM petition_sign WHERE player_account = '%u' AND petitionguid = '%u'", player->GetSession()->GetAccountId(), petitions.front()->GetObjectGuid().GetCounter());
+    auto result = CharacterDatabase.PQuery("SELECT playerguid FROM petition_sign WHERE player_account = '%u' AND petitionguid = '%u'", player->GetSession()->GetAccountId(), petitions.front()->GetObjectGuid().GetCounter());
 
     if (result)
     {
@@ -222,6 +222,7 @@ bool PetitionOfferNearbyAction::Execute(Event& event)
 
 bool PetitionTurnInAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     list<ObjectGuid> vendors = ai->GetAiObjectContext()->GetValue<list<ObjectGuid> >("nearest npcs")->Get();
     bool vendored = false, result = false;
 
@@ -273,14 +274,14 @@ bool PetitionTurnInAction::Execute(Event& event)
     //Select a new target to travel to. 
     TravelTarget newTarget = TravelTarget(ai);
 
-    bool foundTarget = SetNpcFlagTarget(&newTarget, { UNIT_NPC_FLAG_PETITIONER });
+    bool foundTarget = SetNpcFlagTarget(requester, &newTarget, { UNIT_NPC_FLAG_PETITIONER });
 
     if (!foundTarget || !newTarget.isActive())
         return false;
 
     newTarget.setRadius(INTERACTION_DISTANCE);
 
-    setNewTarget(&newTarget, oldTarget);
+    setNewTarget(requester, &newTarget, oldTarget);
 
     return true;
 };
@@ -312,6 +313,7 @@ bool PetitionTurnInAction::isUseful()
 
 bool BuyTabardAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     bool canBuy = ai->DoSpecificAction("buy", Event("buy tabard", "Hitem:5976:"),true);
 
     if (canBuy && AI_VALUE2(uint32, "item count", chat->formatQItem(5976)))
@@ -322,14 +324,14 @@ bool BuyTabardAction::Execute(Event& event)
     //Select a new target to travel to. 
     TravelTarget newTarget = TravelTarget(ai);
 
-    bool foundTarget = SetNpcFlagTarget(&newTarget, { UNIT_NPC_FLAG_TABARDDESIGNER }, "Tabard Vendor", { 5976 });
+    bool foundTarget = SetNpcFlagTarget(requester, &newTarget, { UNIT_NPC_FLAG_TABARDDESIGNER }, "Tabard Vendor", { 5976 });
 
     if (!foundTarget || !newTarget.isActive())
         return false;
 
     newTarget.setRadius(INTERACTION_DISTANCE);
 
-    setNewTarget(&newTarget, oldTarget);
+    setNewTarget(requester, &newTarget, oldTarget);
 
     return true;
 };

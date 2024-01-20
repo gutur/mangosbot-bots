@@ -8,14 +8,15 @@ using namespace ai;
 
 bool OutfitAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     string param = event.getParam();
 
     if (param == "?")
     {
-        List();
-        ai->TellPlayer(GetMaster(), "使用方法:outfit <名字> +[物品] 添加物品");
-        ai->TellPlayer(GetMaster(), "使用方法:outfit <名字> -[物品] 移除物品");
-        ai->TellPlayer(GetMaster(), "使用方法:outfit <名字> 装备/替换 装备物品");
+        List(requester);
+        ai->TellPlayer(requester, "使用方法:outfit <名字> +[物品] 添加物品");
+        ai->TellPlayer(requester, "使用方法:outfit <名字> -[物品] 移除物品");
+        ai->TellPlayer(requester, "使用方法:outfit <名字> 装备/替换 装备物品");
     }
     else
     {
@@ -25,8 +26,8 @@ bool OutfitAction::Execute(Event& event)
         {
             Save(name, items);
             ostringstream out;
-            out << "已将装备方案  " << name << " 设置为 " << param;
-            ai->TellPlayer(GetMaster(), out);
+            out << "已将装备方案 " << name << " 设置为 " << param;
+            ai->TellPlayer(requester, out);
             return true;
         }
 
@@ -43,15 +44,15 @@ bool OutfitAction::Execute(Event& event)
         {
             ostringstream out;
             out << "正在装备装备方案 " << name;
-            ai->TellPlayer(GetMaster(), out);
-            EquipItems(GetMaster(), outfit);
+            ai->TellPlayer(requester, out);
+            EquipItems(requester, outfit);
             return true;
         }
         else if (command == "replace")
         {
             ostringstream out;
             out << "替换当前方案,使用装备方案 " << name;
-            ai->TellPlayer(GetMaster(), out);
+            ai->TellPlayer(requester, out);
             for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; slot++)
             {
                 Item* const pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
@@ -65,14 +66,14 @@ bool OutfitAction::Execute(Event& event)
                 packet << bagIndex << slot << dstBag;
                 bot->GetSession()->HandleAutoStoreBagItemOpcode(packet);
             }
-            EquipItems(GetMaster(), outfit);
+            EquipItems(requester, outfit);
             return true;
         }
         else if (command == "reset")
         {
             ostringstream out;
             out << "替换当前装备 " << name;
-            ai->TellPlayer(GetMaster(), out);
+            ai->TellPlayer(requester, out);
             Save(name, ItemIds());
             return true;
         }
@@ -80,7 +81,7 @@ bool OutfitAction::Execute(Event& event)
         {
             ostringstream out;
             out << "正在使用当前装备更新装备方案 " << name;
-            ai->TellPlayer(GetMaster(), out);
+            ai->TellPlayer(requester, out);
             Update(name);
             return true;
         }
@@ -106,7 +107,7 @@ bool OutfitAction::Execute(Event& event)
                 out << " 已添加至 ";
             }
             out << name;
-            ai->TellPlayer(GetMaster(), out.str());
+            ai->TellPlayer(requester, out.str());
         }
         Save(name, outfit);
     }
@@ -140,8 +141,7 @@ void OutfitAction::Save(string name, ItemIds items)
     outfits.push_back(out.str());
 }
 
-
-void OutfitAction::List()
+void OutfitAction::List(Player* requester)
 {
     list<string>& outfits = AI_VALUE(list<string>&, "outfit list");
     for (list<string>::iterator i = outfits.begin(); i != outfits.end(); ++i)
@@ -160,7 +160,7 @@ void OutfitAction::List()
                 out << chat->formatItem(proto) << " ";
             }
         }
-        ai->TellPlayer(GetMaster(), out);
+        ai->TellPlayer(requester, out);
     }
 }
 

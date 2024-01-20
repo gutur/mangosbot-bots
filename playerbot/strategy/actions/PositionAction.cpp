@@ -5,7 +5,7 @@
 
 using namespace ai;
 
-void TellPosition(PlayerbotAI* ai, string name, ai::PositionEntry pos)
+void TellPosition(PlayerbotAI* ai, Player* requester, string name, ai::PositionEntry pos)
 {
     ostringstream out; out << "位置 " << name;
     if (pos.isSet())
@@ -15,18 +15,18 @@ void TellPosition(PlayerbotAI* ai, string name, ai::PositionEntry pos)
         out << " 已设置为 " << x << "," << y;
     }
     else
-        out << " 未设置.";
-    ai->TellPlayer(ai->GetMaster(), out);
+        out << " 未设置";
+    ai->TellPlayer(requester, out);
 }
 
 bool PositionAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
 	string param = event.getParam();
 	if (param.empty())
 		return false;
 
-    Player* master = GetMaster();
-    if (!master)
+    if (!requester)
         return false;
 
     ai::PositionMap& posMap = context->GetValue<ai::PositionMap&>("position")->Get();
@@ -35,7 +35,7 @@ bool PositionAction::Execute(Event& event)
         for (ai::PositionMap::iterator i = posMap.begin(); i != posMap.end(); ++i)
         {
             if (i->second.isSet())
-                TellPosition(ai, i->first, i->second);
+                TellPosition(ai, requester, i->first, i->second);
         }
         return true;
     }
@@ -43,7 +43,7 @@ bool PositionAction::Execute(Event& event)
     vector<string> params = split(param, ' ');
     if (params.size() != 2)
     {
-        ai->TellPlayer(GetMaster(), "私聊位置 <name> ?/set/reset");
+        ai->TellPlayer(requester, "私聊位置 <name> ?/set/reset");
         return false;
     }
 
@@ -52,7 +52,7 @@ bool PositionAction::Execute(Event& event)
 	ai::PositionEntry pos = posMap[name];
 	if (action == "?")
 	{
-	    TellPosition(ai, name, pos);
+	    TellPosition(ai, requester, name, pos);
 	    return true;
 	}
 
@@ -62,8 +62,8 @@ bool PositionAction::Execute(Event& event)
         pos.Set(atoi(coords[0].c_str()), atoi(coords[1].c_str()), atoi(coords[2].c_str()), ai->GetBot()->GetMapId());
         posMap[name] = pos;
 
-        ostringstream out; out << "位置 " << name << " 已设置.";
-        ai->TellPlayer(GetMaster(), out);
+        ostringstream out; out << "位置 " << name << " 已设置";
+        ai->TellPlayer(requester, out);
         return true;
     }
 
@@ -72,8 +72,8 @@ bool PositionAction::Execute(Event& event)
         pos.Set(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), ai->GetBot()->GetMapId());
 	    posMap[name] = pos;
 
-	    ostringstream out; out << "位置 " << name << " 已设置.";
-	    ai->TellPlayer(GetMaster(), out);
+	    ostringstream out; out << "位置 " << name << " 已设置";
+	    ai->TellPlayer(requester, out);
 	    return true;
 	}
 
@@ -82,8 +82,8 @@ bool PositionAction::Execute(Event& event)
 	    pos.Reset();
 	    posMap[name] = pos;
 
-	    ostringstream out; out << "位置 " << name << " 已重置.";
-	    ai->TellPlayer(GetMaster(), out);
+	    ostringstream out; out << "位置 " << name << " 已重置";
+	    ai->TellPlayer(requester, out);
 	    return true;
 	}
 
@@ -92,11 +92,12 @@ bool PositionAction::Execute(Event& event)
 
 bool MoveToPositionAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
 	ai::PositionEntry pos = context->GetValue<ai::PositionMap&>("position")->Get()[qualifier];
     if (!pos.isSet())
     {
-        ostringstream out; out << "位置 " << qualifier << " 尚未设置.";
-        ai->TellPlayer(GetMaster(), out);
+        ostringstream out; out << "位置 " << qualifier << " 尚未设置";
+        ai->TellPlayer(requester, out);
         return false;
     }
 
@@ -180,7 +181,7 @@ bool ReturnToStayPositionAction::isPossible()
         const float distance = bot->GetDistance(stayPosition.x, stayPosition.y, stayPosition.z);
         if (distance > sPlayerbotAIConfig.reactDistance)
         {
-            ai->TellError("待命位置太远无法返回.我将保持当前位置.");
+            ai->TellError(GetMaster(), "待命位置太远无法返回.我将保持当前位置");
             
             // Set the stay position to current position
             stayPosition.Set(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetMapId());
@@ -210,7 +211,7 @@ bool ReturnToPullPositionAction::isPossible()
                     const float distance = bot->GetDistance(stayPosition.x, stayPosition.y, stayPosition.z);
                     if (distance > sPlayerbotAIConfig.reactDistance)
                     {
-                        ai->TellError("拉怪位置太远无法返回.我将在当前位置拉怪.");
+                        ai->TellError(GetMaster(), "拉怪位置太远无法返回.我将在当前位置拉怪");
 
                         // Set the stay position to current position
                         stayPosition.Set(bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetMapId());

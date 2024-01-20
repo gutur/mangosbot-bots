@@ -29,9 +29,6 @@ AiPlayerbot.DeleteRandomBotAccounts = 0
 # auto-login all player alts as bots on player login
 AiPlayerbot.BotAutologin = 0
 
-# Guild Task system
-AiPlayerbot.EnableGuildTasks = 0
-
 # Enable LFG for random bots (NYI)
 AiPlayerbot.RandomBotJoinLfg = 1
 
@@ -96,6 +93,13 @@ AiPlayerbot.RandomGearLoweringChance = 0.15
 
 AiPlayerbot.RandomGearMaxLevel = 500
 
+# Max difference between bot level and item's required level to be used in randomisation
+# Default = 11, means bots level 80 can use items that require (themselves or via quests) level 69 and above
+AiPlayerbot.RandomGearMaxDiff = 11
+
+# Regularly upgrade bots equipment for their level
+AiPlayerbot.RandomGearUpgradeEnabled = 1
+
 # List of item IDs to exclude from random gear, separated by comma
 AiPlayerbot.RandomGearBlacklist = 0
 
@@ -104,6 +108,9 @@ AiPlayerbot.RandomBotMaxLevelChance = 0.15
 
 # Chance bot chooses RPG (Teleport to random camp for their level) instead of grinding
 AiPlayerbot.RandomBotRpgChance = 0.20
+
+# Chance for bot to use potions
+#AiPlayerbot.UsePotionChance = 1.0
 
 # Bots will speed up when following to stay close.
 # AiPlayerbot.BoostFollow = 1
@@ -627,19 +634,12 @@ AiPlayerbot.FleeingEnabled = 1
 # Random bot default strategies (applied after defaults)
 #AiPlayerbot.RandomBotCombatStrategies = +dps,+dps assist,-threat
 #AiPlayerbot.RandomBotNonCombatStrategies = +grind,+loot,+rpg,+custom::say
+#AiPlayerbot.RandomBotReactStrategies = 
+#AiPlayerbot.RandomBotDeadStrategies = 
 #AiPlayerbot.CombatStrategies = +custom::say
 #AiPlayerbot.NonCombatStrategies = +custom::say,+return,+delayed roll
-
-
-# How often tasks are changed
-#AiPlayerbot.MinGuildTaskChangeTime = 172800
-#AiPlayerbot.MaxGuildTaskChangeTime = 432000
-# Mail spam interval
-#AiPlayerbot.MinGuildTaskAdvertisementTime = 300
-#AiPlayerbot.MaxGuildTaskAdvertisementTime = 28800
-# Delay before reward is sent
-#AiPlayerbot.MinGuildTaskRewardTime = 300
-#AiPlayerbot.MaxGuildTaskRewardTime = 3600
+#AiPlayerbot.ReactStrategies = 
+#AiPlayerbot.DeadStrategies = 
 
 # Quest items to leave (do not destroy)
 #AiPlayerbot.RandomBotQuestItems = 6948,5175,5176,5177,5178,16309,12382,13704,11000

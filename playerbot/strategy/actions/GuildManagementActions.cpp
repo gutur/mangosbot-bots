@@ -241,10 +241,11 @@ bool GuildManageNearbyAction::isUseful()
 
 bool GuildLeaveAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     Player* owner = event.getOwner();
     if (owner && !ai->GetSecurity()->CheckLevelFor(PlayerbotSecurityLevel::PLAYERBOT_SECURITY_INVITE, false, owner, true))
     {
-        ai->TellError("对不起,我很高兴待在我的公会 :)");
+        ai->TellError(requester, "对不起,我很高兴待在我的公会 :)");
         return false;
     }
 

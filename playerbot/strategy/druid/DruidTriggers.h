@@ -31,7 +31,13 @@ namespace ai
         virtual bool IsActive()
         {
             Unit* target = GetTarget();
-            return BuffOnPartyTrigger::IsActive() && (!target->IsPlayer() || !ai->IsRanged((Player*)target));
+            if (BuffOnPartyTrigger::IsActive() && (!target->IsPlayer() || !ai->IsRanged((Player*)target)))
+            {
+                // Don't apply thorns if fire shield (conflict) is on the target
+                return !ai->HasAura("fire shield", target);
+            }
+
+            return false;
         }
     };
 
@@ -39,6 +45,17 @@ namespace ai
     {
     public:
         ThornsTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "thorns", 4) {}
+
+        bool IsActive() override
+        {
+            if (BuffTrigger::IsActive())
+            {
+                // Don't apply thorns if fire shield (conflict) is on the target
+                return !ai->HasAura("fire shield", GetTarget());
+            }
+
+            return false;
+        }
     };
 
     class OmenOfClarityTrigger : public BuffTrigger
@@ -371,5 +388,29 @@ namespace ai
 
             return false;
         }
+    };
+
+    class LifebloomTankTrigger : public Trigger
+    {
+    public:
+        explicit LifebloomTankTrigger(PlayerbotAI* ai) : Trigger(ai, "lifebloom", 1) {}
+
+        Value<Unit*>* GetTargetValue() override;
+        bool IsActive() override
+        {
+            Unit* target = GetTarget();
+            return target
+                && ai->IsTank((Player*)target)                                          //target is tank 
+                && target->IsAlive()                                                    //target is alive
+                && !ai->HasAura("lifebloom", target, true, true, -1, false, 2000, 8)    //target dont have max stacked aura or aura will expire soon
+                && ai->CanCastSpell("lifebloom", target, 0)                             //bot can cast spell
+                && !target->getAttackers().empty();                                     //target have attackers
+        }
+    };
+
+    class ClearcastingTrigger : public HasAuraTrigger
+    {
+    public:
+        ClearcastingTrigger(PlayerbotAI* ai) : HasAuraTrigger(ai, "clearcasting") {}
     };
 }

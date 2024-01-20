@@ -25,8 +25,8 @@ namespace ai
 	class SealTrigger : public BuffTrigger
 	{
 	public:
-		SealTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "seal of justice") {}
-		virtual bool IsActive();
+		SealTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "seal") {}
+		bool IsActive() override;
 	};
 
     // judgements
@@ -34,7 +34,21 @@ namespace ai
     DEBUFF_TRIGGER(JudgementOfLightTrigger, "judgement of light");
     DEBUFF_TRIGGER(JudgementOfWisdomTrigger, "judgement of wisdom");
 
-    DEBUFF_TRIGGER(ConsecrationTrigger, "consecration");
+    class ConsecrationTrigger : public SpellNoCooldownTrigger
+    {
+    public:
+        ConsecrationTrigger(PlayerbotAI* ai) : SpellNoCooldownTrigger(ai, "consecration") {}
+        bool IsActive() override;
+    };
+
+    class ExorcismTrigger : public SpellNoCooldownTrigger
+    {
+    public:
+        ExorcismTrigger(PlayerbotAI* ai) : SpellNoCooldownTrigger(ai, "exorcism") {}
+        bool IsActive() override;
+    };
+
+    CD_TRIGGER(CrusaderStrikeTrigger, "crusader strike");
 
     // repentance triggers
     INTERRUPT_HEALER_TRIGGER(RepentanceOnHealerTrigger, "repentance on enemy healer");

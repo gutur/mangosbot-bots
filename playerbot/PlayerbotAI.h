@@ -314,6 +314,7 @@ public:
     bool CanDoSpecificAction(const string& name, bool isUseful = true, bool isPossible = true);
     virtual bool DoSpecificAction(const string& name, Event event = Event(), bool silent = false);
     void ChangeStrategy(const string& name, BotState type);
+    void PrintStrategies(Player* requester, BotState type);
     void ClearStrategies(BotState type);
     list<string_view> GetStrategies(BotState type);
     bool ContainsStrategy(StrategyType type);
@@ -338,15 +339,16 @@ public:
     bool TellPlayer(Player* player, string text, PlayerbotSecurityLevel securityLevel = PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, bool isPrivate = true);
     bool TellPlayerNoFacing(Player* player, ostringstream& stream, PlayerbotSecurityLevel securityLevel = PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, bool isPrivate = true, bool noRepeat = true) { return TellPlayerNoFacing(player, stream.str(), securityLevel, isPrivate, noRepeat); }
     bool TellPlayerNoFacing(Player* player, string text, PlayerbotSecurityLevel securityLevel = PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, bool isPrivate = true, bool noRepeat = true);
-    bool TellError(string text, PlayerbotSecurityLevel securityLevel = PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL);
+    bool TellError(Player* player, string text, PlayerbotSecurityLevel securityLevel = PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL);
     void SpellInterrupted(uint32 spellid);
     int32 CalculateGlobalCooldown(uint32 spellid);
-    void InterruptSpell();
+    void InterruptSpell(bool withMeleeAndAuto = true);
     bool RemoveAura(const std::string& name);
     void RemoveShapeshift();
     void WaitForSpellCast(Spell *spell);
     bool PlaySound(uint32 emote);
     bool PlayEmote(uint32 emote);
+    bool PlayAttackEmote(float chanceDivider);
     void Ping(float x, float y);
     void Poi(float x, float y, string icon_name = "This way", Player* player = nullptr, uint32 flags = 99, uint32 icon = 6 /* red flag */, uint32 icon_data = 0);
     Item * FindPoison() const;
@@ -368,7 +370,7 @@ public:
     bool GetSpellRange(string name, float* maxRange, float* minRange = nullptr);
     uint32 GetSpellCastDuration(Spell* spell);
 
-    virtual bool HasAura(string spellName, Unit* player, bool maxStack = false, bool checkIsOwner = false, int maxAmount = -1, bool hasMyAura = false, int minDuration = 0);
+    virtual bool HasAura(string spellName, Unit* player, bool maxStack = false, bool checkIsOwner = false, int maxAmount = -1, bool hasMyAura = false, int minDuration = 0, int auraTypeId = TOTAL_AURAS);
     virtual bool HasAnyAuraOf(Unit* player, ...);
     virtual bool HasMyAura(string spellName, Unit* player) { return HasAura(spellName, player, false, false, -1, true); }
     uint8 GetHealthPercent(const Unit& target) const;
@@ -379,6 +381,7 @@ public:
     virtual bool IsInterruptableSpellCasting(Unit* player, string spell, uint8 effectMask);
     virtual bool HasAuraToDispel(Unit* player, uint32 dispelType);
     bool canDispel(const SpellEntry* entry, uint32 dispelType);
+    static bool IsHealSpell(const SpellEntry* entry);
 
     bool HasSpell(string name) const;
     bool HasSpell(uint32 spellid) const;
@@ -387,15 +390,16 @@ public:
     Aura* GetAura(std::string spellName, Unit* player, bool checkOwner = false);
     std::vector<Aura*> GetAuras(Unit* player);
 
-    virtual bool CanCastSpell(string name, Unit* target, uint8 effectMask, Item* itemTarget = NULL, bool ignoreRange = false);
-    bool CanCastSpell(uint32 spellid, Unit* target, uint8 effectMask, bool checkHasSpell = true, Item* itemTarget = NULL, bool ignoreRange = false);
-    bool CanCastSpell(uint32 spellid, GameObject* goTarget, uint8 effectMask, bool checkHasSpell = true, bool ignoreRange = false);
-    bool CanCastSpell(uint32 spellid, float x, float y, float z, uint8 effectMask, bool checkHasSpell = true, Item* itemTarget = NULL, bool ignoreRange = false);
+    virtual bool CanCastSpell(string name, Unit* target, uint8 effectMask, Item* itemTarget = NULL, bool ignoreRange = false, bool ignoreInCombat = false);
+    bool CanCastSpell(uint32 spellid, Unit* target, uint8 effectMask, bool checkHasSpell = true, Item* itemTarget = NULL, bool ignoreRange = false, bool ignoreInCombat = false);
+    bool CanCastSpell(uint32 spellid, GameObject* goTarget, uint8 effectMask, bool checkHasSpell = true, bool ignoreRange = false, bool ignoreInCombat = false);
+    bool CanCastSpell(uint32 spellid, float x, float y, float z, uint8 effectMask, bool checkHasSpell = true, Item* itemTarget = NULL, bool ignoreRange = false, bool ignoreInCombat = false);
     bool CanCastVehicleSpell(uint32 spellid, Unit* target);
 
     virtual bool CastSpell(string name, Unit* target, Item* itemTarget = NULL, bool waitForSpell = true, uint32* outSpellDuration = NULL, bool canUseReagentCheat = true);
     bool CastSpell(uint32 spellId, Unit* target, Item* itemTarget = NULL, bool waitForSpell = true, uint32* outSpellDuration = NULL, bool canUseReagentCheat = true);
     bool CastSpell(uint32 spellId, float x, float y, float z, Item* itemTarget = NULL, bool waitForSpell = true, uint32* outSpellDuration = NULL, bool canUseReagentCheat = true);
+    bool CastPetSpell(uint32 spellId, Unit* target);
     bool CastVehicleSpell(uint32 spellId, Unit* target);
     bool CastVehicleSpell(uint32 spellId, float x, float y, float z);
 
@@ -435,7 +439,7 @@ private:
 
 private:
     void _fillGearScoreData(Player *player, Item* item, std::vector<uint32>* gearScore, uint32& twoHandScore);
-    bool IsTellAllowed(PlayerbotSecurityLevel securityLevel = PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL);
+    bool IsTellAllowed(Player* player, PlayerbotSecurityLevel securityLevel = PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL);
 
 public:
 	Player* GetBot() { return bot; }
@@ -484,10 +488,13 @@ public:
     static bool IsOpposing(uint8 race1, uint8 race2);
     PlayerbotSecurity* GetSecurity() { return &security; }
 
-    Position GetJumpDestination() { return jumpDestination; }
-    void SetJumpDestination(Position pos) { jumpDestination = pos; }
-    void ResetJumpDestination() { jumpDestination = Position(); }
+    WorldPosition GetJumpDestination() { return jumpDestination; }
+    void SetJumpDestination(const WorldPosition& pos) { jumpDestination = pos; }
+    void ResetJumpDestination() { jumpDestination = WorldPosition(); }
 
+    bool IsJumping() { return jumpTime; }
+    void SetFallAfterJump() { fallAfterJump = true; }
+    void SetJumpTime(uint32 time) { jumpTime = time; }
     bool CanMove();
     void StopMoving();
     bool IsInRealGuild();
@@ -509,6 +516,10 @@ public:
     const Action* GetLastExecutedAction(BotState state) const;
 
     bool IsImmuneToSpell(uint32 spellId) const;
+
+    bool IsInPve();
+    bool IsInPvp();
+    bool IsInRaid();
 
     void SetMoveToTransport(bool flag = true) { isMovingToTransport = flag; }
     bool GetMoveToTransport() { return isMovingToTransport; }
@@ -550,7 +561,9 @@ protected:
     bool isMoving = false;
     bool isWaiting = false;
     BotCheatMask cheatMask = BotCheatMask::none;
-    Position jumpDestination = Position();
+    WorldPosition jumpDestination;
+    uint32 jumpTime;
+    bool fallAfterJump;
     uint32 faceTargetUpdateDelay;
     bool isPlayerFriend = false;
     bool isMovingToTransport = false;

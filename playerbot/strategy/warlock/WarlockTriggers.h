@@ -130,7 +130,7 @@ namespace ai
     class BacklashTrigger : public HasAuraTrigger
     {
     public:
-        BacklashTrigger(PlayerbotAI* ai) : HasAuraTrigger(ai, "backlash") {}
+        BacklashTrigger(PlayerbotAI* ai) : HasAuraTrigger(ai, "backlash", 1, SPELL_AURA_ADD_PCT_MODIFIER) {}
     };
 
     class BanishTrigger : public HasCcTargetTrigger
@@ -264,5 +264,22 @@ namespace ai
     {
     public:
         NoFelguardTrigger(PlayerbotAI* ai) : NoSpecificPetTrigger(ai, "no felguard", 17252) {}
+    };
+
+    class SpellLockTrigger : public InterruptSpellTrigger
+    {
+    public:
+        SpellLockTrigger(PlayerbotAI* ai) : InterruptSpellTrigger(ai, "spell lock") {}
+
+        bool IsActive() override
+        {
+            return InterruptSpellTrigger::IsActive();
+        }
+    };
+
+    class SpellLockEnemyHealerTrigger : public InterruptEnemyHealerTrigger
+    {
+    public:
+        SpellLockEnemyHealerTrigger(PlayerbotAI* ai) : InterruptEnemyHealerTrigger(ai, "spell lock") {}
     };
 }

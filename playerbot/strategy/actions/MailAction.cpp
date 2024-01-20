@@ -12,13 +12,14 @@ map<string, MailProcessor*> MailAction::processors;
 class TellMailProcessor : public MailProcessor
 {
 public:
-    virtual bool Before(PlayerbotAI* ai)
+    bool Before(Player* requester, PlayerbotAI* ai) override
     {
-        ai->TellPlayer(ai->GetMaster(), "=== 邮箱 ===", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+        ai->TellPlayer(requester, "=== 邮箱 ===", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         tells.clear();
         return true;
     }
-    virtual bool Process(int index, Mail* mail, PlayerbotAI* ai)
+
+    bool Process(Player* requester, int index, Mail* mail, PlayerbotAI* ai) override
     {
         Player* bot = ai->GetBot();
         time_t cur_time = time(0);
@@ -44,21 +45,22 @@ public:
                 if (proto)
                 {
                     sPlayerbotAIConfig.logEvent(ai, "MailAction", proto->Name1, to_string(proto->ItemId));
-
                     out << ChatHelper::formatItem(item, count);
                     if (!mail->subject.empty()) out << " |cffa0a0a0(" << mail->subject << ")";
                 }
             }
         }
-        out  << ", |cff00ff00" << days << " 天.";
+        out  << ", |cff00ff00" << days << " 天";
         tells.push_front(out.str());
         return true;
     }
 
-    virtual bool After(PlayerbotAI* ai)
+    bool After(Player* requester, PlayerbotAI* ai) override
     {
         for (list<string>::iterator i = tells.begin(); i != tells.end(); ++i)
-            ai->TellPlayer(ai->GetMaster(), *i, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+        {
+            ai->TellPlayer(requester, *i, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+        }
 
         return true;
     }
@@ -72,12 +74,12 @@ private:
 class TakeMailProcessor : public MailProcessor
 {
 public:
-    virtual bool Process(int index, Mail* mail, PlayerbotAI* ai)
+    bool Process(Player* requester, int index, Mail* mail, PlayerbotAI* ai) override
     {
         Player* bot = ai->GetBot();
         if (!CheckBagSpace(bot))
         {
-            ai->TellError("背包空间不足");
+            ai->TellError(requester, "背包空间不足");
             return false;
         }
 
@@ -86,7 +88,7 @@ public:
         {
             ostringstream out;
             out << mail->subject << ", |cffffff00" << ChatHelper::formatMoney(mail->money) << "|cff00ff00 处理完毕";
-            ai->TellPlayer(ai->GetMaster(), out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            ai->TellPlayer(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 
             WorldPacket packet;
             packet << mailbox;
@@ -117,7 +119,7 @@ public:
                 out << mail->subject << ", " << ChatHelper::formatItem(item) << "|cff00ff00 处理完毕";
 
                 bot->GetSession()->HandleMailTakeItem(packet);
-                ai->TellPlayer(ai->GetMaster(), out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+                ai->TellPlayer(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             }
 
             RemoveMail(bot, mail->messageID, mailbox);
@@ -155,12 +157,12 @@ private:
 class DeleteMailProcessor : public MailProcessor
 {
 public:
-    virtual bool Process(int index, Mail* mail, PlayerbotAI* ai)
+    bool Process(Player* requester, int index, Mail* mail, PlayerbotAI* ai) override
     {
         ostringstream out;
         out << "|cffffffff" << mail->subject << "|cffff0000 删除";
         RemoveMail(ai->GetBot(), mail->messageID, FindMailbox(ai));
-        ai->TellPlayer(ai->GetMaster(), out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+        ai->TellPlayer(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         return true;
     }
 
@@ -170,22 +172,23 @@ public:
 class ReadMailProcessor : public MailProcessor
 {
 public:
-    virtual bool Process(int index, Mail* mail, PlayerbotAI* ai)
+    bool Process(Player* requester, int index, Mail* mail, PlayerbotAI* ai) override
     {
         ostringstream out, body;
         out << "|cffffffff" << mail->subject;
-        ai->TellPlayer(ai->GetMaster(), out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+        ai->TellPlayer(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 #ifdef MANGOSBOT_TWO
 
 #else
         if (mail->itemTextId)
         {
             body << "\n" << sObjectMgr.GetItemText(mail->itemTextId);
-            ai->TellPlayer(ai->GetMaster(), body.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            ai->TellPlayer(requester, body.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         }
 #endif
         return true;
     }
+
     static ReadMailProcessor instance;
 };
 
@@ -196,13 +199,13 @@ ReadMailProcessor ReadMailProcessor::instance;
 
 bool MailAction::Execute(Event& event)
 {
-    Player* master = GetMaster();
-    if (!master && event.getSource() != "rpg action")
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
+    if (!requester && event.getSource() != "rpg action")
         return false;
 
     if (!MailProcessor::FindMailbox(ai))
     {
-        ai->TellError("附近没有邮箱");
+        ai->TellError(requester, "附近没有邮箱");
         return false;
     }
 
@@ -217,7 +220,7 @@ bool MailAction::Execute(Event& event)
     string text = event.getParam();
     if (text.empty())
     {
-        ai->TellPlayer(GetMaster(), "发送密语 'mail ?' 发送密语, 'mail take/delete/read filter' 使用过滤器拿取/删除/阅读邮件");
+        ai->TellPlayer(requester, "发送密语 'mail ?' 检查邮箱, 'mail take/delete/read filter' 使用过滤器拿取/删除/阅读邮件");
         return false;
     }
 
@@ -227,12 +230,12 @@ bool MailAction::Execute(Event& event)
     MailProcessor* processor = processors[action];
     if (!processor)
     {
-        ostringstream out; out << action << ": 我不知道该怎么做.";
-        ai->TellPlayer(GetMaster(), out.str());
+        ostringstream out; out << action << ": 我不知道该怎么做";
+        ai->TellPlayer(requester, out.str());
         return false;
     }
 
-    if (!processor->Before(ai))
+    if (!processor->Before(requester, ai))
         return false;
 
     vector<Mail*> mailList;
@@ -246,14 +249,17 @@ bool MailAction::Execute(Event& event)
         mailList.push_back(mail);
     }
 
+    if (mailList.empty())
+        return false;
+
     map<int, Mail*> filtered = filterList(mailList, filter);
     for (map<int, Mail*>::iterator i = filtered.begin(); i != filtered.end(); ++i)
     {
-        if (!processor->Process(i->first, i->second, ai))
+        if (!processor->Process(requester, i->first, i->second, ai))
             break;
     }
 
-    return processor->After(ai);
+    return processor->After(requester, ai);
 }
 
 void MailProcessor::RemoveMail(Player* bot, uint32 id, ObjectGuid mailbox)

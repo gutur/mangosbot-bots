@@ -8,6 +8,7 @@ using namespace ai;
 
 bool TeleportAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     list<ObjectGuid> gos = *context->GetValue<list<ObjectGuid> >("nearest game objects");
     for (list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
     {
@@ -24,24 +25,19 @@ bool TeleportAction::Execute(Event& event)
         if (pSpellInfo->Effect[0] != SPELL_EFFECT_TELEPORT_UNITS && pSpellInfo->Effect[1] != SPELL_EFFECT_TELEPORT_UNITS && pSpellInfo->Effect[2] != SPELL_EFFECT_TELEPORT_UNITS)
             continue;
 
-        ostringstream out; out << "进行传送: " << goInfo->name;
-        ai->TellPlayerNoFacing(GetMaster(), out.str());
+        if (!bot->GetGameObjectIfCanInteractWith(go->GetObjectGuid(), MAX_GAMEOBJECT_TYPE))
+            continue;
+
+        ostringstream out; out << "进行传送 " << goInfo->name;
+        ai->TellPlayerNoFacing(requester, out.str());
 
         ai->ChangeStrategy("-follow,+stay", BotState::BOT_STATE_NON_COMBAT);
 
-        Spell *spell = new Spell(bot, pSpellInfo, false);
-        SpellCastTargets targets;
-        targets.setUnitTarget(bot);
-#ifdef MANGOS
-        spell->prepare(&targets, NULL);
-#endif
-#ifdef CMANGOS
-        spell->SpellStart(&targets, NULL);
-#endif
-            spell->cast(true);
+        std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_GAMEOBJ_USE));
+        *packet << *i;
+        bot->GetSession()->QueuePacket(std::move(packet));
         return true;
     }
-
 
     LastMovement& movement = context->GetValue<LastMovement&>("last area trigger")->Get();
     if (movement.lastAreaTrigger)
@@ -55,6 +51,6 @@ bool TeleportAction::Execute(Event& event)
         return true;
     }
 
-    ai->TellError("找不到任何传送门可供传送.");
+    ai->TellPlayerNoFacing(requester, "找不到任何传送门可供传送");
     return false;
 }

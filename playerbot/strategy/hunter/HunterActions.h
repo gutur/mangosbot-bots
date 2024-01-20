@@ -11,7 +11,8 @@ namespace ai
     {
     public:
         CastAutoShotAction(PlayerbotAI* ai) : CastSpellAction(ai, "auto shot") {}
-        virtual bool isUseful();
+        bool Execute(Event& event) override;
+        bool isUseful() override;
     };
 
     BEGIN_RANGED_SPELL_ACTION(CastTranquilizingShotAction, "tranquilizing shot")
@@ -36,6 +37,13 @@ namespace ai
 
     BEGIN_RANGED_DEBUFF_ACTION(CastScatterShotAction, "scatter shot")
     END_SPELL_ACTION()
+
+    class CastScatterShotOnClosestAttackerTargetingMeAction : public CastRangedDebuffSpellAction
+    {
+    public:
+        CastScatterShotOnClosestAttackerTargetingMeAction(PlayerbotAI* ai) : CastRangedDebuffSpellAction(ai, "scatter shot") {}
+        string GetTargetName() override { return "closest attacker targeting me target"; }
+    };
 
     BEGIN_RANGED_SPELL_ACTION(CastDistractingShotAction, "distracting shot")
     END_SPELL_ACTION()
@@ -79,19 +87,40 @@ namespace ai
     {
     public:
         CastAspectOfTheCheetahAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "aspect of the cheetah") {}
-        virtual bool isUseful();
+        
+        bool isUseful() override
+        {
+            return CastBuffSpellAction::isUseful() && !AI_VALUE(bool, "has attackers");
+        }
     };
 
     class CastAspectOfThePackAction : public CastBuffSpellAction
     {
     public:
         CastAspectOfThePackAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "aspect of the pack") {}
+    
+        bool isUseful() override
+        {
+            return CastBuffSpellAction::isUseful() && !AI_VALUE(bool, "has attackers");
+        }
     };
 
     class CastAspectOfTheViperAction : public CastBuffSpellAction
     {
     public:
         CastAspectOfTheViperAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "aspect of the viper") {}
+    };
+
+    class CastAspectOfTheBeastAction : public CastBuffSpellAction
+    {
+    public:
+        CastAspectOfTheBeastAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "aspect of the beast") {}
+    };
+
+    class CastAspectOfTheDragonhawkAction : public CastBuffSpellAction
+    {
+    public:
+        CastAspectOfTheDragonhawkAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "aspect of the dragonhawk") {}
     };
 
     class CastCallPetAction : public CastBuffSpellAction
@@ -139,9 +168,6 @@ namespace ai
         CastBlackArrow(PlayerbotAI* ai) : CastRangedDebuffSpellAction(ai, "black arrow") {}
     };
 
-    BUFF_ACTION(CastFreezingTrapAction, "freezing trap");
-    BUFF_ACTION(CastFrostTrapAction, "frost trap");
-    BUFF_ACTION(CastExplosiveTrapAction, "explosive trap");
     SNARE_ACTION(CastBlackArrowSnareAction, "black arrow");
     SPELL_ACTION(CastSilencingShotAction, "silencing shot");
     ENEMY_HEALER_ACTION(CastSilencingShotOnHealerAction, "silencing shot");
@@ -201,12 +227,10 @@ namespace ai
         CastScareBeastAction(PlayerbotAI* ai) : CastSpellAction(ai, "scare beast") {}
     };
 
-    class CastScareBeastCcAction : public CastSpellAction
+    class CastScareBeastCcAction : public CastCrowdControlSpellAction
     {
     public:
-        CastScareBeastCcAction(PlayerbotAI* ai) : CastSpellAction(ai, "scare beast on cc") {}
-        virtual Value<Unit*>* GetTargetValue();
-        virtual bool Execute(Event& event);
+        CastScareBeastCcAction(PlayerbotAI* ai) : CastCrowdControlSpellAction(ai, "scare beast") {}
     };
 
     BUFF_ACTION(IntimidationAction, "intimidation");
@@ -226,5 +250,476 @@ namespace ai
     public:
         CastFlareAction(PlayerbotAI* ai) : CastSpellAction(ai, "flare") {}
         virtual string GetTargetName() override { return "nearest stealthed unit"; }
+    };
+
+    class TrapOnTargetAction : public CastSpellAction
+    {
+    public:
+#ifdef MANGOSBOT_ZERO
+        // For vanilla, bots need to feign death before dropping the trap
+        TrapOnTargetAction(PlayerbotAI* ai, string spell) : CastSpellAction(ai, "feign death"), trapSpell(spell)
+        {
+            trapSpellID = AI_VALUE2(uint32, "spell id", trapSpell);
+        }
+#else
+        TrapOnTargetAction(PlayerbotAI* ai, string spell) : CastSpellAction(ai, spell), trapSpell(spell) {}
+#endif
+
+    protected:
+        // Traps don't really have target for the spell
+        string GetTargetName() override { return "self target"; }
+
+        // The move to target
+        virtual string GetTrapTargetName() { return "current target"; }
+
+        // The trap spell that will be used
+        string GetTrapSpellName() { return trapSpell; }
+
+        string GetReachActionName() override { return "reach melee"; }
+        string GetTargetQualifier() override { return GetTrapSpellName(); }
+        ActionThreatType getThreatType() override { return ActionThreatType::ACTION_THREAT_NONE; }
+
+        NextAction** getPrerequisites() override
+        {
+            const string reachAction = GetReachActionName();
+            const string spellName = GetSpellName();
+            const string targetName = GetTrapTargetName();
+
+            // Generate the reach action with qualifiers
+            vector<string> qualifiers = { spellName, targetName, trapSpell };
+            const string qualifiersStr = Qualified::MultiQualify(qualifiers, "::");
+            return NextAction::merge(NextAction::array(0, new NextAction(reachAction + "::" + qualifiersStr), NULL), Action::getPrerequisites());
+        }
+
+#ifdef MANGOSBOT_ZERO
+        bool isPossible() override
+        {
+            // If the trap spell and feign death are not on cooldown
+            return sServerFacade.IsSpellReady(bot, trapSpellID) && sServerFacade.IsSpellReady(bot, 5384);
+        }
+
+        NextAction** getContinuers() override
+        {
+            return NextAction::merge(NextAction::array(0, new NextAction(trapSpell, ACTION_PASSTROUGH), NULL), CastSpellAction::getContinuers());
+        }
+#endif
+
+private:
+        string trapSpell;
+        uint32 trapSpellID;
+    };
+
+    class TrapOnCcTargetAction : public TrapOnTargetAction
+    {
+    public:
+        TrapOnCcTargetAction(PlayerbotAI* ai, string spell) : TrapOnTargetAction(ai, spell) {}
+        string GetTrapTargetName() override { return "cc target"; }
+    };
+
+    class TrapInPlace : public TrapOnTargetAction
+    {
+    public:
+        TrapInPlace(PlayerbotAI* ai, string spell) : TrapOnTargetAction(ai, spell) {}
+        string GetTrapTargetName() override { return "self target"; }
+    };
+
+    class CastTrapAction : public CastSpellAction
+    {
+    public:
+        CastTrapAction(PlayerbotAI* ai, string spell) : CastSpellAction(ai, spell) {}
+
+        // Traps don't really have target for the spell
+        string GetTargetName() override { return "self target"; }
+
+#ifdef MANGOSBOT_ZERO
+        bool Execute(Event& event) override
+        {
+            // The trap could come just after feign death, so better remove it
+            ai->RemoveAura("feign death");
+            return CastSpellAction::Execute(event);
+        }
+#endif
+    };
+
+    class CastImmolationTrapAction : public CastTrapAction
+    {
+    public:
+        CastImmolationTrapAction(PlayerbotAI* ai) : CastTrapAction(ai, "immolation trap") {}
+    };
+
+    class CastImmolationTrapOnTargetAction : public TrapOnTargetAction
+    {
+    public:
+        CastImmolationTrapOnTargetAction(PlayerbotAI* ai) : TrapOnTargetAction(ai, "immolation trap") {}
+    };
+
+    class CastImmolationTrapInPlaceAction : public TrapInPlace
+    {
+    public:
+        CastImmolationTrapInPlaceAction(PlayerbotAI* ai) : TrapInPlace(ai, "immolation trap") {}
+    };
+
+    class CastFreezingTrapAction : public CastTrapAction
+    {
+    public:
+        CastFreezingTrapAction(PlayerbotAI* ai) : CastTrapAction(ai, "freezing trap") {}
+    };
+
+    class CastFreezingTrapOnTargetAction : public TrapOnTargetAction
+    {
+    public:
+        CastFreezingTrapOnTargetAction(PlayerbotAI* ai) : TrapOnTargetAction(ai, "freezing trap") {}
+    };
+
+    class CastFreezingTrapInPlaceAction : public TrapInPlace
+    {
+    public:
+        CastFreezingTrapInPlaceAction(PlayerbotAI* ai) : TrapInPlace(ai, "freezing trap") {}
+    };
+
+    class CastFreezingTrapOnCcAction : public TrapOnCcTargetAction
+    {
+    public:
+        CastFreezingTrapOnCcAction(PlayerbotAI* ai) : TrapOnCcTargetAction(ai, "freezing trap") {}
+    };
+
+    class CastFrostTrapAction : public CastTrapAction
+    {
+    public:
+        CastFrostTrapAction(PlayerbotAI* ai) : CastTrapAction(ai, "frost trap") {}
+    };
+
+    class CastFrostTrapOnTargetAction : public TrapOnTargetAction
+    {
+    public:
+        CastFrostTrapOnTargetAction(PlayerbotAI* ai) : TrapOnTargetAction(ai, "frost trap") {}
+    };
+
+    class CastFrostTrapInPlaceAction : public TrapInPlace
+    {
+    public:
+        CastFrostTrapInPlaceAction(PlayerbotAI* ai) : TrapInPlace(ai, "frost trap") {}
+    };
+
+    class CastExplosiveTrapAction : public CastTrapAction
+    {
+    public:
+        CastExplosiveTrapAction(PlayerbotAI* ai) : CastTrapAction(ai, "explosive trap") {}
+    };
+
+    class CastExplosiveTrapOnTargetAction : public TrapOnTargetAction
+    {
+    public:
+        CastExplosiveTrapOnTargetAction(PlayerbotAI* ai) : TrapOnTargetAction(ai, "explosive trap") {}
+    };
+
+    class CastExplosiveTrapInPlaceAction : public TrapInPlace
+    {
+    public:
+        CastExplosiveTrapInPlaceAction(PlayerbotAI* ai) : TrapInPlace(ai, "explosive trap") {}
+    };
+
+    class CastDismissPetAction : public CastSpellAction
+    {
+    public:
+        CastDismissPetAction(PlayerbotAI* ai) : CastSpellAction(ai, "dismiss pet") {}
+
+        string GetTargetName() override { return "self target"; }
+
+        bool isUseful() override
+        {
+            return AI_VALUE(Unit*, "pet target");
+        }
+    };
+
+    class UpdateHunterPveStrategiesAction : public UpdateStrategyDependenciesAction
+    {
+    public:
+        UpdateHunterPveStrategiesAction(PlayerbotAI* ai) : UpdateStrategyDependenciesAction(ai, "update pve strats")
+        {
+            std::vector<std::string> strategiesRequired = { "beast mastery" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "beast mastery pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "beast mastery pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "beast mastery pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "beast mastery pve", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "aoe" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aoe beast mastery pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aoe beast mastery pve", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "buff" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "buff beast mastery pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "buff beast mastery pve", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "boost" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "boost beast mastery pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "boost beast mastery pve", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "cc" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "cc beast mastery pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "cc beast mastery pve", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "sting" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "sting beast mastery pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "sting beast mastery pve", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "aspect" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aspect beast mastery pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aspect beast mastery pve", strategiesRequired);
+
+            strategiesRequired = { "marksmanship" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "marksmanship pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "marksmanship pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "marksmanship pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "marksmanship pve", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "aoe" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aoe marksmanship pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aoe marksmanship pve", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "buff" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "buff marksmanship pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "buff marksmanship pve", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "boost" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "boost marksmanship pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "boost marksmanship pve", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "cc" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "cc marksmanship pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "cc marksmanship pve", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "sting" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "sting marksmanship pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "sting marksmanship pve", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "aspect" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aspect marksmanship pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aspect marksmanship pve", strategiesRequired);
+
+            strategiesRequired = { "survival" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "survival pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "survival pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "survival pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "survival pve", strategiesRequired);
+
+            strategiesRequired = { "survival", "aoe" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aoe survival pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aoe survival pve", strategiesRequired);
+
+            strategiesRequired = { "survival", "buff" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "buff survival pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "buff survival pve", strategiesRequired);
+
+            strategiesRequired = { "survival", "boost" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "boost survival pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "boost survival pve", strategiesRequired);
+
+            strategiesRequired = { "survival", "cc" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "cc survival pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "cc survival pve", strategiesRequired);
+
+            strategiesRequired = { "survival", "sting" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "sting survival pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "sting survival pve", strategiesRequired);
+
+            strategiesRequired = { "survival", "aspect" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aspect survival pve", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aspect survival pve", strategiesRequired);
+        }
+    };
+
+    class UpdateHunterPvpStrategiesAction : public UpdateStrategyDependenciesAction
+    {
+    public:
+        UpdateHunterPvpStrategiesAction(PlayerbotAI* ai) : UpdateStrategyDependenciesAction(ai, "update pvp strats")
+        {
+            std::vector<std::string> strategiesRequired = { "beast mastery" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "beast mastery pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "beast mastery pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "beast mastery pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "beast mastery pvp", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "aoe" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aoe beast mastery pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aoe beast mastery pvp", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "buff" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "buff beast mastery pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "buff beast mastery pvp", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "boost" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "boost beast mastery pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "boost beast mastery pvp", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "cc" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "cc beast mastery pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "cc beast mastery pvp", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "sting" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "sting beast mastery pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "sting beast mastery pvp", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "aspect" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aspect beast mastery pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aspect beast mastery pvp", strategiesRequired);
+
+            strategiesRequired = { "marksmanship" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "marksmanship pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "marksmanship pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "marksmanship pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "marksmanship pvp", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "aoe" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aoe marksmanship pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aoe marksmanship pvp", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "buff" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "buff marksmanship pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "buff marksmanship pvp", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "boost" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "boost marksmanship pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "boost marksmanship pvp", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "cc" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "cc marksmanship pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "cc marksmanship pvp", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "sting" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "sting marksmanship pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "sting marksmanship pvp", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "aspect" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aspect marksmanship pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aspect marksmanship pvp", strategiesRequired);
+
+            strategiesRequired = { "survival" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "survival pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "survival pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "survival pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "survival pvp", strategiesRequired);
+
+            strategiesRequired = { "survival", "aoe" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aoe survival pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aoe survival pvp", strategiesRequired);
+
+            strategiesRequired = { "survival", "buff" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "buff survival pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "buff survival pvp", strategiesRequired);
+
+            strategiesRequired = { "survival", "boost" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "boost survival pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "boost survival pvp", strategiesRequired);
+
+            strategiesRequired = { "survival", "cc" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "cc survival pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "cc survival pvp", strategiesRequired);
+
+            strategiesRequired = { "survival", "sting" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "sting survival pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "sting survival pvp", strategiesRequired);
+
+            strategiesRequired = { "survival", "aspect" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aspect survival pvp", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aspect survival pvp", strategiesRequired);
+        }
+    };
+
+    class UpdateHunterRaidStrategiesAction : public UpdateStrategyDependenciesAction
+    {
+    public:
+        UpdateHunterRaidStrategiesAction(PlayerbotAI* ai) : UpdateStrategyDependenciesAction(ai, "update raid strats")
+        {
+            std::vector<std::string> strategiesRequired = { "beast mastery" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "beast mastery raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "beast mastery raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "beast mastery raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "beast mastery raid", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "aoe" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aoe beast mastery raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aoe beast mastery raid", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "buff" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "buff beast mastery raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "buff beast mastery raid", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "boost" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "boost beast mastery raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "boost beast mastery raid", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "cc" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "cc beast mastery raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "cc beast mastery raid", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "sting" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "sting beast mastery raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "sting beast mastery raid", strategiesRequired);
+
+            strategiesRequired = { "beast mastery", "aspect" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aspect beast mastery raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aspect beast mastery raid", strategiesRequired);
+
+            strategiesRequired = { "marksmanship" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "marksmanship raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "marksmanship raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "marksmanship raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "marksmanship raid", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "aoe" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aoe marksmanship raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aoe marksmanship raid", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "buff" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "buff marksmanship raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "buff marksmanship raid", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "boost" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "boost marksmanship raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "boost marksmanship raid", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "cc" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "cc marksmanship raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "cc marksmanship raid", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "sting" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "sting marksmanship raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "sting marksmanship raid", strategiesRequired);
+
+            strategiesRequired = { "marksmanship", "aspect" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aspect marksmanship raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aspect marksmanship raid", strategiesRequired);
+
+            strategiesRequired = { "survival" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "survival raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "survival raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_DEAD, "survival raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_REACTION, "survival raid", strategiesRequired);
+
+            strategiesRequired = { "survival", "aoe" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aoe survival raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aoe survival raid", strategiesRequired);
+
+            strategiesRequired = { "survival", "buff" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "buff survival raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "buff survival raid", strategiesRequired);
+
+            strategiesRequired = { "survival", "boost" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "boost survival raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "boost survival raid", strategiesRequired);
+
+            strategiesRequired = { "survival", "cc" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "cc survival raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "cc survival raid", strategiesRequired);
+
+            strategiesRequired = { "survival", "sting" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "sting survival raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "sting survival raid", strategiesRequired);
+
+            strategiesRequired = { "survival", "aspect" };
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_COMBAT, "aspect survival raid", strategiesRequired);
+            strategiesToUpdate.emplace_back(BotState::BOT_STATE_NON_COMBAT, "aspect survival raid", strategiesRequired);
+        }
     };
 }

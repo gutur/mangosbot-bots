@@ -16,6 +16,7 @@ WorldPacketHandlerStrategy::WorldPacketHandlerStrategy(PlayerbotAI* ai) : PassTr
     supported.push_back("random bot update");
     supported.push_back("inventory change failure");
     supported.push_back("bg status");
+    supported.push_back("confirm quest");
 }
 
 void WorldPacketHandlerStrategy::InitNonCombatTriggers(std::list<TriggerNode*> &triggers)
@@ -28,7 +29,7 @@ void WorldPacketHandlerStrategy::InitNonCombatTriggers(std::list<TriggerNode*> &
 
     triggers.push_back(new TriggerNode(
         "group invite",
-        NextAction::array(0, new NextAction("accept invitation", relevance), new NextAction("reset raids", relevance), NULL)));
+        NextAction::array(0, new NextAction("accept invitation", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
         "uninvite",

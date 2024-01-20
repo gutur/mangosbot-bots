@@ -35,6 +35,10 @@ void WarlockStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
     ClassStrategy::InitCombatTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
+        "critical health",
+        NextAction::array(0, new NextAction("sacrifice", ACTION_EMERGENCY), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "life tap",
         NextAction::array(0, new NextAction("life tap", ACTION_HIGH + 3), NULL)));
 
@@ -62,6 +66,10 @@ void WarlockStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 void WarlockStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     ClassStrategy::InitNonCombatTriggers(triggers);
+
+    triggers.push_back(new TriggerNode(
+        "often",
+        NextAction::array(0, new NextAction("initialize pet", ACTION_NORMAL + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
         "no healthstone",
@@ -313,6 +321,14 @@ void WarlockCcStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
     CcStrategy::InitCombatTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
+        "spell lock on enemy healer",
+        NextAction::array(0, new NextAction("spell lock on enemy healer", ACTION_INTERRUPT + 7), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "spell lock",
+        NextAction::array(0, new NextAction("spell lock", ACTION_INTERRUPT + 6), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "death coil interrupt",
         NextAction::array(0, new NextAction("death coil", ACTION_INTERRUPT + 5), NULL)));
 
@@ -432,9 +448,12 @@ void WarlockPetRaidStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& trig
 
 void WarlockCursesStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 {
-    triggers.push_back(new TriggerNode(
-        "no curse on attacker",
-        NextAction::array(0, new NextAction("curse of agony on attacker", ACTION_HIGH + 1), NULL)));
+    if (ai->HasStrategy("aoe", BotState::BOT_STATE_COMBAT))
+    {
+        triggers.push_back(new TriggerNode(
+            "no curse on attacker",
+            NextAction::array(0, new NextAction("curse of agony on attacker", ACTION_HIGH + 1), NULL)));
+    }
 
     triggers.push_back(new TriggerNode(
         "no curse",
@@ -464,6 +483,10 @@ void WarlockStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
     ClassStrategy::InitCombatTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
+        "critical health",
+        NextAction::array(0, new NextAction("sacrifice", ACTION_EMERGENCY), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "life tap",
         NextAction::array(0, new NextAction("life tap", ACTION_HIGH + 3), NULL)));
 
@@ -750,6 +773,14 @@ void WarlockCcStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
     CcStrategy::InitCombatTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
+        "spell lock on enemy healer",
+        NextAction::array(0, new NextAction("spell lock on enemy healer", ACTION_INTERRUPT + 7), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "spell lock",
+        NextAction::array(0, new NextAction("spell lock", ACTION_INTERRUPT + 6), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "death coil interrupt",
         NextAction::array(0, new NextAction("death coil", ACTION_INTERRUPT + 5), NULL)));
 
@@ -869,9 +900,12 @@ void WarlockPetRaidStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& trig
 
 void WarlockCursesStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 {
-    triggers.push_back(new TriggerNode(
-        "no curse on attacker",
-        NextAction::array(0, new NextAction("curse of agony on attacker", ACTION_HIGH + 1), NULL)));
+    if (ai->HasStrategy("aoe", BotState::BOT_STATE_COMBAT))
+    {
+        triggers.push_back(new TriggerNode(
+            "no curse on attacker",
+            NextAction::array(0, new NextAction("curse of agony on attacker", ACTION_HIGH + 1), NULL)));
+    }
 
     triggers.push_back(new TriggerNode(
         "no curse",
@@ -901,6 +935,10 @@ void WarlockStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
     ClassStrategy::InitCombatTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
+        "critical health",
+        NextAction::array(0, new NextAction("sacrifice", ACTION_EMERGENCY), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "life tap",
         NextAction::array(0, new NextAction("life tap", ACTION_HIGH + 3), NULL)));
 
@@ -1187,6 +1225,14 @@ void WarlockCcStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
     CcStrategy::InitCombatTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
+        "spell lock on enemy healer",
+        NextAction::array(0, new NextAction("spell lock on enemy healer", ACTION_INTERRUPT + 7), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "spell lock",
+        NextAction::array(0, new NextAction("spell lock", ACTION_INTERRUPT + 6), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "death coil interrupt",
         NextAction::array(0, new NextAction("death coil", ACTION_INTERRUPT + 5), NULL)));
 
@@ -1306,9 +1352,12 @@ void WarlockPetRaidStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& trig
 
 void WarlockCursesStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 {
-    triggers.push_back(new TriggerNode(
-        "no curse on attacker",
-        NextAction::array(0, new NextAction("curse of agony on attacker", ACTION_HIGH + 1), NULL)));
+    if (ai->HasStrategy("aoe", BotState::BOT_STATE_COMBAT))
+    {
+        triggers.push_back(new TriggerNode(
+            "no curse on attacker",
+            NextAction::array(0, new NextAction("curse of agony on attacker", ACTION_HIGH + 1), NULL)));
+    }
 
     triggers.push_back(new TriggerNode(
         "no curse",
@@ -1332,7 +1381,6 @@ void WarlockCursesRaidStrategy::InitCombatTriggers(std::list<TriggerNode*>& trig
 
 #endif
 
-
 void WarlockManualPetStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
 {
     triggers.push_back(new TriggerNode(
@@ -1342,9 +1390,12 @@ void WarlockManualPetStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& tr
 
 void WarlockManualCurseStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
 {
-    triggers.push_back(new TriggerNode(
-        triggerName + " on attacker",
-        NextAction::array(0, new NextAction(actionName + "on attacker", ACTION_HIGH + 1), NULL)));
+    if (ai->HasStrategy("aoe", BotState::BOT_STATE_COMBAT))
+    {
+        triggers.push_back(new TriggerNode(
+            triggerName + " on attacker",
+            NextAction::array(0, new NextAction(actionName + " on attacker", ACTION_HIGH + 1), NULL)));
+    }
 
     triggers.push_back(new TriggerNode(
         triggerName,

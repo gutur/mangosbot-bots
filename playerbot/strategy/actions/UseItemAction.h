@@ -91,6 +91,50 @@ namespace ai
             return items.front()->GetProto()->ItemId;
         }
 
+        bool Execute(Event& event) override
+        {
+            // Check the chance of using a potion (only in pvp)
+            const bool shouldUsePotion = !ai->IsInPvp() || frand(0.0f, 1.0f) < sPlayerbotAIConfig.usePotionChance;
+            if (shouldUsePotion)
+            {
+                return UseItemIdAction::Execute(event);
+            }
+            else
+            {
+                // Force potion cooldown to prevent spamming this action
+                const ItemPrototype* proto = sObjectMgr.GetItemPrototype(GetItemId());
+                if (proto)
+                {
+                    for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+                    {
+                        _Spell const& spellData = proto->Spells[i];
+                        if (spellData.SpellId)
+                        {
+                            // wrong triggering type
+#ifdef MANGOSBOT_ZERO
+                            if (spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_USE && spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_NO_DELAY_USE)
+#else
+                            if (spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_USE)
+#endif
+                            {
+                                continue;
+                            }
+
+                            const SpellEntry* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellData.SpellId);
+                            if (spellInfo)
+                            {
+                                bot->RemoveSpellCooldown(*spellInfo, false);
+                                bot->AddCooldown(*spellInfo, proto, false);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
     private:
         SpellEffects effect;
     };
@@ -169,6 +213,60 @@ namespace ai
 
             return items.front()->GetProto()->ItemId;
         }
+
+        bool Execute(Event& event) override
+        {
+            // Check the chance of using a healthstone (only in pvp)
+            const bool shouldUsePotion = !ai->IsInPvp() || frand(0.0f, 1.0f) < sPlayerbotAIConfig.usePotionChance;
+            if (shouldUsePotion)
+            {
+                return UseItemIdAction::Execute(event);
+            }
+            else
+            {
+                // Force potion cooldown to prevent spamming this action
+                const ItemPrototype* proto = sObjectMgr.GetItemPrototype(GetItemId());
+                if (proto)
+                {
+                    for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+                    {
+                        _Spell const& spellData = proto->Spells[i];
+                        if (spellData.SpellId)
+                        {
+                            // wrong triggering type
+#ifdef MANGOSBOT_ZERO
+                            if (spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_USE && spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_NO_DELAY_USE)
+#else
+                            if (spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_USE)
+#endif
+                            {
+                                continue;
+                            }
+
+                            const SpellEntry* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellData.SpellId);
+                            if (spellInfo)
+                            {
+                                bot->RemoveSpellCooldown(*spellInfo, false);
+                                bot->AddCooldown(*spellInfo, proto, false);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+    };
+
+    class UseWhipperRootTuberAction : public UseItemIdAction
+    {
+    public:
+        UseWhipperRootTuberAction(PlayerbotAI* ai) : UseItemIdAction(ai, "whipper root tuber") {}
+
+        bool isUseful() override { return bot->GetLevel() >= 45 && UseItemIdAction::isUseful() && AI_VALUE2(bool, "combat", "self target"); }
+
+        uint32 GetItemId() override { return 11951; }
     };
 
     class UseRandomRecipeAction : public UseItemAction
@@ -402,7 +500,7 @@ namespace ai
             return bot->GetLevel() >= 52;
         }
 
-        virtual uint32 GetItemId() 
+        virtual uint32 GetItemId() override
         { 
             if (bot->GetSkillValue(202) >= 325)
                 return 23737;

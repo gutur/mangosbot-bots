@@ -150,7 +150,7 @@ bool BuyAction::Execute(Event& event)
 
     if (!vendored)
     {
-        ai->TellError("附近没有商人");
+        ai->TellError(requester, "附近没有商人");
         return false;
     }
 
@@ -213,7 +213,7 @@ bool BuyBackAction::Execute(Event& event)
 
     if (found.empty())
     {
-        ai->TellError("没有找到任何回购物品");
+        ai->TellError(requester, "没有找到任何回购物品");
         return false;
     }
 
@@ -236,7 +236,7 @@ bool BuyBackAction::Execute(Event& event)
 
     if (!hasVendor)
     {
-        ai->TellError("附近没有商人");
+        ai->TellError(requester, "附近没有商人");
         return false;
     }
 

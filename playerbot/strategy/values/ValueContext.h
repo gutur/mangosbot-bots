@@ -97,6 +97,7 @@
 #include "TalentSpecValue.h"
 #include "MountValues.h"
 #include "DeadValues.h"
+#include "../druid/DruidValues.h"
 
 namespace ai
 {
@@ -182,6 +183,8 @@ namespace ai
             creators["stack space for item"] = &ValueContext::stack_space_for_item;
             creators["should loot object"] = &ValueContext::should_loot_object;
             creators["always loot list"] = &ValueContext::always_loot_list;
+            creators["skip loot list"] = &ValueContext::skip_loot_list;
+            creators["skip go loot list"] = &ValueContext::skip_go_loot_list;
             creators["loot strategy"] = &ValueContext::loot_strategy;
             creators["active rolls"] = &ValueContext::active_rolls;
             creators["last movement"] = &ValueContext::last_movement;
@@ -223,9 +226,12 @@ namespace ai
             creators["tank threat"] = &ValueContext::tank_threat;
             creators["threat"] = &ValueContext::threat;
 
+            creators["incoming damage"] = &ValueContext::incoming_damage;
             creators["balance"] = &ValueContext::balance;
             creators["possible attack targets"] = &ValueContext::possible_attack_targets;
             creators["attackers"] = &ValueContext::attackers;
+            creators["attackers targeting me"] = &ValueContext::attackers_targeting_me;
+            creators["closest attacker targeting me"] = &ValueContext::closest_attacker_targeting_me;
             creators["add hazard"] = &ValueContext::add_hazard;
             creators["stored hazards"] = &ValueContext::stored_hazards;
             creators["hazards"] = &ValueContext::hazards;
@@ -265,6 +271,7 @@ namespace ai
             creators["attack target"] = &ValueContext::attack_target;
             creators["pull target"] = &ValueContext::pull_target;
             creators["follow target"] = &ValueContext::follow_target;
+            creators["manual follow target"] = &ValueContext::manual_follow_target;
             creators["group"] = &ValueContext::group;
             creators["range"] = &ValueContext::range;
             creators["inside target"] = &ValueContext::inside_target;
@@ -378,6 +385,9 @@ namespace ai
             creators["action possible"] = &ValueContext::action_possible;
             creators["action useful"] = &ValueContext::action_useful;
             creators["trigger active"] = &ValueContext::trigger_active;
+
+            creators["party tank without lifebloom"] = &ValueContext::party_tank_without_lifebloom;
+            creators["move style"] = &ValueContext::move_style;
         }
 
     private:
@@ -407,8 +417,11 @@ namespace ai
         static UntypedValue* mana_save_level(PlayerbotAI* ai) { return new ManaSaveLevelValue(ai); }
         static UntypedValue* invalid_target(PlayerbotAI* ai) { return new InvalidTargetValue(ai); }
         static UntypedValue* balance(PlayerbotAI* ai) { return new BalancePercentValue(ai); }
+        static UntypedValue* incoming_damage(PlayerbotAI* ai) { return new IncomingDamageValue(ai); }
         static UntypedValue* possible_attack_targets(PlayerbotAI* ai) { return new PossibleAttackTargetsValue(ai); }
         static UntypedValue* attackers(PlayerbotAI* ai) { return new AttackersValue(ai); }
+        static UntypedValue* attackers_targeting_me(PlayerbotAI* ai) { return new AttackersTargetingMeValue(ai); }
+        static UntypedValue* closest_attacker_targeting_me(PlayerbotAI* ai) { return new ClosestAttackerTargetingMeTargetValue(ai); }
         static UntypedValue* add_hazard(PlayerbotAI* ai) { return new AddHazardValue(ai); }
         static UntypedValue* stored_hazards(PlayerbotAI* ai) { return new StoredHazardsValue(ai); }
         static UntypedValue* hazards(PlayerbotAI* ai) { return new HazardsValue(ai); }
@@ -449,7 +462,9 @@ namespace ai
         static UntypedValue* has_available_loot(PlayerbotAI* ai) { return new HasAvailableLootValue(ai); }
         static UntypedValue* stack_space_for_item(PlayerbotAI* ai) { return new StackSpaceForItem(ai); }
         static UntypedValue* should_loot_object(PlayerbotAI* ai) { return new ShouldLootObject(ai); }
-        static UntypedValue* always_loot_list(PlayerbotAI* ai) { return new AlwaysLootListValue(ai); }
+        static UntypedValue* always_loot_list(PlayerbotAI* ai) { return new AlwaysLootListValue(ai, "always loot list"); }
+        static UntypedValue* skip_loot_list(PlayerbotAI* ai) { return new AlwaysLootListValue(ai, "skip loot list"); }
+        static UntypedValue* skip_go_loot_list(PlayerbotAI* ai) { return new AlwaysLootListValue(ai, "skip go loot list"); }
         static UntypedValue* loot_strategy(PlayerbotAI* ai) { return new LootStrategyValue(ai); }
         static UntypedValue* active_rolls(PlayerbotAI* ai) { return new ActiveRolls(ai); }
         
@@ -550,6 +565,7 @@ namespace ai
         static UntypedValue* attack_target(PlayerbotAI* ai) { return new AttackTargetValue(ai); }
         static UntypedValue* pull_target(PlayerbotAI* ai) { return new PullTargetValue(ai); }
         static UntypedValue* follow_target(PlayerbotAI* ai) { return new FollowTargetValue(ai); }
+        static UntypedValue* manual_follow_target(PlayerbotAI* ai) { return new ManualFollowTargetValue(ai); }
         static UntypedValue* death_count(PlayerbotAI* ai) { return new DeathCountValue(ai); }
 
         static UntypedValue* last_long_move(PlayerbotAI* ai) { return new LastLongMoveValue(ai); }
@@ -649,5 +665,8 @@ namespace ai
         static UntypedValue* action_possible(PlayerbotAI* ai) { return new ActionPossibleValue(ai); }
         static UntypedValue* action_useful(PlayerbotAI* ai) { return new ActionUsefulValue(ai); }
         static UntypedValue* trigger_active(PlayerbotAI* ai) { return new TriggerActiveValue(ai); }
+
+        static UntypedValue* party_tank_without_lifebloom(PlayerbotAI* ai) { return new PartyTankWithoutLifebloomValue(ai); }
+        static UntypedValue* move_style(PlayerbotAI* ai) { return new MoveStyleValue(ai); }
     };
 };

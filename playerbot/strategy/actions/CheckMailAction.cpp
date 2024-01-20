@@ -3,7 +3,6 @@
 #include "CheckMailAction.h"
 #include "Mail.h"
 
-#include "../../GuildTaskMgr.h"
 #include "../../PlayerbotAIConfig.h"
 using namespace ai;
 
@@ -13,10 +12,17 @@ bool CheckMailAction::Execute(Event& event)
     bot->GetSession()->HandleQueryNextMailTime(p);   
 
     list<uint32> ids;
+
+    PlayerMails mails;
+
+    //Fetch mails first and then loop over them to prevent needing to check mails sent to self.
     for (PlayerMails::iterator i = bot->GetMailBegin(); i != bot->GetMailEnd(); ++i)
     {
-        Mail* mail = *i;
+        mails.push_back(*i);
+    }
 
+    for (auto & mail : mails)
+    {
         if (!mail || mail->state == MAIL_STATE_DELETED)
             continue;
 
@@ -58,13 +64,6 @@ void CheckMailAction::ProcessMail(Mail* mail, Player* owner)
 {
     if (mail->items.empty())
     {
-#ifndef MANGOSBOT_TWO
-        if (mail->itemTextId)
-        {
-            sGuildTaskMgr.CheckTaskTransfer(sObjectMgr.GetItemText(mail->itemTextId), owner, bot);
-        }
-#endif
-		//TODO Doesn't compile it wotlk
         return;
     }
 
@@ -77,24 +76,18 @@ void CheckMailAction::ProcessMail(Mail* mail, Player* owner)
         if (!item)
             continue;
 
-        if (!sGuildTaskMgr.CheckItemTask(i->item_template, item->GetCount(), owner, bot, true))
-        {
-            ostringstream body;
-            body << "Hello, " << owner->GetName() << ",\n";
-            body << "\n";
-            body << "Here are the item(s) you've sent me by mistake";
-            body << "\n";
-            body << "Thanks,\n";
-            body << bot->GetName() << "\n";
+        ostringstream body;
+        body << "Hello, " << owner->GetName() << ",\n";
+        body << "\n";
+        body << "Here are the item(s) you've sent me by mistake";
+        body << "\n";
+        body << "Thanks,\n";
+        body << bot->GetName() << "\n";
 
-            MailDraft draft("Item(s) you've sent me", body.str());
-            draft.AddItem(item);
-            bot->RemoveMItem(i->item_guid);
-            draft.SendMailTo(MailReceiver(owner), MailSender(bot));
-            return;
-        }
-
+        MailDraft draft("Item(s) you've sent me", body.str());
+        draft.AddItem(item);
         bot->RemoveMItem(i->item_guid);
-        item->DestroyForPlayer(bot);
+        draft.SendMailTo(MailReceiver(owner), MailSender(bot));
+        return;
     }
 }

@@ -22,7 +22,7 @@ namespace ai
             creators["q"] = &ChatTriggerContext::q;
             creators["ll"] = &ChatTriggerContext::ll;
             creators["ss"] = &ChatTriggerContext::ss;
-            creators["loot all"] = &ChatTriggerContext::loot_all;
+            creators["loot"] = &ChatTriggerContext::loot_all;
             creators["add all loot"] = &ChatTriggerContext::loot_all;
             creators["release"] = &ChatTriggerContext::release;
             creators["teleport"] = &ChatTriggerContext::teleport;
@@ -74,7 +74,9 @@ namespace ai
             creators["guard"] = &ChatTriggerContext::guard;
             creators["free"] = &ChatTriggerContext::free;
             creators["wait for attack time"] = &ChatTriggerContext::wait_for_attack_time;
+            creators["pet"] = &ChatTriggerContext::pet;
             creators["focus heal"] = &ChatTriggerContext::focus_heal_target;
+            creators["follow target"] = &ChatTriggerContext::follow_target;
             creators["self res"] = &ChatTriggerContext::self_resurrect;
             creators["flee"] = &ChatTriggerContext::flee;
             creators["grind"] = &ChatTriggerContext::grind;
@@ -126,6 +128,8 @@ namespace ai
             creators["guild leave"] = &ChatTriggerContext::guild_leave;
             creators["guild leader"] = &ChatTriggerContext::guild_leader;
             creators["bg free"] = &ChatTriggerContext::bg_free;
+            creators["move style"] = &ChatTriggerContext::move_style;
+            creators["jump"] = &ChatTriggerContext::jump;
         }
 
     private:
@@ -168,7 +172,9 @@ namespace ai
         static Trigger* guard(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "guard"); }
         static Trigger* free(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "free"); }
         static Trigger* wait_for_attack_time(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "wait for attack time"); }
+        static Trigger* pet(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "pet"); }
         static Trigger* focus_heal_target(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "focus heal"); }
+        static Trigger* follow_target(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "follow target"); }
         static Trigger* self_resurrect(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "self res"); }
         static Trigger* follow(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "follow"); }
         static Trigger* gb(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "gb"); }
@@ -239,5 +245,7 @@ namespace ai
         static Trigger* guild_leave(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "guild leave"); }
         static Trigger* guild_leader(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "guild leader"); }
         static Trigger* bg_free(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "bg free"); }
+        static Trigger* move_style(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "move style"); }
+        static Trigger* jump(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "jump"); }
     };
 };

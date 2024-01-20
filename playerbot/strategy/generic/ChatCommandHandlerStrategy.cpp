@@ -99,6 +99,8 @@ ChatCommandHandlerStrategy::ChatCommandHandlerStrategy(PlayerbotAI* ai) : PassTr
     supported.push_back("keep");
     supported.push_back("bg free");
     supported.push_back("cast");
+    supported.push_back("move style");
+    supported.push_back("jump");
 }
 
 void ChatCommandHandlerStrategy::InitReactionTriggers(std::list<TriggerNode*> &triggers)
@@ -118,8 +120,18 @@ void ChatCommandHandlerStrategy::InitReactionTriggers(std::list<TriggerNode*> &t
     triggers.push_back(new TriggerNode(
         "add all loot",
         NextAction::array(0, 
-            new NextAction("add all loot", relevance), 
-            new NextAction("loot", relevance), NULL)));
+            new NextAction("add all loot", relevance + 3), 
+            new NextAction("loot", relevance + 2),
+            new NextAction("move to loot", relevance + 1),
+            new NextAction("open loot", relevance), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "loot",
+        NextAction::array(0,
+            new NextAction("add all loot", relevance + 3),
+            new NextAction("loot", relevance + 2),
+            new NextAction("move to loot", relevance + 1),
+            new NextAction("open loot", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
         "u",
@@ -210,8 +222,16 @@ void ChatCommandHandlerStrategy::InitReactionTriggers(std::list<TriggerNode*> &t
         NextAction::array(0, new NextAction("wait for attack time", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
+        "pet",
+        NextAction::array(0, new NextAction("pet", relevance), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "focus heal",
         NextAction::array(0, new NextAction("focus heal target", relevance), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "follow target",
+        NextAction::array(0, new NextAction("follow target", relevance), NULL)));
 
     triggers.push_back(new TriggerNode(
         "self res",

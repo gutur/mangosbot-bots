@@ -10,7 +10,7 @@ namespace ai
     class DrinkAction : public UseItemAction
     {
     public:
-        DrinkAction(PlayerbotAI* ai) : UseItemAction(ai, "drink") {}
+        DrinkAction(PlayerbotAI* ai) : UseItemAction(ai, "drink", true) {}
 
         virtual bool Execute(Event& event) override
         {
@@ -55,6 +55,8 @@ namespace ai
                 {
                     WorldPacket emptyPacket;
                     bot->GetSession()->HandleCancelMountAuraOpcode(emptyPacket);
+                    bot->UpdateSpeed(MOVE_RUN, true);
+                    bot->UpdateSpeed(MOVE_RUN, false);
                 }
 
                 ai->CastSpell(24355, bot);
@@ -92,7 +94,7 @@ namespace ai
     class EatAction : public UseItemAction
     {
     public:
-        EatAction(PlayerbotAI* ai) : UseItemAction(ai, "food") {}
+        EatAction(PlayerbotAI* ai) : UseItemAction(ai, "food", true) {}
 
         virtual bool Execute(Event& event) override
         {
@@ -134,6 +136,8 @@ namespace ai
                 {
                     WorldPacket emptyPacket;
                     bot->GetSession()->HandleCancelMountAuraOpcode(emptyPacket);
+                    bot->UpdateSpeed(MOVE_RUN, true);
+                    bot->UpdateSpeed(MOVE_RUN, false);
                 }
 
                 ai->CastSpell(24005, bot);

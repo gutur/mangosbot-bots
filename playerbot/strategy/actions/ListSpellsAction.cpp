@@ -67,16 +67,14 @@ list<pair<uint32, string> > ListSpellsAction::GetSpellList(string filter)
 
     if (vendorItems.empty())
     {
-        QueryResult* results = WorldDatabase.PQuery("SELECT item FROM npc_vendor where maxcount = 0");
-        if (results != NULL)
+        auto results = WorldDatabase.PQuery("SELECT item FROM npc_vendor where maxcount = 0");
+        if (results)
         {
             do
             {
                 Field* fields = results->Fetch();
                 vendorItems.insert(fields[0].GetUInt32());
             } while (results->NextRow());
-
-            delete results;
         }
     }
 
@@ -262,25 +260,25 @@ list<pair<uint32, string> > ListSpellsAction::GetSpellList(string filter)
 
 bool ListSpellsAction::Execute(Event& event)
 {
-    Player* master = GetMaster();
-    if (!master)
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
+    if (!requester)
         return false;
 
     string filter = event.getParam();
 
     list<pair<uint32, string> > spells = GetSpellList(filter);
 
-    ai->TellPlayer(GetMaster(), "=== 技能 ===");
+    ai->TellPlayer(requester, "=== 技能 ===");
     spells.sort(CompareSpells);
 
     int count = 0;
     for (list<pair<uint32, string> >::iterator i = spells.begin(); i != spells.end(); ++i)
     {
-        ai->TellPlayerNoFacing(GetMaster(), i->second);
+        ai->TellPlayerNoFacing(requester, i->second);
         if (++count >= 50)
         {
             ostringstream msg; msg << (spells.size() - 50) << " 更多...";
-            ai->TellPlayerNoFacing(GetMaster(), msg.str());
+            ai->TellPlayerNoFacing(requester, msg.str());
             break;
         }
     }

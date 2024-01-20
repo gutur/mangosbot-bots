@@ -8,6 +8,7 @@ using namespace ai;
 
 bool GuildAcceptAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     WorldPacket p(event.getPacket());
     p.rpos(0);
     Player* inviter = nullptr;
@@ -24,17 +25,17 @@ bool GuildAcceptAction::Execute(Event& event)
     uint32 guildId = inviter->GetGuildId();
     if (!guildId)
     {
-        ai->TellError("你不在公会里!");
+        ai->TellError(requester, "你不在公会里!");
         accept = false;
     }
     else if (bot->GetGuildId())
     {
-        ai->TellError("对不起,我已经加入了一个公会.");
+        ai->TellError(requester, "对不起,我已经加入了一个公会.");
         accept = false;
     }
     else if (!ai->GetSecurity()->CheckLevelFor(PlayerbotSecurityLevel::PLAYERBOT_SECURITY_INVITE, false, inviter, true))
     {
-        ai->TellError("对不起,我不想加入你的公会 :(");
+        ai->TellError(requester, "对不起,我不想加入你的公会 :(");
         accept = false;
     }
 
@@ -42,7 +43,7 @@ bool GuildAcceptAction::Execute(Event& event)
 
     if(guild && guild->GetMemberSize() > 1000)
     {
-        ai->TellError("该公会成员已经达到1000人以上.为了防止达到1064人的限制,我拒绝加入.");
+        ai->TellError(requester, "该公会成员已经达到1000人以上.为了防止达到1064人的限制,我拒绝加入.");
         accept = false;
     }
 

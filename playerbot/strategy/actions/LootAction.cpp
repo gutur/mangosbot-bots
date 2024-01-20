@@ -8,7 +8,6 @@
 #include "../../PlayerbotAIConfig.h"
 #include "../../../ahbot/AhBot.h"
 #include "../../RandomPlayerbotMgr.h"
-#include "../../GuildTaskMgr.h"
 #include "../../ServerFacade.h"
 #include "../values/LootStrategyValue.h"
 #include "../values/ItemUsageValue.h"
@@ -243,6 +242,7 @@ bool OpenLootAction::CanOpenLock(uint32 skillId, uint32 reqSkillValue)
 
 bool StoreLootAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     WorldPacket p(event.getPacket()); // (8+1+4+1+1+4+4+4+4+4+1)
     ObjectGuid guid;
     uint8 loot_type;
@@ -309,16 +309,6 @@ bool StoreLootAction::Execute(Event& event)
             uint32 price = itemcount * auctionbot.GetBuyPrice(proto) * sRandomPlayerbotMgr.GetBuyMultiplier(bot) + gold;
             if (price)
                 sRandomPlayerbotMgr.AddTradeDiscount(bot, master, price);
-
-            Group* group = bot->GetGroup();
-            if (group)
-            {
-                for (GroupReference *ref = group->GetFirstMember(); ref; ref = ref->next())
-                {
-                    if( ref->getSource() != bot)
-                        sGuildTaskMgr.CheckItemTask(itemid, itemcount, ref->getSource(), bot);
-                }
-            }
         }
 
         WorldPacket packet(CMSG_AUTOSTORE_LOOT_ITEM, 1);
@@ -328,9 +318,12 @@ bool StoreLootAction::Execute(Event& event)
         if (proto->Quality > ITEM_QUALITY_NORMAL && !urand(0, 50) && ai->HasStrategy("emote", BotState::BOT_STATE_NON_COMBAT)) ai->PlayEmote(TEXTEMOTE_CHEER);
         if (proto->Quality >= ITEM_QUALITY_RARE && !urand(0, 1) && ai->HasStrategy("emote", BotState::BOT_STATE_NON_COMBAT)) ai->PlayEmote(TEXTEMOTE_CHEER);
 
-        ostringstream out; out << "拾取 " << chat->formatItem(itemQualifier);
-
-        ai->TellPlayerNoFacing(GetMaster(), out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+        if (requester && (ai->HasStrategy("debug", BotState::BOT_STATE_NON_COMBAT) || (requester->GetMapId() != bot->GetMapId() || WorldPosition(requester).sqDistance2d(bot) > (sPlayerbotAIConfig.sightDistance * sPlayerbotAIConfig.sightDistance))))
+        {
+            map<string, string> args;
+            args["%item"] = chat->formatItem(itemQualifier);
+            ai->TellPlayerNoFacing(requester, BOT_TEXT2("loot_command", args), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+        }
 
         if (sPlayerbotAIConfig.guildFeedbackRate && frand(0, 100) <= sPlayerbotAIConfig.guildFeedbackRate && bot->GetGuildId() && !urand(0, 10) && proto->Quality >= ITEM_QUALITY_RARE && sRandomPlayerbotMgr.IsFreeBot(bot))
         {
@@ -376,6 +369,10 @@ bool StoreLootAction::IsLootAllowed(ItemQualifier& itemQualifier, PlayerbotAI *a
     set<uint32>& lootItems = AI_VALUE(set<uint32>&, "always loot list");
     if (lootItems.find(itemQualifier.GetId()) != lootItems.end())
         return true;
+
+    set<uint32>& skipItems = AI_VALUE(set<uint32>&, "skip loot list");
+    if (skipItems.find(itemQualifier.GetId()) != skipItems.end())
+        return false;
 
     uint32 max = proto->MaxCount;
     if (max > 0 && ai->GetBot()->HasItemCount(itemQualifier.GetId(), max, true))

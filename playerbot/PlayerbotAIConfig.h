@@ -27,6 +27,8 @@ enum class BotCheatMask : uint32
     maxMask = 1 << 11
 };
 
+#define MAX_GEAR_PROGRESSION_LEVEL 6
+
 class ConfigAccess
 {
 private:
@@ -58,6 +60,7 @@ public:
 
     bool enabled;
     bool allowGuildBots;
+    bool allowMultiAccountAltBots;
     uint32 globalCoolDown, reactDelay, maxWaitForMove, expireActionTime, dispelAuraDuration, passiveDelay, repeatDelay,
         errorDelay, rpgDelay, sitDelay, returnDelay, lootDelay;
     float sightDistance, spellDistance, reactDistance, grindDistance, lootDistance, shootDistance,
@@ -81,14 +84,19 @@ public:
     std::list<string> toggleAlwaysOnlineChars;
     uint32 randomBotTeleportDistance;
     bool randomBotTeleportNearPlayer;
+    uint32 randomBotTeleportNearPlayerMaxAmount;
+    float randomBotTeleportNearPlayerMaxAmountRadius;
     uint32 randomGearMaxLevel;
     uint32 randomGearMaxDiff;
+    bool randomGearUpgradeEnabled;
     std::list<uint32> randomGearBlacklist;
     std::list<uint32> randomGearWhitelist;
     bool randomGearProgression;
     float randomGearLoweringChance;
     float randomBotMaxLevelChance;
     float randomBotRpgChance;
+    float usePotionChance;
+    float attackEmoteChance;
     uint32 minRandomBots, maxRandomBots;
     uint32 randomBotUpdateInterval, randomBotCountChangeMinInterval, randomBotCountChangeMaxInterval;
     uint32 loginBoostPercentage;
@@ -109,8 +117,8 @@ public:
     bool logInGroupOnly, logValuesPerTick;
     bool fleeingEnabled;
     bool summonAtInnkeepersEnabled;
-    std::string combatStrategies, nonCombatStrategies;
-    std::string randomBotCombatStrategies, randomBotNonCombatStrategies;
+    std::string combatStrategies, nonCombatStrategies, reactStrategies, deadStrategies;
+    std::string randomBotCombatStrategies, randomBotNonCombatStrategies, randomBotReactStrategies, randomBotDeadStrategies;
     uint32 randomBotMinLevel, randomBotMaxLevel;
     float randomChangeMultiplier;
     uint32 specProbability[MAX_CLASSES][10];
@@ -118,6 +126,9 @@ public:
     uint32 classRaceProbabilityTotal;
     uint32 classRaceProbability[MAX_CLASSES][MAX_RACES];
     ClassSpecs classSpecs[MAX_CLASSES];
+    bool gearProgressionSystemEnabled;
+    uint32 gearProgressionSystemItemLevels[MAX_GEAR_PROGRESSION_LEVEL][2];
+    int32 gearProgressionSystemItems[MAX_GEAR_PROGRESSION_LEVEL][MAX_CLASSES][4][SLOT_EMPTY];
     std::string commandPrefix, commandSeparator;
     std::string randomBotAccountPrefix;
     uint32 randomBotAccountCount;
@@ -140,6 +151,7 @@ public:
     bool disableRandomLevels;
     bool instantRandomize;
     bool gearscorecheck;
+    int32 levelCheck;
 	bool randomBotPreQuests;
     float playerbotsXPrate;
     uint32 botActiveAlone;
@@ -162,13 +174,6 @@ public:
     bool nonGmFreeSummon;
 
     uint32 selfBotLevel;
-
-    bool guildTaskEnabled;
-    uint32 minGuildTaskChangeTime, maxGuildTaskChangeTime;
-    uint32 minGuildTaskAdvertisementTime, maxGuildTaskAdvertisementTime;
-    uint32 minGuildTaskRewardTime, maxGuildTaskRewardTime;
-    uint32 guildTaskAdvertCleanupTime;
-
     uint32 iterationsPerTick;
 
     std::string autoPickReward;
@@ -188,6 +193,18 @@ public:
     bool respawnModForPlayerBots, respawnModForInstances;
 
     bool randomBotLoginWithPlayer;
+
+    bool jumpInBg;
+    bool jumpWithPlayer;
+    bool jumpFollow;
+    bool jumpChase;
+    bool useKnockback;
+    float jumpNoCombatChance;
+    float jumpMeleeInCombatChance;
+    float jumpRandomChance;
+    float jumpInPlaceChance;
+    float jumpBackwardChance;
+    float jumpHeightLimit;
 
     std::mutex m_logMtx;
 

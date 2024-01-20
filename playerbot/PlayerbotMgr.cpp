@@ -276,7 +276,6 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
         for (Group::MemberSlotList::const_iterator i = slots.begin(); i != slots.end(); ++i)
         {
             ObjectGuid member = i->guid;
-            
             if (master)
             {
                 if (master->GetObjectGuid() == member)
@@ -285,14 +284,14 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
                     break;
                 }
             }
-            else
+
+            // Don't disband alt groups when master goes away 
+            // (will need to manually disband with leave command)
+            uint32 account = sObjectMgr.GetPlayerAccountIdByGUID(member);
+            if (!sPlayerbotAIConfig.IsInRandomAccountList(account))
             {
-                uint32 account = sObjectMgr.GetPlayerAccountIdByGUID(member);
-                if (!sPlayerbotAIConfig.IsInRandomAccountList(account))
-                {
-                    groupValid = true;
-                    break;
-                }
+                groupValid = true;
+                break;
             }
         }
 
@@ -401,13 +400,11 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
     if (sRandomPlayerbotMgr.IsRandomBot(bot))
     {
         uint32 lowguid = bot->GetObjectGuid().GetCounter();
-        QueryResult* result = CharacterDatabase.PQuery("SELECT 1 FROM character_social WHERE flags='%u' and friend='%d'", SOCIAL_FLAG_FRIEND, lowguid);
+        auto result = CharacterDatabase.PQuery("SELECT 1 FROM character_social WHERE flags='%u' and friend='%d'", SOCIAL_FLAG_FRIEND, lowguid);
         if (result)
             bot->GetPlayerbotAI()->SetPlayerFriend(true);
         else
             bot->GetPlayerbotAI()->SetPlayerFriend(false);
-
-        delete result;
 
         if (sPlayerbotAIConfig.instantRandomize && !sPlayerbotAIConfig.disableRandomLevels && !bot->GetTotalPlayedTime())
         {
@@ -419,7 +416,7 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
 string PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, ObjectGuid masterguid, bool admin, uint32 masterAccountId, uint32 masterGuildId)
 {
     if (!sPlayerbotAIConfig.enabled || guid.IsEmpty())
-        return "bot system is disabled";
+        return "Bot system is disabled";
 
     uint32 botAccount = sObjectMgr.GetPlayerAccountIdByGUID(guid);
     bool isRandomBot = sRandomPlayerbotMgr.IsRandomBot(guid);
@@ -430,7 +427,7 @@ string PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, ObjectGui
     {
         Player* master = sObjectMgr.GetPlayer(masterguid);
         if (master && (!sPlayerbotAIConfig.allowGuildBots || !masterGuildId || (masterGuildId && master->GetGuildIdFromDB(guid) != masterGuildId)))
-            return "not in your guild or account";
+            return "Not in your guild or account";
     }
 
     if (!isRandomAccount && this == &sRandomPlayerbotMgr)
@@ -441,24 +438,49 @@ string PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, ObjectGui
     if (cmd == "add" || cmd == "login")
     {
         if (sObjectMgr.GetPlayer(guid))
-            return "player already logged in";
+            return "Player already logged in";
 
-        if (isRandomAccount)
-            sRandomPlayerbotMgr.AddRandomBot(guid.GetCounter());
+        // Only allow bots that are on the same account or same guild (if enabled)
+        Player* master = sObjectMgr.GetPlayer(masterguid);
+        uint32 guildId = Player::GetGuildIdFromDB(guid);
+        if (master && (isMasterAccount || (sPlayerbotAIConfig.allowGuildBots && masterGuildId && guildId == masterGuildId) || admin))
+        {
+            if (isRandomAccount)
+                sRandomPlayerbotMgr.AddRandomBot(guid.GetCounter());
+            else if (isMasterAccount || sPlayerbotAIConfig.allowMultiAccountAltBots)
+                AddPlayerBot(guid.GetCounter(), masterAccountId);
+            else
+                return "Not in your account";
+        }
         else
-            AddPlayerBot(guid.GetCounter(), masterAccountId);
+        {
+            return "Not in your guild or account";
+        }
 
         return "ok";
     }
     else if (cmd == "remove" || cmd == "logout" || cmd == "rm")
     {
-        if (!sObjectMgr.GetPlayer(guid))
-            return "player is offline";
+        Player* player = sObjectMgr.GetPlayer(guid);
+        if (!player)
+            return "Player is offline";
 
-        if (!GetPlayerBot(guid.GetCounter()))
-            return "not your bot";
+        Player* master = sObjectMgr.GetPlayer(masterguid);
+        uint32 guildId = Player::GetGuildIdFromDB(guid);
+        if (master && (isMasterAccount || (sPlayerbotAIConfig.allowGuildBots && masterGuildId && guildId == masterGuildId) || admin))
+        {
+            if (isRandomAccount)
+                sRandomPlayerbotMgr.Remove(player);
+            else if (GetPlayerBot(guid.GetCounter()))
+                LogoutPlayerBot(guid.GetCounter());
+            else
+                return "Not your bot";
+        }
+        else
+        {
+            return "Not in your guild or account";
+        }
 
-        LogoutPlayerBot(guid.GetCounter());
         return "ok";
     }
 
@@ -564,6 +586,25 @@ string PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, ObjectGui
                 factory.Randomize(false, true);
                 return "ok";
             }
+            else if (cmd == "enchants")
+            {
+                PlayerbotFactory factory(bot, master->GetLevel(), ITEM_QUALITY_LEGENDARY);
+                factory.EnchantEquipment();
+                return "ok";
+            }
+            else if (cmd == "ammo")
+            {
+                PlayerbotFactory factory(bot, master->GetLevel(), ITEM_QUALITY_LEGENDARY);
+                factory.InitAmmo();
+                return "ok";
+            }
+            else if (cmd == "pet")
+            {
+                PlayerbotFactory factory(bot, master->GetLevel(), ITEM_QUALITY_LEGENDARY);
+                factory.InitPet();
+                factory.InitPetSpells();
+                return "ok";
+            }
         }
 
         if (cmd == "levelup" || cmd == "level")
@@ -637,7 +678,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
     string command = args;
 
     char *cmd = strtok ((char*)args, " ");
-    char *charname = strtok (NULL, " ");
+    const char *charname = strtok (NULL, " ");
     if (!cmd)
     {
         messages.push_back("usage: list/reload or add/init/remove PLAYERNAME");
@@ -748,11 +789,18 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
     }
 
     if (!strcmp(cmd, "self"))
-    {
+    {        
         if (master->GetPlayerbotAI())
         {
-            messages.push_back("Disable player ai");
             DisablePlayerBot(master->GetGUIDLow());
+           
+            if (sRandomPlayerbotMgr.GetValue(master->GetObjectGuid().GetCounter(), "selfbot"))
+            {
+                messages.push_back("Disable player ai (on login)");
+                sRandomPlayerbotMgr.SetValue(master->GetObjectGuid().GetCounter(), "selfbot", 0);
+            }
+            else
+                messages.push_back("Disable player ai");
         }
         else if (sPlayerbotAIConfig.selfBotLevel == 0)
             messages.push_back("Self-bot is disabled");
@@ -760,8 +808,15 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
             messages.push_back("You do not have permission to enable player ai");
         else
         {
-            messages.push_back("Enable player ai");
             OnBotLogin(master);
+
+            if (charname && !strcmp(charname, "login"))
+            {
+                messages.push_back("Enable player ai (on login)");
+                sRandomPlayerbotMgr.SetValue(master->GetObjectGuid().GetCounter(), "selfbot", 1);
+            }
+            else
+                messages.push_back("Enable player ai");
         }
        return messages;
      }
@@ -792,7 +847,8 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
 
         if (!hasBot)
         {
-            if (master->GetPlayerbotAI()) {
+            if (master->GetPlayerbotAI()) 
+            {
                 {
                     delete master->GetPlayerbotAI();
                 }
@@ -805,8 +861,15 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
 
     if (!charname)
     {
-        messages.push_back("usage: list or add/init/remove PLAYERNAME");
-        return messages;
+        if (master && master->GetTarget() && master->GetTarget()->IsPlayer() && !((Player*)master->GetTarget())->isRealPlayer())
+        {
+            charname = master->GetTarget()->GetName();
+        }
+        else
+        {
+            messages.push_back("usage: list or add/init/remove PLAYERNAME");
+            return messages;
+        }
     }
 
     std::string cmdStr = cmd;
@@ -858,7 +921,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
             continue;
         }
 
-        QueryResult* results = CharacterDatabase.PQuery(
+        auto results = CharacterDatabase.PQuery(
             "SELECT name FROM characters WHERE account = '%u'",
             accountId);
         if (results)
@@ -869,8 +932,6 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
                 string charName = fields[0].GetString();
                 bots.insert(charName);
             } while (results->NextRow());
-
-			delete results;
         }
 	}
 
@@ -908,12 +969,11 @@ uint32 PlayerbotHolder::GetAccountId(string name)
 {
     uint32 accountId = 0;
 
-    QueryResult* results = LoginDatabase.PQuery("SELECT id FROM account WHERE username = '%s'", name.c_str());
+    auto results = LoginDatabase.PQuery("SELECT id FROM account WHERE username = '%s'", name.c_str());
     if(results)
     {
         Field* fields = results->Fetch();
         accountId = fields[0].GetUInt32();
-		delete results;
     }
 
     return accountId;
@@ -953,7 +1013,7 @@ string PlayerbotHolder::ListBots(Player* master)
 
     if (master)
     {
-        QueryResult* results = CharacterDatabase.PQuery("SELECT class,name FROM characters where account = '%u'",
+        auto results = CharacterDatabase.PQuery("SELECT class,name FROM characters where account = '%u'",
                 master->GetSession()->GetAccountId());
         if (results != NULL)
         {
@@ -969,7 +1029,6 @@ string PlayerbotHolder::ListBots(Player* master)
                     classes[name] = classNames[cls];
                 }
             } while (results->NextRow());
-			delete results;
         }
     }
 
@@ -1163,14 +1222,14 @@ void PlayerbotMgr::OnPlayerLogin(Player* player)
     sPlayerbotTextMgr.AddLocalePriority(player->GetSession()->GetSessionDbLocaleIndex());
     sLog.outBasic("Player %s logged in, localeDbc %i, localeDb %i", player->GetName(), (uint32)(player->GetSession()->GetSessionDbcLocale()), player->GetSession()->GetSessionDbLocaleIndex());
 
-    if(sPlayerbotAIConfig.selfBotLevel > 2 || sPlayerbotAIConfig.IsFreeAltBot(player))
+    if(sPlayerbotAIConfig.selfBotLevel > 2 || sPlayerbotAIConfig.IsFreeAltBot(player) || sRandomPlayerbotMgr.GetValue(master->GetObjectGuid().GetCounter(), "selfbot"))
         HandlePlayerbotCommand("self", player);
 
     if (!sPlayerbotAIConfig.botAutologin)
         return;
 
     uint32 accountId = player->GetSession()->GetAccountId();
-    QueryResult* results = CharacterDatabase.PQuery(
+    auto results = CharacterDatabase.PQuery(
         "SELECT name FROM characters WHERE account = '%u'",
         accountId);
     if (results)
@@ -1183,8 +1242,6 @@ void PlayerbotMgr::OnPlayerLogin(Player* player)
             if (first) first = false; else out << ",";
             out << fields[0].GetString();
         } while (results->NextRow());
-
-        delete results;
 
         HandlePlayerbotCommand(out.str().c_str(), player);
     }

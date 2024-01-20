@@ -5,7 +5,6 @@
 #include "MountValues.h"
 
 #include "../../../ahbot/AhBot.h"
-#include "../../GuildTaskMgr.h"
 #include "../../RandomItemMgr.h"
 #include "../../ServerFacade.h"
 
@@ -37,9 +36,9 @@ ItemQualifier::ItemQualifier(string qualifier, bool linkQualifier)
     itemId = stoi(numbers[0]);
 
 #ifdef MANGOSBOT_ZERO
-    uint32 propertyPosition = linkQualifier ? 2 : 5;
+    uint32 propertyPosition = linkQualifier ? 2 : 6;
 #else
-    uint32 propertyPosition = linkQualifier ? 6 : 5;
+    uint32 propertyPosition = linkQualifier ? 6 : 6;
 #endif
 
     if (numbers.size() > 1 && !numbers[1].empty())
@@ -49,7 +48,7 @@ ItemQualifier::ItemQualifier(string qualifier, bool linkQualifier)
         randomPropertyId = stoi(numbers[propertyPosition]);
 
 #ifndef MANGOSBOT_ZERO
-    uint8 gemPosition = linkQualifier ? 2 : 1;
+    uint8 gemPosition = linkQualifier ? 2 : 2;
 
     if (numbers.size() > gemPosition + 3)
     {
@@ -57,9 +56,9 @@ ItemQualifier::ItemQualifier(string qualifier, bool linkQualifier)
             gem1 = stoi(numbers[gemPosition]);
         if (!numbers[gemPosition+1].empty())
             gem2 = stoi(numbers[gemPosition+1]);
-        if (!numbers[gemPosition + 1].empty())
+        if (!numbers[gemPosition + 2].empty())
             gem3 = stoi(numbers[gemPosition+2]);
-        if (!numbers[gemPosition + 1].empty())
+        if (!numbers[gemPosition + 3].empty())
             gem4 = stoi(numbers[gemPosition+3]);
     }
 #endif
@@ -187,10 +186,6 @@ ItemUsage ItemUsageValue::Calculate()
         else if (stacks < 2)
             return ItemUsage::ITEM_USAGE_KEEP;
     }
-
-    //GUIDTASK
-    if (bot->GetGuildId() && sGuildTaskMgr.IsGuildTaskItem(itemId, bot->GetGuildId()))
-        return ItemUsage::ITEM_USAGE_GUILD_TASK;
 
     //EQUIP
     if (MountValue::GetMountSpell(itemId) && bot->CanUseItem(proto) == EQUIP_ERR_OK && MountValue::GetSpeed(MountValue::GetMountSpell(itemId)))

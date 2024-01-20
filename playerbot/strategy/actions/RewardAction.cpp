@@ -13,16 +13,19 @@ bool RewardAction::Execute(Event& event)
 
     ItemIds itemIds = chat->parseItems(link);
     if (itemIds.empty())
+    {
         return false;
+    }
 
     uint32 itemId = *itemIds.begin();
-
     list<ObjectGuid> npcs = AI_VALUE(list<ObjectGuid>, "nearest npcs");
     for (list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
     {
         Unit* npc = ai->GetUnit(*i);
         if (npc && Reward(requester, itemId, npc))
+        {
             return true;
+        }
     }
 
     list<ObjectGuid> gos = AI_VALUE(list<ObjectGuid>, "nearest game objects");
@@ -30,13 +33,19 @@ bool RewardAction::Execute(Event& event)
     {
         GameObject* go = ai->GetGameObject(*i);
         if (go && Reward(requester, itemId, go))
+        {
             return true;
+        }
     }
 
     if (requester && Reward(requester, itemId, requester))
-       return true;    
+    {
+       return true;
+    }
 
-    ai->TellError("无法和任务发布者交谈.");
+    if(!ai->GetMaster() || sServerFacade.GetDistance2d(bot, ai->GetMaster()) < sPlayerbotAIConfig.reactDistance || ai->HasStrategy("debug", BotState::BOT_STATE_NON_COMBAT))
+        ai->TellPlayer(requester, BOT_TEXT("quest_error_talk"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+
     return false;
 }
 
@@ -53,7 +62,7 @@ bool RewardAction::Reward(Player* requester, uint32 itemId, Object* questGiver)
 
         // if quest is complete, turn it in
         if (status == QUEST_STATUS_COMPLETE &&
-            ! bot->GetQuestRewardStatus(questID) &&
+            !bot->GetQuestRewardStatus(questID) &&
             pQuest->GetRewChoiceItemsCount() > 1 &&
             bot->CanRewardQuest(pQuest, false))
         {
@@ -64,11 +73,9 @@ bool RewardAction::Reward(Player* requester, uint32 itemId, Object* questGiver)
                 {
                     bot->RewardQuest(pQuest, rewardIdx, questGiver, false);
 
-                    string questTitle  = pQuest->GetTitle();
-                    string itemName = pRewardItem->Name1;
-
-                    ostringstream out; out << chat->formatItem(pRewardItem) << " rewarded";
-                    ai->TellPlayer(requester, out);
+                    map<string, string> args;
+                    args["%item"] = chat->formatItem(pRewardItem);
+                    ai->TellPlayer(requester, BOT_TEXT2("quest_choose_reward", args));
 
                     return true;
                 }

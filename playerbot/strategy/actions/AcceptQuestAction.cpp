@@ -83,11 +83,11 @@ bool AcceptQuestAction::Execute(Event& event)
 
 bool AcceptQuestShareAction::Execute(Event& event)
 {
-    Player* master = GetMaster();
-    Player *bot = ai->GetBot();
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
+    Player* bot = ai->GetBot();
 
-    if (!ai->IsSafe(master))
-        master = bot;
+    if (!ai->IsSafe(requester))
+        requester = bot;
 
     WorldPacket& p = event.getPacket();
     p.rpos(0);
@@ -103,7 +103,7 @@ bool AcceptQuestShareAction::Execute(Event& event)
     {
         // can't take quest
         bot->SetDividerGuid( ObjectGuid() );
-        ai->TellError(BOT_TEXT("quest_cant_take"));
+        ai->TellError(requester, BOT_TEXT("quest_cant_take"));
 
         return false;
     }
@@ -111,13 +111,13 @@ bool AcceptQuestShareAction::Execute(Event& event)
     if( !bot->GetDividerGuid().IsEmpty() )
     {
         // send msg to quest giving player
-        master->SendPushToPartyResponse( bot, QUEST_PARTY_MSG_ACCEPT_QUEST );
+        requester->SendPushToPartyResponse( bot, QUEST_PARTY_MSG_ACCEPT_QUEST );
         bot->SetDividerGuid( ObjectGuid() );
     }
 
     if( bot->CanAddQuest( qInfo, false ) )
     {
-        bot->AddQuest( qInfo, master );
+        bot->AddQuest( qInfo, requester);
 
         sPlayerbotAIConfig.logEvent(ai, "AcceptQuestShareAction", qInfo->GetTitle(), to_string(qInfo->GetQuestId()));
 
@@ -140,7 +140,52 @@ bool AcceptQuestShareAction::Execute(Event& event)
             );
         }
 
-        ai->TellPlayer(master, BOT_TEXT("quest_accept"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+        ai->TellPlayer(requester, BOT_TEXT("quest_accept"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+        return true;
+    }
+
+    return false;
+}
+
+bool ConfirmQuestAction::Execute(Event& event)
+{
+    Player *bot = ai->GetBot();
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
+
+    WorldPacket& p = event.getPacket();
+    p.rpos(0);
+    uint32 quest;
+    p >> quest;
+    Quest const* qInfo = sObjectMgr.GetQuestTemplate(quest);
+
+    quest = qInfo->GetQuestId();
+    if( !bot->CanTakeQuest( qInfo, false ) )
+    {
+        // can't take quest
+        ai->TellError(requester, BOT_TEXT("quest_cant_take"));
+        return false;
+    }
+
+    if( bot->CanAddQuest( qInfo, false ) )
+    {
+        bot->AddQuest( qInfo, requester );
+
+        if( bot->CanCompleteQuest( quest ) )
+            bot->CompleteQuest( quest );
+
+        if( qInfo->GetSrcSpell() > 0 )
+        {
+            bot->CastSpell( bot, qInfo->GetSrcSpell(),
+#ifdef MANGOS
+                    true
+#endif
+#ifdef CMANGOS
+                    (uint32)0
+#endif
+            );
+        }
+
+        ai->TellPlayer(requester, BOT_TEXT("quest_accept"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         return true;
     }
 

@@ -15,6 +15,7 @@ using namespace ai;
 
 bool PetitionSignAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     WorldPacket p(event.getPacket());
     p.rpos(0);
     ObjectGuid petitionGuid;
@@ -25,7 +26,7 @@ bool PetitionSignAction::Execute(Event& event)
     uint32 type = 9;
 
 #ifndef MANGOSBOT_ZERO
-    QueryResult* result = CharacterDatabase.PQuery("SELECT `type` FROM `petition` WHERE `petitionguid` = '%u'", petitionGuid.GetCounter());
+    auto result = CharacterDatabase.PQuery("SELECT `type` FROM `petition` WHERE `petitionguid` = '%u'", petitionGuid.GetCounter());
     if (!result)
     {
         return false;
@@ -33,7 +34,6 @@ bool PetitionSignAction::Execute(Event& event)
 
     Field* fields = result->Fetch();
     type = fields[0].GetUInt32();
-    delete result;
 #endif
 
     bool accept = true;
@@ -46,7 +46,7 @@ bool PetitionSignAction::Execute(Event& event)
         if (bot->GetArenaTeamId(slot))
         {
             // player is already in an arena team
-            ai->TellError("抱歉,我已经在一个队伍中了.");
+            ai->TellError(requester, "抱歉,我已经在一个队伍中了");
             accept = false;
         }
 #endif
@@ -55,13 +55,13 @@ bool PetitionSignAction::Execute(Event& event)
     {
         if (bot->GetGuildId())
         {
-            ai->TellError("抱歉,我已经加入了一个公会.");
+            ai->TellError(requester, "抱歉,我已经加入了一个公会");
             accept = false;
         }
 
         if (bot->GetGuildIdInvited())
         {
-            ai->TellError("抱歉,我已经被邀请加入了一个公会.");
+            ai->TellError(requester, "抱歉,我已经被邀请加入了一个公会");
             accept = false;
         }
 

@@ -7,12 +7,13 @@ using namespace ai;
 
 bool ResetAiAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     ResetValues();
     ResetStrategies();
 
     if (fullReset)
     {
-        ai->TellError("AI已重置为默认设置");
+        ai->TellError(requester, "AI已重置为默认设置");
     }
 
     return true;
@@ -32,7 +33,7 @@ void ResetAiAction::ResetValues()
 {
     uint64 guid = ai->GetBot()->GetObjectGuid().GetRawValue();
 
-    QueryResult* results = PlayerbotDatabase.PQuery("SELECT `value` FROM `ai_playerbot_db_store` WHERE `guid` = '%lu' and `key` = 'value'", guid);
+    auto results = PlayerbotDatabase.PQuery("SELECT `value` FROM `ai_playerbot_db_store` WHERE `guid` = '%lu' and `key` = 'value'", guid);
     if (results)
     {
         list<string> values;
@@ -64,11 +65,12 @@ void ResetAiAction::ResetValues()
 
 bool ResetStratsAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     ResetStrategies();
    
     if (fullReset)
     {
-        ai->TellError("策略已重置为默认设置");
+        ai->TellError(requester, "策略已重置为默认设置");
     }
 
     return true;
@@ -76,11 +78,12 @@ bool ResetStratsAction::Execute(Event& event)
 
 bool ResetValuesAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     ResetValues();
 
     if (fullReset)
     {
-        ai->TellError("设置已重置为默认设置");
+        ai->TellError(requester, "设置已重置为默认设置");
     }
 
     return true;

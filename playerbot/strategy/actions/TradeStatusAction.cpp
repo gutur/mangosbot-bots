@@ -6,7 +6,6 @@
 #include "../../PlayerbotAIConfig.h"
 #include "../../../ahbot/AhBot.h"
 #include "../../RandomPlayerbotMgr.h"
-#include "../../GuildTaskMgr.h"
 #include "../../ServerFacade.h"
 #include "../values/CraftValues.h"
 #include "../values/ItemUsageValue.h"
@@ -21,12 +20,17 @@ bool TradeStatusAction::Execute(Event& event)
     if (!trader)
         return false;
 
-    if (trader != master && !trader->GetPlayerbotAI())
+    bool shouldTrade = true;
+    if (!trader->GetPlayerbotAI())
     {
-		bot->Whisper("我现在有点忙", LANG_UNIVERSAL, trader->GetObjectGuid());
+        shouldTrade = false;
+        if (trader == master || bot->IsInGroup(trader))
+        {
+            shouldTrade = ai->GetSecurity()->CheckLevelFor(PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false, trader);
+        }
     }
 
-    if ((trader != master || !ai->GetSecurity()->CheckLevelFor(PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, master)) && !trader->GetPlayerbotAI())
+    if (!shouldTrade)
     {
         WorldPacket p;
         uint32 status = 0;
@@ -80,8 +84,6 @@ bool TradeStatusAction::Execute(Event& event)
                 {
                     craftData.AddObtained(itemId, count);
                 }
-
-                sGuildTaskMgr.CheckItemTask(itemId, count, trader, bot);
             }
 
 
@@ -119,22 +121,23 @@ void TradeStatusAction::BeginTrade()
     WorldPacket p;
     bot->GetSession()->HandleBeginTradeOpcode(p);
 
-    if (bot->GetTrader()->GetPlayerbotAI())
+    Player* trader = bot->GetTrader();
+    if (trader->GetPlayerbotAI())
         return;
 
     ListItemsVisitor visitor;
     ai->InventoryIterateItems(&visitor, IterateItemsMask::ITERATE_ITEMS_IN_BAGS);
 
-    ai->TellPlayer(GetMaster(), "=== 背包 ===");
-    ai->InventoryTellItems(GetMaster(), visitor.items, visitor.soulbound);
+    ai->TellPlayer(trader, "=== 背包 ===");
+    ai->InventoryTellItems(trader, visitor.items, visitor.soulbound);
 
     if (sRandomPlayerbotMgr.IsRandomBot(bot))
     {
         uint32 discount = sRandomPlayerbotMgr.GetTradeDiscount(bot, ai->GetMaster());
         if (discount)
         {
-            ostringstream out; out << "可享受折扣: " << chat->formatMoney(discount);
-            ai->TellPlayer(GetMaster(), out);
+            ostringstream out; out << "可优惠: " << chat->formatMoney(discount);
+            ai->TellPlayer(trader, out);
         }
     }
 }
@@ -173,9 +176,13 @@ bool TradeStatusAction::CheckTrade()
         {
             string name = trader->GetName();
             if (bot->GetGroup() && bot->GetGroup()->IsMember(bot->GetTrader()->GetObjectGuid()) && ai->HasRealPlayerMaster())
-                ai->TellPlayerNoFacing(GetMaster(), "多谢你 " + name + ".", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            {
+                ai->TellPlayerNoFacing(trader, "多谢你 " + name + ".", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            }
             else
+            {
                 bot->Say("谢谢你 " + name + ".", (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+            }
         }
         return isGettingItem;
     }
@@ -187,7 +194,10 @@ bool TradeStatusAction::CheckTrade()
         int32 playerItemsMoney = CalculateCost(trader, false);
         int32 playerMoney = trader->GetTradeData()->GetMoney() + playerItemsMoney;
         if (playerMoney || botMoney)
+        {
             ai->PlaySound(playerMoney < botMoney ? TEXTEMOTE_SIGH : TEXTEMOTE_THANK);
+        }
+
         return true;
     }
 
@@ -202,8 +212,8 @@ bool TradeStatusAction::CheckTrade()
         if (item && !auctionbot.GetSellPrice(item->GetProto()))
         {
             ostringstream out;
-            out << chat->formatItem(item) << " - 这个物品不出售.";
-            ai->TellPlayer(GetMaster(), out);
+            out << chat->formatItem(item) << " - 这个物品不出售";
+            ai->TellPlayer(trader, out);
             ai->PlaySound(TEXTEMOTE_NO);
             return false;
         }
@@ -215,8 +225,8 @@ bool TradeStatusAction::CheckTrade()
             if ((botMoney && !auctionbot.GetBuyPrice(item->GetProto())) || usage == ItemUsage::ITEM_USAGE_NONE)
             {
                 ostringstream out;
-                out << chat->formatItem(item) << " - 我不需要这个.";
-                ai->TellPlayer(GetMaster(), out);
+                out << chat->formatItem(item) << " - 我不需要这个";
+                ai->TellPlayer(trader, out);
                 ai->PlaySound(TEXTEMOTE_NO);
                 return false;
             }
@@ -228,7 +238,7 @@ bool TradeStatusAction::CheckTrade()
 
     if (!botItemsMoney && !playerItemsMoney)
     {
-        ai->TellError("我不需要这个.");
+        ai->TellError(trader, "没有物品供交易");
         return false;
     }
 
@@ -242,7 +252,7 @@ bool TradeStatusAction::CheckTrade()
         {
             if (moneyDelta < 0)
             {
-                ai->TellError("你只能用折扣来购买物品.");
+                ai->TellPlayer(trader, "你只能用折扣价来购买物品");
                 ai->PlaySound(TEXTEMOTE_NO);
                 return false;
             }
@@ -259,16 +269,16 @@ bool TradeStatusAction::CheckTrade()
         sRandomPlayerbotMgr.AddTradeDiscount(bot, trader, delta);
         switch (urand(0, 4)) {
         case 0:
-            ai->TellPlayer(GetMaster(), "你只能用折扣来购买物品.");
+            ai->TellPlayer(trader, "很高兴和你交易");
             break;
         case 1:
-            ai->TellPlayer(GetMaster(), "公平交易.");
+            ai->TellPlayer(trader, "公平交易");
             break;
         case 2:
-            ai->TellPlayer(GetMaster(), "谢谢.");
+            ai->TellPlayer(trader, "谢谢");
             break;
         case 3:
-            ai->TellPlayer(GetMaster(), "你可以离开了.");
+            ai->TellPlayer(trader, "你可以离开了");
             break;
         }
         ai->PlaySound(TEXTEMOTE_THANK);
@@ -276,8 +286,8 @@ bool TradeStatusAction::CheckTrade()
     }
 
     ostringstream out;
-    out << "我要 " << chat->formatMoney(-(delta + discount)) << " 作为交易费用.";
-    ai->TellPlayer(GetMaster(), out);
+    out << "我还要 " << chat->formatMoney(-(delta + discount)) << " 作为交易费用";
+    ai->TellPlayer(trader, out);
     ai->PlaySound(TEXTEMOTE_NO);
     return false;
 }

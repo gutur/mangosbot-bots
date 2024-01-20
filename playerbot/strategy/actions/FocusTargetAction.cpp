@@ -56,7 +56,7 @@ bool FocusHealSetTargetAction::Execute(Event& event)
             std::list<ObjectGuid> focusHealTargets;
             if (removeTargets)
             {
-                ai->TellPlayerNoFacing(requester, "Removed focus heal target");
+                ai->TellPlayerNoFacing(requester, "移除焦点治疗目标");
             }
             else
             {
@@ -85,12 +85,12 @@ bool FocusHealSetTargetAction::Execute(Event& event)
                         if (!targetGuid.IsEmpty())
                         {
                             focusHealTargets.push_back(targetGuid);
-                            std::stringstream message; message << "Added " << targetName << " to focus heal targets";
+                            std::stringstream message; message << "添加 " << targetName << " 焦点治疗目标";
                             ai->TellPlayerNoFacing(requester, message.str());
                         }
                         else
                         {
-                            std::stringstream message; message << "I'm not in a group with " << targetName;
+                            std::stringstream message; message << "我跟他不在一个队里: " << targetName;
                             ai->TellPlayerNoFacing(requester, message.str());
                         }
                     }

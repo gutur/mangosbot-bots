@@ -68,24 +68,31 @@ namespace ai
 
     bool LfgAction::Execute(Event& event)
     {
+        Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
         if (bot->InBattleGround())
             return false;
 
         if (bot->InBattleGroundQueue())
             return false;
 
-        Player* master = event.getOwner();
-
-        if (!ai->IsSafe(master))
+        if (!ai->IsSafe(requester))
             return false;
 
-        if (master->GetLevel() == DEFAULT_MAX_LEVEL && bot->GetLevel() != DEFAULT_MAX_LEVEL)
+        if (requester->GetLevel() == DEFAULT_MAX_LEVEL && bot->GetLevel() != DEFAULT_MAX_LEVEL)
             return false;
 
-        if (master->GetLevel() > bot->GetLevel() + 4 || bot->GetLevel() > master->GetLevel() + 4)
+        if (requester->GetLevel() > bot->GetLevel() + 4 || bot->GetLevel() > requester->GetLevel() + 4)
             return false;
 
-        Group* group = master->GetGroup();
+        string param = event.getParam();
+
+        if (!param.empty() && param != "40" && param != "25" && param != "20" && param != "10" && param != "5")
+        {
+            ai->TellError(requester, BOT_TEXT2("Unknown group size. Valid sizes for lfg are 40, 25, 20, 10 and 5.", {}));
+            return false;
+        }
+
+        Group* group = requester->GetGroup();
 
         unordered_map<Classes, unordered_map<BotRoles,uint32>> allowedClassNr;
         unordered_map<BotRoles, uint32> allowedRoles;
@@ -94,17 +101,23 @@ namespace ai
         allowedRoles[BOT_ROLE_HEALER] = 1;
         allowedRoles[BOT_ROLE_DPS] = 3;
 
-        BotRoles role = ai->IsTank(master, false) ? BOT_ROLE_TANK : (ai->IsHeal(master, false) ? BOT_ROLE_HEALER : BOT_ROLE_DPS);
-        Classes cls = (Classes)master->getClass();
-        
+        BotRoles role = ai->IsTank(requester, false) ? BOT_ROLE_TANK : (ai->IsHeal(requester, false) ? BOT_ROLE_HEALER : BOT_ROLE_DPS);
+        Classes cls = (Classes)requester->getClass();
+
         if (group)
         {
-            if (group->IsFull())
-                return false;
-
-            if (group->IsRaidGroup())
-            {
+            //If no input use max raid for raid groups.
+            if (param.empty() && group->IsRaidGroup())
 #ifdef MANGOSBOT_ZERO
+                param = "40";
+#else
+            /// Default to TBC Raiding. Max size 25
+                param = "25";
+#endif
+
+            //Select optimal group layout.
+            if (param == "40")
+            {
                 allowedRoles[BOT_ROLE_TANK] = 4;
                 allowedRoles[BOT_ROLE_HEALER] = 16;
                 allowedRoles[BOT_ROLE_DPS] = 20;
@@ -126,11 +139,32 @@ namespace ai
                 allowedClassNr[CLASS_MAGE][BOT_ROLE_DPS] = 15;
                 allowedClassNr[CLASS_WARLOCK][BOT_ROLE_DPS] = 4;
                 allowedClassNr[CLASS_DRUID][BOT_ROLE_DPS] = 1;
-#else
+            }
+            else if (param == "25")
+            {
                 allowedRoles[BOT_ROLE_TANK] = 3;
                 allowedRoles[BOT_ROLE_HEALER] = 7;
                 allowedRoles[BOT_ROLE_DPS] = 15;
-#endif
+            }
+            else if (param == "20")
+            {
+                allowedRoles[BOT_ROLE_TANK] = 2;
+                allowedRoles[BOT_ROLE_HEALER] = 5;
+                allowedRoles[BOT_ROLE_DPS] = 13;
+            }
+            else if (param == "10")
+            {
+                allowedRoles[BOT_ROLE_TANK] = 2;
+                allowedRoles[BOT_ROLE_HEALER] = 3;
+                allowedRoles[BOT_ROLE_DPS] = 5;
+            }
+
+            if (group->IsFull())
+            {
+                if (param.empty() || param == "5"  || group->IsRaidGroup())
+                    return false; //Group or raid is full so stop trying.
+                else
+                    group->ConvertToRaid(); //We want a raid but are in a group so convert and continue.
             }
 
             Group::MemberSlotList const& groupSlot = group->GetMemberSlots();
@@ -179,7 +213,7 @@ namespace ai
                 return false;
         }
 
-        bool invite = Invite(master, bot);
+        bool invite = Invite(requester, bot);
 
         if (invite)
         {
@@ -191,9 +225,9 @@ namespace ai
             placeholders["%spotsleft"] = to_string(allowedRoles[role] - 1);
 
             if(allowedRoles[role] > 1)
-                ai->TellPlayer(GetMaster(), BOT_TEXT2("以 %role 参加, %spotsleft 个 %role 名额.", placeholders));
+                ai->TellPlayer(requester, BOT_TEXT2("以 %role 参加, 还剩%spotsleft 个 %role 名额.", placeholders));
             else
-                ai->TellPlayer(GetMaster(), BOT_TEXT2("作为%role加入.", placeholders));
+                ai->TellPlayer(requester, BOT_TEXT2("以 %role 参加.", placeholders));
 
             return true;
         }
@@ -263,12 +297,12 @@ namespace ai
             if (sPlayerbotAIConfig.inviteChat && sRandomPlayerbotMgr.IsFreeBot(bot))
             {
                 map<string, string> placeholders;
-                placeholders["%name"] = player->GetName();
+                placeholders["%player"] = player->GetName();
 
                 if(group && group->IsRaidGroup())
-                    bot->Say(BOT_TEXT2("嘿 %name 你想加入我的团队吗?", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));                    
+                    bot->Say(BOT_TEXT2("join_raid", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));                    
                 else
-                    bot->Say(BOT_TEXT2("嘿 %name 你想加入我的小队吗?", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+                    bot->Say(BOT_TEXT2("join_group", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
             }
 
             return Invite(bot, player);

@@ -18,7 +18,8 @@ namespace ai
         virtual string Format() { return "?"; }
         virtual string Save() { return "?"; }
         virtual bool Load(string value) { return false; }
-        virtual bool Expired(uint32 interval = 0) { return false; }
+        virtual bool Expired() { return false; }
+        virtual bool Expired(uint32 interval) { return false; }
         virtual bool Protected() { return false; }
 
 #ifdef GenerateBotHelp
@@ -330,5 +331,14 @@ namespace ai
             Unit* unit = Get();
             return unit ? unit->GetName() : "<none>";
         }
+    };
+
+    class GuidPositionManualSetValue : public ManualSetValue<GuidPosition>
+    {
+    public:
+        GuidPositionManualSetValue(PlayerbotAI* ai, GuidPosition defaultValue, string name = "value") :
+            ManualSetValue<GuidPosition>(ai, defaultValue, name) {}
+
+        virtual string Format() override;
     };
 }

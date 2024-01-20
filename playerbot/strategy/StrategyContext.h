@@ -92,6 +92,9 @@ namespace ai
             creators["rpg bg"] = &StrategyContext::rpg_bg;
             creators["rpg player"] = &StrategyContext::rpg_player;
             creators["rpg craft"] = &StrategyContext::rpg_craft;
+            creators["rpg jump"] = &StrategyContext::rpg_jump;
+            creators["follow jump"] = &StrategyContext::follow_jump;
+            creators["chase jump"] = &StrategyContext::chase_jump;
 			creators["travel"] = &StrategyContext::travel;
             creators["travel once"] = &StrategyContext::travel_once;
             creators["explore"] = &StrategyContext::explore;
@@ -123,6 +126,7 @@ namespace ai
             creators["debug mount"] = &StrategyContext::debug_mount;
             creators["debug grind"] = &StrategyContext::debug_grind;
             creators["rtsc"] = &StrategyContext::rtsc;
+            creators["rtsc jump"] = &StrategyContext::rtsc_jump;
             creators["maintenance"] = &StrategyContext::maintenance;
             creators["group"] = &StrategyContext::group;
             creators["guild"] = &StrategyContext::guild;
@@ -131,6 +135,8 @@ namespace ai
             creators["wait for attack"] = &StrategyContext::wait_for_attack;
             creators["pull back"] = &StrategyContext::pull_back;
             creators["focus heal target"] = &StrategyContext::focus_heal_target;
+            creators["heal interrupt"] = &StrategyContext::heal_interrupt;
+            creators["preheal"] = &StrategyContext::preheal;
             creators["wbuff"] = &StrategyContext::world_buff;
 
             // Dungeon Strategies
@@ -198,6 +204,9 @@ namespace ai
         static Strategy* rpg_bg(PlayerbotAI* ai) { return new RpgBgStrategy(ai); }
         static Strategy* rpg_player(PlayerbotAI* ai) { return new RpgPlayerStrategy(ai); }
         static Strategy* rpg_craft(PlayerbotAI* ai) { return new RpgCraftStrategy(ai); }
+        static Strategy* rpg_jump(PlayerbotAI* ai) { return new RpgJumpStrategy(ai); }
+        static Strategy* follow_jump(PlayerbotAI* ai) { return new FollowJumpStrategy(ai); }
+        static Strategy* chase_jump(PlayerbotAI* ai) { return new ChaseJumpStrategy(ai); }
 		static Strategy* travel(PlayerbotAI* ai) { return new TravelStrategy(ai); }
         static Strategy* travel_once(PlayerbotAI* ai) { return new TravelOnceStrategy(ai); }
         static Strategy* explore(PlayerbotAI* ai) { return new ExploreStrategy(ai); }
@@ -216,6 +225,7 @@ namespace ai
         static Strategy* debug_mount(PlayerbotAI* ai) { return new DebugMountStrategy(ai); }
         static Strategy* debug_grind(PlayerbotAI* ai) { return new DebugGrindStrategy(ai); }
         static Strategy* rtsc(PlayerbotAI* ai) { return new RTSCStrategy(ai); }
+        static Strategy* rtsc_jump(PlayerbotAI* ai) { return new RTSCSJumptrategy(ai); }
         static Strategy* maintenance(PlayerbotAI* ai) { return new MaintenanceStrategy(ai); }
         static Strategy* group(PlayerbotAI* ai) { return new GroupStrategy(ai); }
         static Strategy* guild (PlayerbotAI* ai) { return new GuildStrategy(ai); }
@@ -224,6 +234,8 @@ namespace ai
         static Strategy* wait_for_attack(PlayerbotAI* ai) { return new WaitForAttackStrategy(ai); }
         static Strategy* pull_back(PlayerbotAI* ai) { return new PullBackStrategy(ai); }
         static Strategy* focus_heal_target(PlayerbotAI* ai) { return new FocusHealTargetStrategy(ai); }
+        static Strategy* heal_interrupt(PlayerbotAI* ai) { return new HealInterruptStrategy(ai); }
+        static Strategy* preheal(PlayerbotAI* ai) { return new PreHealStrategy(ai); }
         static Strategy* world_buff(PlayerbotAI* ai) { return new WorldBuffStrategy(ai); }
 
         // Dungeon Strategies

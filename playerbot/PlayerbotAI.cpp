@@ -23,8 +23,8 @@
 #include "Group.h"
 #include "Pet.h"
 #include "SpellAuras.h"
+#include "SpellMgr.h"
 #include "../ahbot/AhBot.h"
-#include "GuildTaskMgr.h"
 #include "PlayerbotDbStore.h"
 #include "strategy/values/PositionValue.h"
 #include "ServerFacade.h"
@@ -105,7 +105,7 @@ void PacketHandlingHelper::AddPacket(const WorldPacket& packet)
 
 
 PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL),
-    currentEngine(NULL), chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL), currentState(BotState::BOT_STATE_NON_COMBAT), faceTargetUpdateDelay(0)
+    currentEngine(NULL), chatHelper(this), chatFilter(this), accountId(0), security(NULL), master(NULL), currentState(BotState::BOT_STATE_NON_COMBAT), faceTargetUpdateDelay(0), jumpTime(0), fallAfterJump(false)
 {
     for (uint8 i = 0 ; i < (uint8)BotState::BOT_STATE_ALL; i++)
         engines[i] = NULL;
@@ -118,7 +118,7 @@ PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL)
 }
 
 PlayerbotAI::PlayerbotAI(Player* bot) :
-    PlayerbotAIBase(), chatHelper(this), chatFilter(this), security(bot), master(NULL), faceTargetUpdateDelay(0)
+    PlayerbotAIBase(), chatHelper(this), chatFilter(this), security(bot), master(NULL), faceTargetUpdateDelay(0), jumpTime(0), fallAfterJump(false)
 {
 	this->bot = bot;    
     if (!bot->isTaxiCheater() && HasCheat(BotCheatMask::taxi))
@@ -161,6 +161,7 @@ PlayerbotAI::PlayerbotAI(Player* bot) :
     masterIncomingPacketHandlers.AddHandler(CMSG_QUESTGIVER_HELLO, "gossip hello");
     masterIncomingPacketHandlers.AddHandler(CMSG_QUESTGIVER_COMPLETE_QUEST, "complete quest");
     masterIncomingPacketHandlers.AddHandler(CMSG_QUESTGIVER_ACCEPT_QUEST, "accept quest");
+    masterIncomingPacketHandlers.AddHandler(CMSG_QUEST_CONFIRM_ACCEPT, "confirm quest");
     masterIncomingPacketHandlers.AddHandler(CMSG_ACTIVATETAXI, "activate taxi");
     masterIncomingPacketHandlers.AddHandler(CMSG_ACTIVATETAXIEXPRESS, "activate taxi");
     masterIncomingPacketHandlers.AddHandler(CMSG_TAXICLEARALLNODES, "taxi done");
@@ -199,6 +200,7 @@ PlayerbotAI::PlayerbotAI(Player* bot) :
     botOutgoingPacketHandlers.AddHandler(SMSG_LOOT_START_ROLL, "loot start roll", true);
     botOutgoingPacketHandlers.AddHandler(SMSG_SUMMON_REQUEST, "summon request");
     botOutgoingPacketHandlers.AddHandler(MSG_RAID_READY_CHECK, "ready check");
+    botOutgoingPacketHandlers.AddHandler(SMSG_QUEST_CONFIRM_ACCEPT, "confirm quest");
 
     
 #ifndef MANGOSBOT_ZERO
@@ -311,12 +313,88 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
 
     // force stop if moving but should not
 #ifndef MANGOSBOT_TWO
-    if (!bot->IsStopped() && !CanMove() && !bot->m_movementInfo.HasMovementFlag(MOVEFLAG_JUMPING) && !bot->IsTaxiFlying() && !bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING) && !bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED))
+    if (!bot->IsStopped() && !IsJumping() && !CanMove() && !bot->IsTaxiFlying() && !bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING) && !bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED))
 #else
-    if (!bot->IsStopped() && !CanMove() && !bot->m_movementInfo.HasMovementFlag(MOVEFLAG_FALLING) && !bot->IsTaxiFlying() && !bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING) && !bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED))
+    if (!bot->IsStopped() && !IsJumping() && !CanMove() && !bot->m_movementInfo.HasMovementFlag(MOVEFLAG_FALLING) && !bot->IsTaxiFlying() && !bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING) && !bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED))
 #endif
     {
         StopMoving();
+    }
+
+    // land after knockback/jump
+    uint32 curTime = sWorld.GetCurrentMSTime();
+    if (jumpTime && (jumpTime < curTime || (jumpTime + 10000 < curTime)))
+    {
+        // remove moveflags
+        bot->m_movementInfo.SetMovementFlags(MOVEFLAG_NONE);
+        bot->m_movementInfo.jump = MovementInfo::JumpInfo();
+        if (!fallAfterJump)
+            bot->InterruptMoving(true);
+
+        // might be not needed
+        if (GetJumpDestination())
+        {
+            bot->Relocate(jumpDestination.getX(), jumpDestination.getY(), jumpDestination.getZ());
+        }
+
+        // normal landing
+        if (!fallAfterJump)
+        {
+            WorldPacket land(MSG_MOVE_FALL_LAND);
+#ifdef MANGOSBOT_TWO
+            land << bot->GetObjectGuid().WriteAsPacked();
+#endif
+            land << bot->m_movementInfo;
+            bot->GetSession()->HandleMovementOpcodes(land);
+            sLog.outDetail("%s: Jump: Landed, landTime: %u", bot->GetName(), curTime);
+
+            jumpTime = 0;
+            fallAfterJump = false;
+            ResetJumpDestination();
+        }
+        // falling after hitting something
+        else
+        {
+            //bot->SetFallInformation(0, bot->m_movementInfo.pos.z);
+#ifdef MANGOSBOT_ZERO
+            bot->m_movementInfo.AddMovementFlag(MOVEFLAG_JUMPING);
+#else
+            bot->m_movementInfo.AddMovementFlag(MOVEFLAG_FALLING);
+#endif
+            // use motion master (disabled for now, makes bot move to ceiling it just hit)
+            if (false && bot->GetMotionMaster()->MoveFall())
+            {
+                jumpTime = 0;
+                fallAfterJump = false;
+                ResetJumpDestination();
+                sLog.outDetail("%s: Jump: MoveFall activated", bot->GetName());
+            }
+            // simulate falling
+            else
+            {
+                float landingHeight = bot->m_movementInfo.pos.z;
+                bot->UpdateAllowedPositionZ(bot->m_movementInfo.pos.x, bot->m_movementInfo.pos.y, landingHeight);
+
+                // calculate fall time
+                float gravity = 19.2911f;
+                float terminalVelocity = 60.148f;
+                float time;
+
+                const float terminal_length = float(terminalVelocity* terminalVelocity) / (2.f* gravity);
+                const float terminalFallTime = float(terminalVelocity / gravity);
+
+                float path_length = fabs(bot->m_movementInfo.pos.z - landingHeight);
+                if (path_length >= terminal_length)
+                    time = (path_length - terminal_length) / terminalVelocity + terminalFallTime;
+                else
+                    time = sqrtf(2.f * path_length / gravity);
+
+                SetJumpTime(curTime + uint32(time * IN_MILLISECONDS) + 1000);
+                fallAfterJump = false;
+                jumpDestination = WorldPosition(bot->GetMapId(), bot->m_movementInfo.pos.x, bot->m_movementInfo.pos.y, landingHeight);
+                sLog.outDetail("%s: Jump: Falling simulated, height: %f, timeToLand %u", bot->GetName(), landingHeight, jumpTime);
+            }
+        }
     }
 
     // cheat options
@@ -366,7 +444,14 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
             }
             else
             {
+#ifndef MANGOSBOT_ZERO
+                if (!bot->HasAura(46699)) // Thori'dal
+                {
+                    PlayerbotFactory(bot, bot->GetLevel(), 0).InitAmmo();
+                }
+#else
                 PlayerbotFactory(bot, bot->GetLevel(), 0).InitAmmo();
+#endif
             }
         }
     }
@@ -384,7 +469,7 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
             MANGOS_ASSERT(botPos.fDist(bot) < 500.0f);
         }
     }
-    else if (!bot->IsBeingTeleported() && bot->GetTransport() && bot->GetMapId() == bot->GetTransport()->GetMapId() && !WorldPosition(bot).isOnTransport(bot->GetTransport()) && !isMovingToTransport)
+    else if (!HasRealPlayerMaster() && !bot->IsBeingTeleported() && bot->GetTransport() && bot->GetMapId() == bot->GetTransport()->GetMapId() && !WorldPosition(bot).isOnTransport(bot->GetTransport()) && !isMovingToTransport)
     {
         if (HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
         {
@@ -555,6 +640,76 @@ bool PlayerbotAI::IsImmuneToSpell(uint32 spellId) const
     }
 
     return false;
+}
+
+bool PlayerbotAI::IsInPve()
+{
+    return !IsInPvp() && !IsInRaid();
+}
+
+bool PlayerbotAI::IsInPvp()
+{
+    if (IsSafe(bot))
+    {
+        const bool inDuel = bot->duel && bot->duel->opponent;
+        if (!inDuel)
+        {
+            const bool inBattleground = bot->InBattleGround();
+            bool inArena = false;
+#ifndef MANGOSBOT_ZERO
+            inArena = bot->InArena();
+#endif
+            if (!inBattleground && !inArena)
+            {
+                AiObjectContext* context = aiObjectContext;
+                const bool isPlayerNear = AI_VALUE(bool, "has enemy player targets");
+                if (!isPlayerNear)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+bool PlayerbotAI::IsInRaid()
+{
+    bool inRaidFight = false;
+    if (IsSafe(bot))
+    {
+        const Map* map = bot->GetMap();
+        if (map && (map->IsDungeon() || map->IsRaid()))
+        {
+            inRaidFight = true;
+        }
+        else if (!IsInPvp() && GetState() == BotState::BOT_STATE_COMBAT)
+        {
+            AiObjectContext* context = GetAiObjectContext();
+            const std::list<ObjectGuid>& attackers = AI_VALUE(std::list<ObjectGuid>, "attackers");
+            for (const ObjectGuid& attackerGuid : attackers)
+            {
+                Creature* creature = GetCreature(attackerGuid);
+                if (creature)
+                {
+                    const CreatureInfo* creatureInfo = creature->GetCreatureInfo();
+                    if (creatureInfo)
+                    {
+                        if (creatureInfo->Rank == CREATURE_ELITE_WORLDBOSS)
+                        {
+                            inRaidFight = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return inRaidFight;
 }
 
 PlayerTalentSpec PlayerbotAI::GetTalentSpec()
@@ -914,6 +1069,10 @@ void PlayerbotAI::Reset(bool full)
         InterruptSpell();
 
         StopMoving();
+
+        jumpTime = 0;
+        fallAfterJump = false;
+        ResetJumpDestination();
 
         WorldSession* botWorldSessionPtr = bot->GetSession();
         bool logout = botWorldSessionPtr->ShouldLogOut(time(nullptr));
@@ -1348,6 +1507,9 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
     }
     case SMSG_MOVE_KNOCK_BACK: // handle knockbacks
     {
+        if (!sPlayerbotAIConfig.useKnockback || !HasPlayerNearby())
+            return;
+
         WorldPacket p(packet);
         p.rpos(0);
 
@@ -1358,68 +1520,80 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
         p >> guid.ReadAsPacked() >> counter >> vcos >> vsin >> horizontalSpeed >> verticalSpeed;
         verticalSpeed = -verticalSpeed;
 
-        // calculate rough knockback time
-        float moveTimeHalf = verticalSpeed / 19.29f;
-
-        float dis = 2 * moveTimeHalf * horizontalSpeed;
-        float max_height = -Movement::computeFallElevation(moveTimeHalf, false, -verticalSpeed);
-        float disHalf = dis / 3.0f;
-        float ox, oy, oz;
-        bot->GetPosition(ox, oy, oz);
-        float fx = ox + dis * vcos;
-        float fy = oy + dis * vsin;
-        float fz = oz + 0.5f;
-#ifdef MANGOSBOT_TWO
-        bot->GetMap()->GetHitPosition(ox, oy, oz + max_height, fx, fy, fz, bot->GetPhaseMask(), -0.5f);
-#else
-        bot->GetMap()->GetHitPosition(ox, oy, oz + max_height, fx, fy, fz, -0.5f);
-#endif
-        bot->UpdateFallInformationIfNeed(bot->m_movementInfo, CMSG_MOVE_KNOCK_BACK_ACK);
-        bot->UpdateAllowedPositionZ(fx, fy, fz);
-
         // stop casting
-        InterruptSpell();
+        InterruptSpell(false);
 
         // stop movement
         StopMoving();
 
-        // set delay based on actual distance
-        float newdis = sqrt(bot->GetDistance2d(fx, fy, DIST_CALC_NONE));
-        SetAIInternalUpdateDelay((uint32)((newdis / dis) * moveTimeHalf * 4 * IN_MILLISECONDS));
+        float timeToLand, distToLand, maxHeight;
+        bool goodLanding = true;
+        float angleRadian = (vsin > 0) ? acos(vcos) : -acos(vcos);
+        float angle = angleRadian;
+        WorldPosition dest_calculated = JumpAction::CalculateJumpParameters(WorldPosition(bot), bot, angle, verticalSpeed, horizontalSpeed, timeToLand, distToLand, maxHeight, goodLanding, 200.f);
+        bool jumpInPlace = horizontalSpeed == 0.f;
+        if (!dest_calculated)
+        {
+            sLog.outDetail("Knockback fail to calculate");
+            return;
+        }
+
+        // set fall height for fall damage calculations
+        bot->SetFallInformation(0, maxHeight);
+
+        // fix height
+        if (goodLanding)
+        {
+            float ox = dest_calculated.getX();
+            float oy = dest_calculated.getY();
+            float oz = dest_calculated.getZ();
+            bot->UpdateAllowedPositionZ(ox, oy, oz);
+            // set to fall after land if not at the ground
+            if (fabs(oz - dest_calculated.getZ()) > 5.0f)
+            {
+                SetFallAfterJump();
+            }
+            else
+            {
+                dest_calculated = WorldPosition(dest_calculated.getMapId(), ox, oy, oz);
+            }
+
+        }
+        else
+            SetFallAfterJump();
+
 
         // add moveflags
-#ifdef MANGOSBOT_TWO
-        bot->m_movementInfo.AddMovementFlag(MOVEFLAG_PENDINGSTOP);
-        bot->m_movementInfo.SetMovementFlags(MOVEFLAG_FALLING);
-        bot->m_movementInfo.AddMovementFlag(MOVEFLAG_FORWARD);
-#else
+#ifdef MANGOSBOT_ZERO
         bot->m_movementInfo.SetMovementFlags(MOVEFLAG_JUMPING);
-        bot->m_movementInfo.AddMovementFlag(MOVEFLAG_FORWARD);
+        bot->m_movementInfo.AddMovementFlag(MOVEFLAG_BACKWARD);
+#else
+        bot->m_movementInfo.SetMovementFlags(MOVEFLAG_FALLING);
+        bot->m_movementInfo.AddMovementFlag(MOVEFLAG_BACKWARD);
 #endif
-
-        // copy MovementInfo
-        MovementInfo movementInfo = bot->m_movementInfo;
 
         // send ack
         WorldPacket ack(CMSG_MOVE_KNOCK_BACK_ACK);
-        movementInfo.jump.cosAngle = vcos;
-        movementInfo.jump.sinAngle = vsin;
-        movementInfo.jump.zspeed = -verticalSpeed;
-        movementInfo.jump.xyspeed = horizontalSpeed;
+        bot->m_movementInfo.jump.cosAngle = vcos;
+        bot->m_movementInfo.jump.sinAngle = vsin;
+        bot->m_movementInfo.jump.zspeed = -verticalSpeed;
+        bot->m_movementInfo.jump.xyspeed = horizontalSpeed;
 #ifdef MANGOSBOT_TWO
         ack << bot->GetObjectGuid().WriteAsPacked();
 #else
         ack << bot->GetObjectGuid();
 #endif
         ack << uint32(0);
-        ack << movementInfo;
+        ack << bot->m_movementInfo;
         bot->GetSession()->HandleMoveKnockBackAck(ack);
 
-        // set jump destination for MSG_LAND packet
-        SetJumpDestination(Position(fx, fy, fz, bot->GetOrientation()));
-
-        //bot->SendHeartBeat();
-
+        // write jump time
+        uint32 curTime = sWorld.GetCurrentMSTime();
+        jumpTime = curTime + sWorld.GetAverageDiff() + (uint32)(timeToLand * IN_MILLISECONDS) + 1000;
+        SetJumpDestination(dest_calculated);
+        bot->Relocate(dest_calculated.getX(), dest_calculated.getY(), dest_calculated.getZ());
+        //bot->m_movementInfo.ChangePosition(dest_calculated.getX(), dest_calculated.getY(), dest_calculated.getZ(), bot->GetOrientation());
+        sLog.outDetail("%s: KNOCKBACK x: %f, y: %f, z: %f, time: %f, dist: %f, maxHeight: %f inPlace: %u, landTime: %u", bot->GetName(), dest_calculated.getX(), dest_calculated.getY(), dest_calculated.getZ(), timeToLand, distToLand, maxHeight, jumpInPlace, jumpTime);
         return;
     }
 	default:
@@ -1623,19 +1797,29 @@ void PlayerbotAI::DoNextAction(bool min)
             }
 
         if (!newMaster && playerMaster)
+        {
             newMaster = playerMaster;
+        }
 
         if (newMaster && (!master || master != newMaster) && bot != newMaster)
         {
             master = newMaster;
             ai->SetMaster(newMaster);
             ai->ResetStrategies();
-            ai->ChangeStrategy("+follow", BotState::BOT_STATE_NON_COMBAT);
+
+            if (sRandomPlayerbotMgr.IsFreeBot(bot))
+            {
+                ai->ChangeStrategy("+follow", BotState::BOT_STATE_NON_COMBAT);
+            }
 
             if (ai->GetMaster() == ai->GetGroupMaster())
+            {
                 ai->TellPlayer(master, BOT_TEXT("hello_follow"));
+            }
             else
+            {
                 ai->TellPlayer(master, BOT_TEXT("hello"));
+            }
         }
     }
 
@@ -1685,140 +1869,9 @@ void PlayerbotAI::DoNextAction(bool min)
     }
 #endif
 
-    // land after knockback/jump
-#ifdef MANGOSBOT_TWO
-    if (bot->m_movementInfo.HasMovementFlag(MOVEFLAG_FALLING))
-#else
-    if (bot->m_movementInfo.HasMovementFlag(MOVEFLAG_JUMPING))
-#endif
-    {
-        //// stop movement
-        //bot->InterruptMoving(true);
-        //bot->GetMotionMaster()->Clear();
-        //bot->GetMotionMaster()->MoveIdle();
-
-        // remove moveflags
-#ifdef MANGOSBOT_TWO
-        bot->m_movementInfo.RemoveMovementFlag(MOVEFLAG_FALLING);
-        bot->m_movementInfo.RemoveMovementFlag(MOVEFLAG_PENDINGSTOP);
-#else
-        bot->m_movementInfo.RemoveMovementFlag(MOVEFLAG_JUMPING);
-#endif
-
-        // set jump destination
-        bot->m_movementInfo.pos = !GetJumpDestination().IsEmpty() ? GetJumpDestination() : bot->GetPosition();
-        bot->m_movementInfo.jump = MovementInfo::JumpInfo();
-
-        WorldPacket land(MSG_MOVE_FALL_LAND);
-#ifdef MANGOSBOT_TWO
-        land << bot->GetObjectGuid().WriteAsPacked();
-#endif
-        land << bot->m_movementInfo;
-        bot->GetSession()->HandleMovementOpcodes(land);
-
-        // move stop
-        WorldPacket stop(MSG_MOVE_STOP);
-#ifdef MANGOSBOT_TWO
-        stop << bot->GetObjectGuid().WriteAsPacked();
-#endif
-        stop << bot->m_movementInfo;
-        bot->GetSession()->HandleMovementOpcodes(stop);
-
-        // stop movement
-        StopMoving();
-
-        ResetJumpDestination();
-    }
-
     if (bot->IsTaxiFlying())
     {        
         return;
-    }
-
-    // random jumping (WIP, not working properly)
-    bool randomJump = false;
-    if (randomJump && !inCombat /*&& (!master || (master && sServerFacade.GetDistance2d(bot, master) < 20.0f)) && !bot->m_movementInfo.HasMovementFlag(MOVEFLAG_JUMPING) && !bot->IsMoving()*/)
-    {
-        if (!urand(0, 50))
-        {
-            //float dx, dy, dz = 0.f;
-            //if (bot->IsMoving())
-            //    bot->GetMotionMaster()->GetDestination(dx, dy, dz);
-
-            float angle = master ? master->GetOrientation() : bot->GetOrientation();
-            //if (angle > M_PI_F)
-            //    angle -= 2.0f * M_PI_F;
-
-            float vsin = 1.f;// sin(angle);
-            float vcos = 0.f;// cos(angle);
-
-            // calculate jump time
-            float moveTimeHalf = 7.96f / 19.29f;
-
-            // calculate jump distance
-            float dis = 0.f;// 2 * moveTimeHalf * bot->GetSpeed(MOVE_RUN);
-            float max_height = -Movement::computeFallElevation(moveTimeHalf, false, -7.96f);
-
-            // calculate jump destination
-            float ox, oy, oz;
-            bot->GetPosition(ox, oy, oz);
-            float fx = ox + dis * vsin;
-            float fy = oy + dis * vcos;
-            float fz = oz +0.5f;
-#ifdef MANGOSBOT_TWO
-            bot->GetMap()->GetHitPosition(ox, oy, oz + 2.5f, fx, fy, fz, bot->GetPhaseMask(), -0.5f);
-#else
-            bot->GetMap()->GetHitPosition(ox, oy, oz + max_height, fx, fy, fz, -0.5f);
-#endif
-            bot->UpdateFallInformationIfNeed(bot->m_movementInfo, MSG_MOVE_JUMP);
-            bot->UpdateAllowedPositionZ(fx, fy, fz);
-            // set jump destination for MSG_LAND packet
-            SetJumpDestination(Position(fx, fy, fz, bot->GetOrientation()));
-
-            // set delay based on actual distance
-            //float newdis = sqrt(bot->GetDistance2d(fx, fy, DIST_CALC_NONE));
-            //SetAIInternalUpdateDelay((uint32)((newdis / dis)* moveTimeHalf * 4 * IN_MILLISECONDS));
-
-            // stop movement
-            StopMoving();
-
-            // set delay based on actual distance
-            float newdis = sqrt(bot->GetDistance2d(fx, fy, DIST_CALC_NONE));
-            SetAIInternalUpdateDelay((uint32)((newdis / dis)* moveTimeHalf * 4 * IN_MILLISECONDS));
-
-            // jump packet
-            WorldPacket jump(MSG_MOVE_JUMP);
-
-            //// add moveflags
-            //bot->m_movementInfo.SetMovementFlags(MOVEFLAG_JUMPING);
-            //bot->m_movementInfo.AddMovementFlag(MOVEFLAG_FORWARD);
-
-            // copy MovementInfo
-            MovementInfo movementInfo = bot->m_movementInfo;
-
-            // write jump info
-            movementInfo.jump.zspeed = -7.96f;
-            movementInfo.jump.cosAngle = vcos;
-            movementInfo.jump.sinAngle = vsin;
-            movementInfo.jump.xyspeed = 0.f;// bot->GetSpeed(MOVE_RUN);
-            //movementInfo.jump.start = movementInfo.pos;
-            //movementInfo.jump.startClientTime = WorldTimer::getMSTime();
-            //movementInfo.pos = bot->GetPosition();
-
-            // write packet info
-#ifndef MANGOSBOT_ZERO
-            jump << bot->GetObjectGuid().WriteAsPacked();
-#endif
-            jump << movementInfo;
-            bot->GetSession()->HandleMovementOpcodes(jump);
-            //bot->SendHeartBeat();
-
-            //bot->m_movementInfo.ChangePosition(fx, fy, fz, bot->GetOrientation());
-
-            // add moveflag
-            //bot->m_movementInfo.AddMovementFlag(MOVEFLAG_PENDINGSTOP);
-            //bot->SendHeartBeat();
-        }
     }
 }
 
@@ -1837,7 +1890,7 @@ void PlayerbotAI::ChangeStrategy(const string& names, BotState type)
             Engine* engine = engines[i];
             if (engine)
             {
-                engine->ChangeStrategy(names, BotStateToString(BotState(i)));
+                engine->ChangeStrategy(names);
             }
         }
     }
@@ -1846,7 +1899,30 @@ void PlayerbotAI::ChangeStrategy(const string& names, BotState type)
         Engine* engine = engines[(uint8)type];
         if (engine)
         {
-            engine->ChangeStrategy(names, BotStateToString(type));
+            engine->ChangeStrategy(names);
+        }
+    }
+}
+
+void PlayerbotAI::PrintStrategies(Player* requester, BotState type)
+{
+    if (type == BotState::BOT_STATE_ALL)
+    {
+        for (uint8 i = 0; i < (uint8)BotState::BOT_STATE_ALL; i++)
+        {
+            Engine* engine = engines[i];
+            if (engine)
+            {
+                engine->PrintStrategies(requester, BotStateToString(BotState(i)));
+            }
+        }
+    }
+    else
+    {
+        Engine* engine = engines[(uint8)type];
+        if (engine)
+        {
+            engine->PrintStrategies(requester, BotStateToString(type));
         }
     }
 }
@@ -1908,6 +1984,7 @@ bool PlayerbotAI::CanDoSpecificAction(const string& name, bool isUseful, bool is
 
 bool PlayerbotAI::DoSpecificAction(const string& name, Event event, bool silent)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     for (uint8 i = 0 ; i < (uint8)BotState::BOT_STATE_ALL; i++)
     {
         Engine* engine = engines[i];
@@ -1932,7 +2009,7 @@ bool PlayerbotAI::DoSpecificAction(const string& name, Event event, bool silent)
                     {
                         ostringstream out;
                         out << name << ": impossible";
-                        TellError(out.str());
+                        TellError(requester, out.str());
                         PlaySound(TEXTEMOTE_NO);
                     }
 
@@ -1945,7 +2022,7 @@ bool PlayerbotAI::DoSpecificAction(const string& name, Event event, bool silent)
                     {
                         ostringstream out;
                         out << name << ": useless";
-                        TellError(out.str());
+                        TellError(requester, out.str());
                         PlaySound(TEXTEMOTE_NO);
                     }
 
@@ -1958,7 +2035,7 @@ bool PlayerbotAI::DoSpecificAction(const string& name, Event event, bool silent)
                     {
                         ostringstream out;
                         out << name << ": failed";
-                        TellError(out.str());
+                        TellError(requester, out.str());
                     }
 
                     return false;
@@ -1970,7 +2047,7 @@ bool PlayerbotAI::DoSpecificAction(const string& name, Event event, bool silent)
                     {
                         ostringstream out;
                         out << name << ": unknown action";
-                        TellError(out.str());
+                        TellError(requester, out.str());
                     }
 
                     return false;
@@ -1983,7 +2060,7 @@ bool PlayerbotAI::DoSpecificAction(const string& name, Event event, bool silent)
             {
                 ostringstream out;
                 out << name << ": engine not ready";
-                TellError(out.str());
+                TellError(requester, out.str());
             }
         }
     }
@@ -2006,7 +2083,7 @@ bool PlayerbotAI::PlayEmote(uint32 emote)
 {
     WorldPacket data(SMSG_TEXT_EMOTE);
     data << (TextEmotes)emote;
-    data << EmoteAction::GetNumberOfEmoteVariants((TextEmotes)emote, bot->getRace(), bot->getGender());
+    data << urand(0, EmoteAction::GetNumberOfEmoteVariants((TextEmotes)emote, bot->getRace(), bot->getGender()) - 1);
     data << ((master && (sServerFacade.GetDistance2d(bot, master) < 30.0f) && urand(0, 1)) ? master->GetObjectGuid() : (bot->GetSelectionGuid() && urand(0, 1)) ? bot->GetSelectionGuid() : ObjectGuid());
     bot->GetSession()->HandleTextEmoteOpcode(data);
 
@@ -2309,7 +2386,7 @@ bool PlayerbotAI::TellPlayerNoFacing(Player* player, string text, PlayerbotSecur
 
             return true;
         case CHAT_MSG_WHISPER:
-            if (!IsTellAllowed(securityLevel))
+            if (!IsTellAllowed(player, securityLevel))
                 return false;
 
             if (!HasRealPlayerMaster())
@@ -2331,30 +2408,28 @@ bool PlayerbotAI::TellPlayerNoFacing(Player* player, string text, PlayerbotSecur
     return true;
 }
 
-bool PlayerbotAI::TellError(string text, PlayerbotSecurityLevel securityLevel)
+bool PlayerbotAI::TellError(Player* player, string text, PlayerbotSecurityLevel securityLevel)
 {
-    Player* master = GetMaster();
-    if (!IsTellAllowed(securityLevel) || !IsSafe(master) || master->GetPlayerbotAI())
+    if (!IsTellAllowed(player, securityLevel) || !IsSafe(player) || player->GetPlayerbotAI())
         return false;
 
-    PlayerbotMgr* mgr = master->GetPlayerbotMgr();
+    PlayerbotMgr* mgr = player->GetPlayerbotMgr();
     if (mgr) mgr->TellError(bot->GetName(), text);
 
     return false;
 }
 
-bool PlayerbotAI::IsTellAllowed(PlayerbotSecurityLevel securityLevel)
+bool PlayerbotAI::IsTellAllowed(Player* player, PlayerbotSecurityLevel securityLevel)
 {
-    Player* master = GetMaster();
-    if (!master || master->IsBeingTeleported())
+    if (!player || player->IsBeingTeleported())
         return false;
 
-    if (!GetSecurity()->CheckLevelFor(securityLevel, true, master))
+    if (!GetSecurity()->CheckLevelFor(securityLevel, true, player))
         return false;
 
     if (sPlayerbotAIConfig.whisperDistance && !bot->GetGroup() && sRandomPlayerbotMgr.IsFreeBot(bot) &&
-            master->GetSession()->GetSecurity() < SEC_GAMEMASTER &&
-            (bot->GetMapId() != master->GetMapId() || sServerFacade.GetDistance2d(bot, master) > sPlayerbotAIConfig.whisperDistance))
+            player->GetSession()->GetSecurity() < SEC_GAMEMASTER &&
+            (bot->GetMapId() != player->GetMapId() || sServerFacade.GetDistance2d(bot, player) > sPlayerbotAIConfig.whisperDistance))
         return false;
 
     return true;
@@ -2394,7 +2469,7 @@ bool IsRealAura(Player* bot, Aura const* aura, Unit* unit)
     return false;
 }
 
-bool PlayerbotAI::HasAura(string name, Unit* unit, bool maxStack, bool checkIsOwner, int maxAuraAmount, bool hasMyAura, int minDuration)
+bool PlayerbotAI::HasAura(string name, Unit* unit, bool maxStack, bool checkIsOwner, int maxAuraAmount, bool hasMyAura, int minDuration, int auraTypeId)
 {
     if (!unit)
         return false;
@@ -2416,6 +2491,9 @@ bool PlayerbotAI::HasAura(string name, Unit* unit, bool maxStack, bool checkIsOw
 
 	for (uint32 auraType = SPELL_AURA_BIND_SIGHT; auraType < TOTAL_AURAS; auraType++)
 	{
+        if (auraTypeId != TOTAL_AURAS && auraType != auraTypeId)
+            continue;
+
 		Unit::AuraList const& auras = unit->GetAurasByType((AuraType)auraType);
 
         if (auras.empty())
@@ -2474,7 +2552,7 @@ bool PlayerbotAI::HasAura(string name, Unit* unit, bool maxStack, bool checkIsOw
                 if (minDuration > 0)
                 {
                     int32 auraDuration = aura->GetHolder()->GetAuraDuration();
-                    minDurationPassed = minDuration >= auraDuration;
+                    minDurationPassed = minDuration <= auraDuration;
                 }
 
                 if (maxAuraAmount < 0 && minDurationPassed)
@@ -2755,28 +2833,35 @@ bool PlayerbotAI::HasSpell(uint32 spellid) const
     return false;
 }
 
-bool PlayerbotAI::CanCastSpell(string name, Unit* target, uint8 effectMask, Item* itemTarget, bool ignoreRange)
+bool PlayerbotAI::CanCastSpell(string name, Unit* target, uint8 effectMask, Item* itemTarget, bool ignoreRange, bool ignoreInCombat)
 {
-    return CanCastSpell(aiObjectContext->GetValue<uint32>("spell id", name)->Get(), target, 0, true, itemTarget, ignoreRange);
+    return CanCastSpell(aiObjectContext->GetValue<uint32>("spell id", name)->Get(), target, 0, true, itemTarget, ignoreRange, ignoreInCombat);
 }
 
-bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, uint8 effectMask, bool checkHasSpell, Item* itemTarget, bool ignoreRange)
+bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, uint8 effectMask, bool checkHasSpell, Item* itemTarget, bool ignoreRange, bool ignoreInCombat)
 {
     if (!spellid)
         return false;
 
-    if (bot->hasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL) && !(spellid == 7744 || spellid == 11958 || spellid == 642 || spellid == 1020 || spellid == 1953))
-        return false;
+    Pet* pet = bot->GetPet();
+    if (pet && pet->HasSpell(spellid) && pet->IsSpellReady(spellid))
+        return true;
+
+    if (bot->hasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL))
+    {
+        // Spells that can be casted while out of control
+        const std::list<uint32> ignoreOutOfControllSpells = { 642, 1020, 1499, 1953, 7744, 11958, 13795, 13809, 13813, 14302, 14303, 14304, 14305, 14310, 14311, 14316, 14317, 27023, 27025, 34600, 49055, 49056, 49066, 49067 };
+        if (std::find(ignoreOutOfControllSpells.begin(), ignoreOutOfControllSpells.end(), spellid) == ignoreOutOfControllSpells.end())
+        {
+            return false;
+        }
+    }
 
     if (!target)
         target = bot;
 
     if (checkHasSpell && !HasSpell(spellid))
         return false;
-
-    Pet* pet = bot->GetPet();
-    if (pet && pet->HasSpell(spellid))
-        return true;
 
     if (!bot->IsSpellReady(spellid))
         return false;
@@ -2785,16 +2870,31 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, uint8 effectMask, b
 	if (!spellInfo)
         return false;
 
-    uint32 CastingTime = !IsChanneledSpell(spellInfo) ? GetSpellCastTime(spellInfo, bot) : GetSpellDuration(spellInfo);
+    // already active next melee swing spell
+    if (IsNextMeleeSwingSpell(spellInfo))
+    {
+        Spell* autorepeatSpell = bot->GetCurrentSpell(CURRENT_MELEE_SPELL);
+        if (autorepeatSpell)
+        {
+            if (autorepeatSpell->m_spellInfo->Id == spellInfo->Id)
+                return false;
+        }
+    }
 
 	if (!itemTarget)
 	{
-        bool positiveSpell = IsPositiveSpell(spellInfo);
-        if (positiveSpell && sServerFacade.IsHostileTo(bot, target))
-            return false;
+        // Consider neutral spells (spells that are neither positive or negative (e.g. feign death, hunter traps, ...)
+        const std::list<uint32> neutralSpells = { 1499, 5384, 13795, 13809, 13813, 14302, 14303, 14304, 14305, 14310, 14311, 14316, 14317, 27023, 27025, 34600, 49055, 49056, 49066, 49067 };
+        const bool neutralSpell = std::find(neutralSpells.begin(), neutralSpells.end(), spellid) != neutralSpells.end();
+        if(!neutralSpell)
+        {
+            const bool positiveSpell = IsPositiveSpell(spellInfo);
+            if (positiveSpell && sServerFacade.IsHostileTo(bot, target))
+                return false;
 
-        if (!positiveSpell && sServerFacade.IsFriendlyTo(bot, target))
-            return false;
+            if (!positiveSpell && sServerFacade.IsFriendlyTo(bot, target))
+                return false;
+        }
 
         bool damage = false;
         for (int32 i = EFFECT_INDEX_0; i <= EFFECT_INDEX_2; i++)
@@ -2847,64 +2947,66 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, uint8 effectMask, b
 
     switch (result)
     {
-    case SPELL_FAILED_NOT_INFRONT:
-    case SPELL_FAILED_NOT_STANDING:
-    case SPELL_FAILED_UNIT_NOT_INFRONT:
-    case SPELL_FAILED_MOVING:
-    case SPELL_FAILED_TRY_AGAIN:
-    case SPELL_CAST_OK:
-        return true;
-    case SPELL_FAILED_OUT_OF_RANGE:
-    case SPELL_FAILED_LINE_OF_SIGHT:
-        return ignoreRange;
-    case SPELL_FAILED_REAGENTS:
-        return ignoreReagents;
-    default:
-        return false;
+        case SPELL_FAILED_NOT_INFRONT:
+        case SPELL_FAILED_NOT_STANDING:
+        case SPELL_FAILED_UNIT_NOT_INFRONT:
+        case SPELL_FAILED_MOVING:
+        case SPELL_FAILED_TRY_AGAIN:
+        case SPELL_CAST_OK:
+            return true;
+        case SPELL_FAILED_OUT_OF_RANGE:
+        case SPELL_FAILED_LINE_OF_SIGHT:
+            return ignoreRange;
+        case SPELL_FAILED_REAGENTS:
+        case SPELL_FAILED_TOTEMS:
+            return ignoreReagents;
+        case SPELL_FAILED_AFFECTING_COMBAT:
+            return ignoreInCombat;
+        default:
+            return false;
     }
 }
 
-bool PlayerbotAI::CanCastSpell(uint32 spellid, GameObject* goTarget, uint8 effectMask, bool checkHasSpell, bool ignoreRange)
+bool PlayerbotAI::CanCastSpell(uint32 spellid, GameObject* goTarget, uint8 effectMask, bool checkHasSpell, bool ignoreRange, bool ignoreInCombat)
 {
     if (!spellid)
         return false;
 
-    if (bot->hasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL))
-        return false;
-
     Pet* pet = bot->GetPet();
-    if (pet && pet->HasSpell(spellid))
+    if (pet && pet->HasSpell(spellid) && pet->IsSpellReady(spellid))
         return true;
+
+    if (bot->hasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL))
+    {
+        // Spells that can be casted while out of control
+        const std::list<uint32> ignoreOutOfControllSpells = { 642, 1020, 1499, 1953, 7744, 11958, 13795, 13809, 13813, 14302, 14303, 14304, 14305, 14310, 14311, 14316, 14317, 27023, 27025, 34600, 49055, 49056, 49066, 49067 };
+        if (std::find(ignoreOutOfControllSpells.begin(), ignoreOutOfControllSpells.end(), spellid) == ignoreOutOfControllSpells.end())
+        {
+            return false;
+        }
+    }
 
     if (checkHasSpell && !bot->HasSpell(spellid))
         return false;
 
-#ifdef MANGOS
-    if (bot->HasSpellCooldown(spellid))
-        return false;
-#endif
-#ifdef CMANGOS
     if (!bot->IsSpellReady(spellid))
         return false;
-#endif
 
     SpellEntry const* spellInfo = sServerFacade.LookupSpellInfo(spellid);
     if (!spellInfo)
         return false;
 
-    uint32 CastingTime = !IsChanneledSpell(spellInfo) ? GetSpellCastTime(spellInfo, bot) : GetSpellDuration(spellInfo);
-   
-        bool damage = false;
-        for (int32 i = EFFECT_INDEX_0; i <= EFFECT_INDEX_2; i++)
+    bool damage = false;
+    for (int32 i = EFFECT_INDEX_0; i <= EFFECT_INDEX_2; i++)
+    {
+        if (spellInfo->Effect[(SpellEffectIndex)i] == SPELL_EFFECT_SCHOOL_DAMAGE)
         {
-            if (spellInfo->Effect[(SpellEffectIndex)i] == SPELL_EFFECT_SCHOOL_DAMAGE)
-            {
-                damage = true;
-                break;
-            }
+            damage = true;
+            break;
         }
-        if (sServerFacade.GetDistance2d(bot, goTarget) > sPlayerbotAIConfig.sightDistance)
-            return false;
+    }
+    if (sServerFacade.GetDistance2d(bot, goTarget) > sPlayerbotAIConfig.sightDistance)
+        return false;
 
     //ObjectGuid oldSel = bot->GetSelectionGuid();
     bot->SetSelectionGuid(goTarget->GetObjectGuid());
@@ -2934,27 +3036,34 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, GameObject* goTarget, uint8 effec
         return ignoreRange;
     case SPELL_FAILED_REAGENTS:
         return ignoreReagents;
+    case SPELL_FAILED_AFFECTING_COMBAT:
+        return ignoreInCombat;
     default:
         return false;
     }
 }
 
-bool PlayerbotAI::CanCastSpell(uint32 spellid, float x, float y, float z, uint8 effectMask, bool checkHasSpell, Item* itemTarget, bool ignoreRange)
+bool PlayerbotAI::CanCastSpell(uint32 spellid, float x, float y, float z, uint8 effectMask, bool checkHasSpell, Item* itemTarget, bool ignoreRange, bool ignoreInCombat)
 {
     if (!spellid)
         return false;
 
     Pet* pet = bot->GetPet();
-    if (pet && pet->HasSpell(spellid))
+    if (pet && pet->HasSpell(spellid) && pet->IsSpellReady(spellid))
         return true;
+
+    if (bot->hasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL))
+    {
+        // Spells that can be casted while out of control
+        const std::list<uint32> ignoreOutOfControllSpells = { 642, 1020, 1499, 1953, 7744, 11958, 13795, 13809, 13813, 14302, 14303, 14304, 14305, 14310, 14311, 14316, 14317, 27023, 27025, 34600, 49055, 49056, 49066, 49067 };
+        if (std::find(ignoreOutOfControllSpells.begin(), ignoreOutOfControllSpells.end(), spellid) == ignoreOutOfControllSpells.end())
+        {
+            return false;
+        }
+    }
 
     if (checkHasSpell && !bot->HasSpell(spellid))
         return false;
-
-#ifdef MANGOS
-    if (bot->HasSpellCooldown(spellid))
-        return false;
-#endif
 
     SpellEntry const* spellInfo = sServerFacade.LookupSpellInfo(spellid);
     if (!spellInfo)
@@ -2990,6 +3099,8 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, float x, float y, float z, uint8 
         return ignoreRange;
     case SPELL_FAILED_REAGENTS:
         return ignoreReagents;
+    case SPELL_FAILED_AFFECTING_COMBAT:
+        return ignoreInCombat;
     default:
         return false;
     }
@@ -3035,25 +3146,9 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
         target = bot;
 
     Pet* pet = bot->GetPet();
-	SpellEntry const *pSpellInfo = sServerFacade.LookupSpellInfo(spellId);
-	if (pet && pet->HasSpell(spellId))
+    if (pet && pet->HasSpell(spellId))
     {
-	    bool autocast = false;
-	    for(AutoSpellList::iterator i = pet->m_autospells.begin(); i != pet->m_autospells.end(); ++i)
-	    {
-	        if (*i == spellId)
-	        {
-	            autocast = true;
-	            break;
-	        }
-	    }
-
-		pet->ToggleAutocast(spellId, !autocast);
-		ostringstream out;
-		out << (autocast ? "|cffff0000|Disabling" : "|cFF00ff00|Enabling") << " pet auto-cast for ";
-		out << chatHelper.formatSpell(pSpellInfo);
-        TellPlayer(GetMaster(), out);
-        return true;
+        return CastPetSpell(spellId, target);
     }
 
     aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(NULL);
@@ -3099,6 +3194,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
         return false;
     }
 
+    const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(spellId);
     Spell *spell = new Spell(bot, pSpellInfo, false);
 
     SpellCastTargets targets;
@@ -3172,9 +3268,14 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
     }
 
     // Fail the cast if the bot is moving and the spell is a casting/channeled spell
-    const bool isMoving = !bot->IsStopped();
+    const bool isMoving = !bot->IsStopped() || bot->IsFalling();
     if (isMoving && ((GetSpellCastTime(pSpellInfo, bot, spell) > 0) || (IsChanneledSpell(pSpellInfo) && (GetSpellDuration(pSpellInfo) > 0))))
     {
+        if (IsJumping() || bot->IsFalling())
+        {
+            spell->cancel();
+            return false;
+        }
         StopMoving();
     }
 
@@ -3208,6 +3309,8 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget, bool
 
     if (spellSuccess != SPELL_CAST_OK)
         return false;
+
+    PlayAttackEmote(6);
 
     if(waitForSpell)
     {
@@ -3243,25 +3346,9 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
         return false;
 
     Pet* pet = bot->GetPet();
-    SpellEntry const* pSpellInfo = sServerFacade.LookupSpellInfo(spellId);
     if (pet && pet->HasSpell(spellId))
     {
-        bool autocast = false;
-        for (AutoSpellList::iterator i = pet->m_autospells.begin(); i != pet->m_autospells.end(); ++i)
-        {
-            if (*i == spellId)
-            {
-                autocast = true;
-                break;
-            }
-        }
-
-        pet->ToggleAutocast(spellId, !autocast);
-        ostringstream out;
-        out << (autocast ? "|cffff0000|Disabling" : "|cFF00ff00|Enabling") << " pet auto-cast for ";
-        out << chatHelper.formatSpell(pSpellInfo);
-        TellPlayer(GetMaster(), out);
-        return true;
+        return CastPetSpell(spellId, nullptr);
     }
 
     aiObjectContext->GetValue<LastMovement&>("last movement")->Get().Set(NULL);
@@ -3289,7 +3376,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
         if (bot->GetMotionMaster()->top()->GetMovementGeneratorType() != IDLE_MOTION_TYPE)
             isMoving = true;
 
-    if (!bot->IsStopped())
+    if (!bot->IsStopped() || bot->IsFalling())
         isMoving = true;
 
     if (!sServerFacade.isMoving(bot) || isMoving) bot->SetFacingTo(bot->GetAngleAt(bot->GetPositionX(), bot->GetPositionY(), x, y));
@@ -3309,6 +3396,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
         return false;
     }
 
+    const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(spellId);
     Spell* spell = new Spell(bot, pSpellInfo, false);
 
     SpellCastTargets targets;
@@ -3392,6 +3480,11 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
 
     if (sServerFacade.isMoving(bot) && spell->GetCastTime())
     {
+        if (IsJumping() || bot->IsFalling())
+        {
+            spell->cancel();
+            return false;
+        }
         bot->StopMoving();
     }
 
@@ -3431,6 +3524,44 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
     }
 
     return true;
+}
+
+bool PlayerbotAI::CastPetSpell(uint32 spellId, Unit* target)
+{
+    Pet* pet = bot->GetPet();
+    if (pet && spellId && pet->HasSpell(spellId))
+    {
+        auto IsAutocastActive = [&pet, &spellId]() -> bool
+        {
+            for (AutoSpellList::iterator i = pet->m_autospells.begin(); i != pet->m_autospells.end(); ++i)
+            {
+                if (*i == spellId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        // Send pet spell action packet
+        uint8 flag = ACT_PASSIVE;
+        if (IsAutocastable(spellId))
+        {
+            flag = IsAutocastActive() ? ACT_ENABLED : ACT_DISABLED;
+        }
+
+        uint32 command = (flag << 24) | spellId;
+
+        WorldPacket data(CMSG_PET_ACTION);
+        data << pet->GetObjectGuid();
+        data << command;
+        data << (target ? target->GetObjectGuid() : ObjectGuid());
+        bot->GetSession()->HandlePetAction(data);
+        return true;
+    }
+
+    return false;
 }
 
 bool PlayerbotAI::CanCastVehicleSpell(uint32 spellId, Unit* target)
@@ -3734,19 +3865,21 @@ void PlayerbotAI::WaitForSpellCast(Spell *spell)
     SetAIInternalUpdateDelay(GetSpellCastDuration(spell));
 }
 
-void PlayerbotAI::InterruptSpell()
+void PlayerbotAI::InterruptSpell(bool withMeleeAndAuto)
 {
     for (int type = CURRENT_MELEE_SPELL; type < CURRENT_CHANNELED_SPELL; type++)
     {
-        Spell* spell = bot->GetCurrentSpell((CurrentSpellTypes)type);
-        if (!spell)
-            continue;
-
-        if (IsPositiveSpell(spell->m_spellInfo))
-            continue;
-
-        bot->InterruptSpell((CurrentSpellTypes)type);
-        SpellInterrupted(spell->m_spellInfo->Id);
+        if (!withMeleeAndAuto)
+        {
+            if (type == CURRENT_MELEE_SPELL || type == CURRENT_AUTOREPEAT_SPELL)
+                continue;
+        }
+        Spell* currentSpell = bot->GetCurrentSpell((CurrentSpellTypes)type);
+        if (currentSpell && currentSpell->CanBeInterrupted())
+        {
+            bot->InterruptSpell((CurrentSpellTypes)type);
+            SpellInterrupted(currentSpell->m_spellInfo->Id);
+        }
     }
 }
 
@@ -3842,6 +3975,40 @@ bool PlayerbotAI::canDispel(const SpellEntry* entry, uint32 dispelType)
         strcmpi((const char*)entry->SpellName[0], "chilled") &&
         strcmpi((const char*)entry->SpellName[0], "mana tap") &&
         strcmpi((const char*)entry->SpellName[0], "ice armor"));
+}
+
+bool PlayerbotAI::IsHealSpell(const SpellEntry* spell)
+{
+    // Holy Light/Flash of Light
+    if (spell->SpellFamilyName == SPELLFAMILY_PALADIN)
+    {
+        if (spell->SpellIconID == 70 ||
+            spell->SpellIconID == 242)
+            return true;
+    }
+
+    for (uint8 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
+        switch (spell->Effect[i])
+        {
+            case SPELL_EFFECT_HEAL:
+            case SPELL_EFFECT_HEAL_MAX_HEALTH:
+                return true;
+            case SPELL_EFFECT_APPLY_AURA:
+            case SPELL_EFFECT_APPLY_AREA_AURA_FRIEND:
+            case SPELL_EFFECT_APPLY_AREA_AURA_PARTY:
+            case SPELL_EFFECT_APPLY_AREA_AURA_PET:
+            {
+                switch (spell->EffectApplyAuraName[i])
+                {
+                    case SPELL_AURA_PERIODIC_HEAL:
+                        return true;
+                }
+                break;
+            }
+        }
+    }
+    return false;
 }
 
 bool IsAlliance(uint8 race)
@@ -4644,11 +4811,6 @@ bool ChatHandler::HandleRandomPlayerbotCommand(char* args)
 bool ChatHandler::HandleAhBotCommand(char* args)
 {
     return ahbot::AhBot::HandleAhBotCommand(this, args);
-}
-
-bool ChatHandler::HandleGuildTaskCommand(char* args)
-{
-    return GuildTaskMgr::HandleConsoleCommand(this, args);
 }
 
 float PlayerbotAI::GetRange(string type)
@@ -5785,13 +5947,19 @@ bool PlayerbotAI::CanMove()
         bot->IsTaxiFlying() ||
         (sServerFacade.UnitIsDead(bot) && !bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)) ||
         bot->IsBeingTeleported() ||
-        bot->hasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL))
-        //bot->m_movementInfo.HasMovementFlag(MOVEFLAG_FALLING))
+        bot->hasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL) ||
+        IsJumping() ||
+#ifdef MANGOSBOT_ONE
+        bot->IsFalling() ||
+        bot->IsJumping())
+#else
+        bot->IsFalling())
+#endif
         return false;
 
     MotionMaster& mm = *bot->GetMotionMaster();
 #ifdef CMANGOS
-    return mm.GetCurrentMovementGeneratorType() != TAXI_MOTION_TYPE;
+    return mm.GetCurrentMovementGeneratorType() != TAXI_MOTION_TYPE && mm.GetCurrentMovementGeneratorType() != FALL_MOTION_TYPE;
 #endif
 #ifdef MANGOS
     return mm.GetCurrentMovementGeneratorType() != FLIGHT_MOTION_TYPE;
@@ -5806,7 +5974,10 @@ void PlayerbotAI::StopMoving()
     if (IsInVehicle())
         return;
 
-    // interrupt movement as much as we can...
+    if (bot->IsBeingTeleportedFar())
+        return;
+
+    bot->m_movementInfo.SetMovementFlags(MOVEFLAG_NONE);
     bot->InterruptMoving(true);
     MovementInfo mInfo = bot->m_movementInfo;
     float x, y, z;
@@ -5820,8 +5991,11 @@ void PlayerbotAI::StopMoving()
     data << mInfo;
     bot->GetSession()->HandleMovementOpcodes(data);
 
-    bot->GetMotionMaster()->Clear(false, true);
-    bot->GetMotionMaster()->MoveIdle();
+    if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType())
+    {
+        bot->GetMotionMaster()->Clear(false, true);
+        bot->GetMotionMaster()->MoveIdle();
+    }
 }
 
 bool PlayerbotAI::IsInRealGuild()
@@ -5867,4 +6041,22 @@ bool PlayerbotAI::HasPlayerRelation()
 void PlayerbotAI::QueueChatResponse(uint8 msgtype, ObjectGuid guid1, ObjectGuid guid2, std::string message, std::string chanName, std::string name)
 {
     chatReplies.push(ChatQueuedReply(msgtype, guid1.GetCounter(), guid2.GetCounter(), message, chanName, name, time(0) + urand(inCombat ? 10 : 5, inCombat ? 25 : 15)));
+}
+
+
+bool PlayerbotAI::PlayAttackEmote(float chanceMultiplier)
+{
+    auto group = bot->GetGroup();
+    if (group) chanceMultiplier /= (group->GetMembersCount() - 1);
+    if ((float)urand(0, 10000) * chanceMultiplier < sPlayerbotAIConfig.attackEmoteChance * 10000.0f && bot->IsInCombat())
+    {
+        vector<uint32> sounds;
+        sounds.push_back(TEXTEMOTE_OPENFIRE);
+        sounds.push_back(305);
+        sounds.push_back(307);
+        PlaySound(sounds[urand(0, sounds.size() - 1)]);
+        return true;
+    }
+
+    return false;
 }

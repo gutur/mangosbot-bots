@@ -8,6 +8,7 @@ using namespace ai;
 
 bool RtiAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     string text = event.getParam();
     string type = "rti";
     if (text.find("cc ") == 0)
@@ -15,22 +16,22 @@ bool RtiAction::Execute(Event& event)
         type = "rti cc";
         text = text.substr(3);
     }
-    if (text.empty() || text == "?")
+    else if (text.empty() || text == "?")
     {
         ostringstream outRti; outRti << "rti" << ": ";
         AppendRti(outRti, "rti");
-        ai->TellPlayer(GetMaster(), outRti);
+        ai->TellPlayer(requester, outRti);
 
         ostringstream outRtiCc; outRtiCc << "rti cc" << ": ";
         AppendRti(outRtiCc, "rti cc");
-        ai->TellPlayer(GetMaster(), outRtiCc);
+        ai->TellPlayer(requester, outRtiCc);
         return true;
     }
 
     context->GetValue<string>(type)->Set(text);
     ostringstream out; out << type << " 设置为: ";
     AppendRti(out, type);
-    ai->TellPlayer(GetMaster(), out);
+    ai->TellPlayer(requester, out);
     return true;
 }
 
@@ -42,7 +43,6 @@ void RtiAction::AppendRti(ostringstream & out, string type)
     Unit* target = AI_VALUE(Unit*, n.str());
     if (target)
         out << " (" << target->GetName() << ")";
-
 }
 
 bool MarkRtiAction::Execute(Event& event)
@@ -84,6 +84,13 @@ bool MarkRtiAction::Execute(Event& event)
     if (!target) return false;
 
     string rti = AI_VALUE(string, "rti");
+
+    // Add the default rti if the bot is setup to ignore rti targets
+    if (rti == "none")
+    {
+        rti = "skull";
+    }
+
     int index = RtiTargetValue::GetRtiIndex(rti);
 #ifndef MANGOSBOT_TWO
     group->SetTargetIcon(index, target->GetObjectGuid());

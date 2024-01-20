@@ -116,14 +116,11 @@ file(GLOB Playerbot_DeathKnight ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy/d
     LIST(APPEND LIBRARY_SRCS ${Playerbot_DeathKnight})
 
 # Define ENABLE_PLAYERBOTS if need
-if (BUILD_PLAYERBOT)
+if (BUILD_PLAYERBOT OR PLAYERBOTS OR BUILD_IKE3_BOTS OR BUILD_MANGOSBOTS)
   add_definitions(-DENABLE_PLAYERBOTS)
-endif()
-if (PLAYERBOTS)
-  add_definitions(-DENABLE_PLAYERBOTS)
-endif()
-if (BUILD_IKE3_BOTS)
-  add_definitions(-DENABLE_PLAYERBOTS)
+  if (BUILD_MANGOSBOTS)
+	add_definitions(-DENABLE_MANGOSBOTS)
+  endif()
 endif()
 # Define Achievements USE_ACHIEVEMENTS if need
 if (BUILD_ACHIEVEMENTS)
@@ -242,7 +239,7 @@ endif()
 
 add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SRCS})
 
-target_link_libraries(${LIBRARY_NAME} shared detour)
+target_link_libraries(${LIBRARY_NAME} shared Detour)
 
 if(UNIX)
   # Both systems don't have libdl and don't need them

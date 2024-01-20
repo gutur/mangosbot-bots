@@ -499,4 +499,8 @@ namespace ai
             return BuffOnTankTrigger::IsActive();
         }
     };
+
+    CAN_CAST_TRIGGER(ChainLightningTrigger, "chain lightning");
+
+    CAN_CAST_TRIGGER(StormstrikeTrigger, "stormstrike");
 }

@@ -56,11 +56,12 @@ bool LootStartRollAction::Execute(Event& event)
 
 bool RollAction::Execute(Event& event)
 {      
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     string text = event.getParam();
 
     if (text.empty())
     {
-        ai->TellPlayerNoFacing(GetMaster(), "请提供掷骰类型或物品,参阅 " + ChatHelper::formatValue("help", "action:roll", "roll help") + " 获取更多相关信息.");
+        ai->TellPlayerNoFacing(requester, "请提供掷骰类型或物品,参阅 " + ChatHelper::formatValue("help", "action:roll", "roll help") + " 获取更多相关信息.");
         return false;
     }
 
@@ -74,7 +75,7 @@ bool RollAction::Execute(Event& event)
 
     if (type != "need" && type != "greed" && type != "pass" && type != "auto")
     {
-        ai->TellPlayerNoFacing(GetMaster(), "请提供正确的掷骰类型.need(需求)、greed(贪婪)、pass(放弃)或auto(自动).有关更多信息,请参阅 " + ChatHelper::formatValue("help", "action:roll", "roll help") + " .");
+        ai->TellPlayerNoFacing(requester, "请提供正确的掷骰类型.need(需求)、greed(贪婪)、pass(放弃)或auto(自动).有关更多信息,请参阅 " + ChatHelper::formatValue("help", "action:roll", "roll help") + " 获取更多资讯.");
         return false;
     }
 

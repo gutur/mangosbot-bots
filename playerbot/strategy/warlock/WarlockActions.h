@@ -40,6 +40,30 @@ namespace ai
     {
     public:
 		CastShadowburnAction(PlayerbotAI* ai) : CastSpellAction(ai, "shadowburn") {}
+
+        bool Execute(Event& event) override
+        {
+            if (CastSpellAction::Execute(event))
+            {
+                // Remove potential extra soul shard
+                if (ai->HasCheat(BotCheatMask::item))
+                {
+                    Unit* target = GetTarget();
+                    if (target && AI_VALUE2(uint8, "health", GetTargetName()) <= 20)
+                    {
+                        Item* soulShard = bot->GetItemByEntry(6265);
+                        if (soulShard)
+                        {
+                            bot->DestroyItem(soulShard->GetBagSlot(), soulShard->GetSlot(), true);
+                        }
+                    }
+                }
+                
+                return true;
+            }
+
+            return false;
+        }
     };
 
     class CastSoulstoneAction : public UseItemIdAction
@@ -248,6 +272,28 @@ namespace ai
     {
     public:
 		CastSoulLinkAction(PlayerbotAI* ai) : CastBuffSpellAction(ai, "soul link") {}
+    };
+
+    class CastSacrificeAction : public CastPetSpellAction
+    {
+    public:
+        CastSacrificeAction(PlayerbotAI* ai) : CastPetSpellAction(ai, "sacrifice") {}
+        string GetTargetName() override { return "self target"; }
+    };
+
+    class CastSpellLockAction : public CastPetSpellAction
+    {
+    public:
+        CastSpellLockAction(PlayerbotAI* ai) : CastPetSpellAction(ai, "spell lock") {}
+    };
+
+    class CastSpellLockOnEnemyHealerAction : public CastPetSpellAction
+    {
+    public:
+        CastSpellLockOnEnemyHealerAction(PlayerbotAI* ai) : CastPetSpellAction(ai, "spell lock") {}
+        virtual string GetTargetName() override { return "enemy healer target"; }
+        virtual string GetTargetQualifier() override { return GetSpellName(); }
+        virtual string getName() override { return GetSpellName() + " on enemy healer"; }
     };
 
 	class CastSummonImpAction : public CastBuffSpellAction

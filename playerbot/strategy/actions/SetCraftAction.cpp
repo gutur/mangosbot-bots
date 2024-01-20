@@ -11,9 +11,8 @@ map<uint32, SkillLineAbilityEntry const*> SetCraftAction::skillSpells;
 
 bool SetCraftAction::Execute(Event& event)
 {
-    Player* master = GetMaster();
-
-    if (!master)
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
+    if (!requester)
         return false;
 
     string link = event.getParam();
@@ -22,20 +21,20 @@ bool SetCraftAction::Execute(Event& event)
     if (link == "reset")
     {
         data.Reset();
-        ai->TellPlayer(GetMaster(), "我不会给你制造任何东西.");
+        ai->TellPlayer(requester, "我不会给你制造任何东西");
         return true;
     }
 
     if (link == "?")
     {
-        TellCraft();
+        TellCraft(requester);
         return true;
     }
 
     ItemIds itemIds = chat->parseItems(link);
     if (itemIds.empty())
     {
-        ai->TellPlayer(GetMaster(), "用法: 'craft [物品ID]' or 'craft reset'");
+        ai->TellPlayer(requester, "用法: 'craft [物品ID]' or 'craft reset'");
         return false;
     }
 
@@ -97,22 +96,22 @@ bool SetCraftAction::Execute(Event& event)
 
     if (data.required.empty())
     {
-        ai->TellPlayer(GetMaster(), "我不能制造这个物品.");
+        ai->TellPlayer(requester, "我不能制造这个物品");
         return false;
     }
 
     data.itemId = itemId;
 
-    TellCraft();
+    TellCraft(requester);
     return true;
 }
 
-void SetCraftAction::TellCraft()
+void SetCraftAction::TellCraft(Player* requester)
 {
     CraftData& data = AI_VALUE(CraftData&, "craft");
     if (data.IsEmpty())
     {
-        ai->TellPlayer(GetMaster(), "我不会制造任何东西.");
+        ai->TellPlayer(requester, "我不会制造任何东西");
         return;
     }
 
@@ -141,7 +140,7 @@ void SetCraftAction::TellCraft()
     }
 
     out << " (制作费用: " << chat->formatMoney(GetCraftFee(data)) << ")";
-    ai->TellPlayer(GetMaster(), out.str());
+    ai->TellPlayer(requester, out.str());
 }
 
 uint32 SetCraftAction::GetCraftFee(CraftData& data)

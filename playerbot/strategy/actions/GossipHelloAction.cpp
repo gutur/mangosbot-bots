@@ -89,14 +89,19 @@ void GossipHelloAction::TellGossipMenus(Player* requester)
 {
     if (!bot->GetPlayerMenu())
         return;
+ 
+     GossipMenu& menu = bot->GetPlayerMenu()->GetGossipMenu();
 
-    Creature *pCreature = bot->GetNPCIfCanInteractWith(GetMaster()->GetSelectionGuid(), UNIT_NPC_FLAG_NONE);
-    GossipMenu& menu = bot->GetPlayerMenu()->GetGossipMenu();
-    if (pCreature)
-    {
-        uint32 textId = bot->GetGossipTextId(menu.GetMenuId(), pCreature);
-        TellGossipText(requester, textId);
-    }
+     if (requester)
+     {
+         Creature* pCreature = bot->GetNPCIfCanInteractWith(requester->GetSelectionGuid(), UNIT_NPC_FLAG_NONE);
+
+         if (pCreature)
+         {
+             uint32 textId = bot->GetGossipTextId(menu.GetMenuId(), pCreature);
+             TellGossipText(requester, textId);
+         }
+     }
 
     for (unsigned int i = 0; i < menu.MenuItemCount(); i++)
     {
@@ -111,7 +116,7 @@ bool GossipHelloAction::ProcessGossip(Player* requester, int menuToSelect)
     GossipMenu& menu = bot->GetPlayerMenu()->GetGossipMenu();
     if (menuToSelect >= 0 && (unsigned int)menuToSelect >= menu.MenuItemCount())
     {
-        ai->TellError("未知的对话选项");
+        ai->TellError(requester, "未知的对话选项");
         return false;
     }
     GossipMenuItem const& item = menu.GetItem(menuToSelect);

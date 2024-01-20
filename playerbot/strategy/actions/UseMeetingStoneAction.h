@@ -8,13 +8,14 @@ namespace ai
     public:
         SummonAction(PlayerbotAI* ai, string name = "summon") : MovementAction(ai, name) {}
         bool isPossible() override { return true; }
+        bool isUseful() override { return true; }
         bool isUsefulWhenStunned() override { return true; }
         virtual bool Execute(Event& event);
 
     protected:
-        bool Teleport(Player *summoner, Player *player);
-        bool SummonUsingGos(Player *summoner, Player *player);
-        bool SummonUsingNpcs(Player *summoner, Player *player);
+        bool Teleport(Player* requester, Player *summoner, Player *player);
+        bool SummonUsingGos(Player* requester, Player *summoner, Player *player);
+        bool SummonUsingNpcs(Player* requester, Player *summoner, Player *player);
     };
 
     class UseMeetingStoneAction : public SummonAction

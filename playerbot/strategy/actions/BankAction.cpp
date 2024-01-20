@@ -21,7 +21,7 @@ bool BankAction::Execute(Event& event)
         return ExecuteCommand(requester, text, npc);
     }
 
-    ai->TellError("附近找不到银行.");
+    ai->TellError(requester, "附近找不到银行");
     return false;
 }
 

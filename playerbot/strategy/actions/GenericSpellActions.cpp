@@ -57,7 +57,11 @@ bool CastSpellAction::Execute(Event& event)
     }
     else
     {
-        if (spellName == "freezing trap" || spellName == "frost trap") //Temporary fix for core crash
+        // Temporary fix for core crash
+        if (spellName == "freezing trap" || 
+            spellName == "frost trap" || 
+            spellName == "immolation trap" || 
+            spellName == "explosive trap") 
         {
             uint32 spellId = AI_VALUE2(uint32,"spell id", spellName);
 
@@ -70,12 +74,11 @@ bool CastSpellAction::Execute(Event& event)
                 uint8 slot = 0;
                 switch (pSpellInfo->Effect[j])
                 {
-                case SPELL_EFFECT_SUMMON_OBJECT_SLOT1: slot = 0; break;
-                case SPELL_EFFECT_SUMMON_OBJECT_SLOT2: slot = 1; break;
-                case SPELL_EFFECT_SUMMON_OBJECT_SLOT3: slot = 2; break;
-                case SPELL_EFFECT_SUMMON_OBJECT_SLOT4: slot = 3; break;
-                default: 
-                    continue;
+                    case SPELL_EFFECT_SUMMON_OBJECT_SLOT1: slot = 0; break;
+                    case SPELL_EFFECT_SUMMON_OBJECT_SLOT2: slot = 1; break;
+                    case SPELL_EFFECT_SUMMON_OBJECT_SLOT3: slot = 2; break;
+                    case SPELL_EFFECT_SUMMON_OBJECT_SLOT4: slot = 3; break;
+                    default: continue;
                 }
 
                 if (ObjectGuid guid = bot->m_ObjectSlotGuid[slot])
@@ -108,6 +111,7 @@ bool CastSpellAction::Execute(Event& event)
     {
         if (ai->HasCheat(BotCheatMask::attackspeed))
             spellDuration = 1;
+
         SetDuration(spellDuration);
     }
 
@@ -172,7 +176,7 @@ bool CastSpellAction::isPossible()
     }
     
     // Check if the spell can be casted
-	return ai->CanCastSpell(spellName, GetTarget(), 0, nullptr, true);
+	return ai->CanCastSpell(spellName, spellTarget, 0, nullptr, true);
 }
 
 bool CastSpellAction::isUseful()
@@ -196,7 +200,7 @@ bool CastSpellAction::isUseful()
 NextAction** CastSpellAction::getPrerequisites()
 {
     // Set the reach action as the cast spell prerequisite when needed
-    string reachAction = GetReachActionName();
+    const string reachAction = GetReachActionName();
     if (!reachAction.empty())
     {
         const string targetName = GetTargetName();
@@ -228,6 +232,12 @@ void CastSpellAction::SetSpellName(const string& name, string spellIDContextName
     {
         spellName = name;
         spellId = ai->GetAiObjectContext()->GetValue<uint32>(spellIDContextName, name)->Get();
+
+        float spellRange;
+        if (ai->GetSpellRange(spellName, &spellRange))
+        {
+            range = spellRange;
+        }
     }
 }
 
@@ -236,6 +246,49 @@ Unit* CastSpellAction::GetTarget()
     string targetName = GetTargetName();
     string targetNameQualifier = GetTargetQualifier();
     return targetNameQualifier.empty() ? AI_VALUE(Unit*, targetName) : AI_VALUE2(Unit*, targetName, targetNameQualifier);
+}
+
+bool CastPetSpellAction::isPossible()
+{
+    Unit* spellTarget = GetTarget();
+    if (!spellTarget)
+        return false;
+
+    Unit* pet = AI_VALUE(Unit*, "pet target");
+    if (pet && ai->IsSafe(pet))
+    {
+        const uint32& spellId = GetSpellID();
+        if (pet->HasSpell(spellId) && pet->IsSpellReady(spellId))
+        {
+            // Check if the pet is not too far from the owner
+            if (bot->GetDistance(pet) <= sPlayerbotAIConfig.sightDistance)
+            {
+                bool canReach = false;
+                const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(spellId);
+                if (pSpellInfo)
+                {
+                    const float dist = pet->GetDistance(spellTarget, true, DIST_CALC_COMBAT_REACH);
+                    canReach = dist <= (range + sPlayerbotAIConfig.contactDistance);
+
+                    if (pSpellInfo->rangeIndex != SPELL_RANGE_IDX_COMBAT && pSpellInfo->rangeIndex != SPELL_RANGE_IDX_SELF_ONLY && pSpellInfo->rangeIndex != SPELL_RANGE_IDX_ANYWHERE)
+                    {
+                        float max_range, min_range;
+                        if (ai->GetSpellRange(GetSpellName(), &max_range, &min_range))
+                        {
+                            canReach = dist < max_range&& dist >= min_range;
+                        }
+                    }
+                }
+
+                if (canReach)
+                {
+                    return ai->CanCastSpell(spellId, spellTarget, 0, true);
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 bool CastAuraSpellAction::isUseful()
@@ -414,4 +467,31 @@ bool RemoveBuffAction::Execute(Event& event)
 {
     ai->RemoveAura(name);
     return !ai->HasAura(name, bot);
+}
+
+bool InterruptCurrentSpellAction::isUseful()
+{
+    for (int type = CURRENT_MELEE_SPELL; type < CURRENT_CHANNELED_SPELL; type++)
+    {
+        Spell* currentSpell = bot->GetCurrentSpell((CurrentSpellTypes)type);
+        if (currentSpell && currentSpell->CanBeInterrupted())
+            return true;
+    }
+    return false;
+}
+
+bool InterruptCurrentSpellAction::Execute(Event& event)
+{
+    bool interrupted = false;
+    for (int type = CURRENT_MELEE_SPELL; type < CURRENT_CHANNELED_SPELL; type++)
+    {
+        Spell* currentSpell = bot->GetCurrentSpell((CurrentSpellTypes)type);
+        if (currentSpell && currentSpell->CanBeInterrupted())
+        {
+            bot->InterruptSpell((CurrentSpellTypes)type);
+            ai->SpellInterrupted(currentSpell->m_spellInfo->Id);
+            interrupted = true;
+        }
+    }
+    return interrupted;
 }

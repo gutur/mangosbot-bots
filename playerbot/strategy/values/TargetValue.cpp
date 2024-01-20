@@ -132,12 +132,42 @@ Unit* PullTargetValue::Get()
 
 Unit* FollowTargetValue::Calculate()
 {
-    Formation* formation = AI_VALUE(Formation*, "formation");
-    string targetName = formation->GetTargetName();
+    Unit* followTarget = AI_VALUE(GuidPosition, "manual follow target").GetUnit();
+    if (followTarget == nullptr)
+    {
+        Formation* formation = AI_VALUE(Formation*, "formation");
+        if (formation && !formation->GetTargetName().empty())
+        {
+            followTarget = AI_VALUE(Unit*, formation->GetTargetName());
+        }
+        else
+        {
+            followTarget = AI_VALUE(Unit*, "master target");
+        }
+    }
 
-    Unit* fTarget = NULL;
-    if (!targetName.empty())
-        return AI_VALUE(Unit*, targetName);
-    else
-        return AI_VALUE(Unit*, "master target");
+    return followTarget;
+}
+
+Unit* ClosestAttackerTargetingMeTargetValue::Calculate()
+{
+    Unit* result = nullptr;
+    float closest = 9999.0f;
+
+    const std::list<ObjectGuid>& attackers = AI_VALUE(list<ObjectGuid>, "attackers targeting me");
+    for (const ObjectGuid& attackerGuid : attackers)
+    {
+        Unit* attacker = ai->GetUnit(attackerGuid);
+        if (attacker)
+        {
+            const float distance = bot->GetDistance(attacker, true, DIST_CALC_COMBAT_REACH);
+            if (distance < closest)
+            {
+                closest = distance;
+                result = attacker;
+            }
+        }
+    }
+
+    return result;
 }

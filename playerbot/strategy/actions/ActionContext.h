@@ -60,6 +60,7 @@
 #include "PullActions.h"
 #include "ResetAiAction.h"
 #include "ShareQuestAction.h"
+#include "UpdateGearAction.h"
 
 #include "OnyxiasLairDungeonActions.h"
 #include "MoltenCoreDungeonActions.h"
@@ -96,6 +97,7 @@ namespace ai
             creators["flee with pet"] = &ActionContext::flee_with_pet;
             creators["wait for attack keep safe distance"] = &ActionContext::wait_for_attack_keep_safe_distance;
             creators["shoot"] = &ActionContext::shoot;
+            creators["whipper root tuber"] = &ActionContext::whipper_root_tuber;
             creators["healthstone"] = &ActionContext::healthstone;
             creators["healing potion"] = &ActionContext::healing_potion;
             creators["mana potion"] = &ActionContext::mana_potion;
@@ -181,6 +183,7 @@ namespace ai
             creators["enchant random item"] = &ActionContext::enchant_random_item;
             creators["reset instances"] = &ActionContext::reset_instances;
             creators["reset raids"] = &ActionContext::reset_raids;
+            creators["update gear"] = &ActionContext::update_gear;
             creators["buy petition"] = &ActionContext::buy_petition;
             creators["offer petition"] = &ActionContext::offer_petition;
             creators["offer petition nearby"] = &ActionContext::offer_petition_nearby;
@@ -189,6 +192,8 @@ namespace ai
             creators["guild manage nearby"] = &ActionContext::guild_manage_nearby;
             creators["use trinket"] = &ActionContext::use_trinket;
             creators["reset"] = &ActionContext::reset;
+            creators["interrupt current spell"] = &ActionContext::interrupt_current_spell;
+            creators["initialize pet"] = &ActionContext::initialize_pet;
 
             // item helpers
             creators["goblin sapper"] = &ActionContext::goblin_sapper;
@@ -365,6 +370,7 @@ namespace ai
         static Action* flee_with_pet(PlayerbotAI* ai) { return new FleeWithPetAction(ai); }
         static Action* wait_for_attack_keep_safe_distance(PlayerbotAI* ai) { return new WaitForAttackKeepSafeDistanceAction(ai); }
         static Action* flee(PlayerbotAI* ai) { return new FleeAction(ai); }
+        static Action* initialize_pet(PlayerbotAI* ai) { return new InitializePetAction(ai); }
 
         //racials      
         static Action* war_stomp(PlayerbotAI* ai) { return new CastWarStompAction(ai); }
@@ -420,6 +426,7 @@ namespace ai
         static Action* mana_potion(PlayerbotAI* ai) { return new UseManaPotionAction(ai); }
         static Action* healing_potion(PlayerbotAI* ai) { return new UseHealingPotionAction(ai); }
         static Action* healthstone(PlayerbotAI* ai) { return new UseHealthstoneAction(ai); }
+        static Action* whipper_root_tuber(PlayerbotAI* ai) { return new UseWhipperRootTuberAction(ai); }
         static Action* move_out_of_enemy_contact(PlayerbotAI* ai) { return new MoveOutOfEnemyContactAction(ai); }
         static Action* set_facing(PlayerbotAI* ai) { return new SetFacingTargetAction(ai); }
         static Action* set_behind(PlayerbotAI* ai) { return new SetBehindTargetAction(ai); }
@@ -451,6 +458,7 @@ namespace ai
         static Action* enchant_random_item(PlayerbotAI* ai) { return new EnchantRandomItemAction(ai); }
         static Action* reset_instances(PlayerbotAI* ai) { return new ResetInstancesAction(ai); }
         static Action* reset_raids(PlayerbotAI* ai) { return new ResetRaidsAction(ai); }
+        static Action* update_gear(PlayerbotAI* ai) { return new UpdateGearAction(ai); }
         static Action* buy_petition(PlayerbotAI* ai) { return new BuyPetitionAction(ai); }
         static Action* offer_petition(PlayerbotAI* ai) { return new PetitionOfferAction(ai); }
         static Action* offer_petition_nearby(PlayerbotAI* ai) { return new PetitionOfferNearbyAction(ai); }
@@ -459,6 +467,7 @@ namespace ai
         static Action* guild_manage_nearby(PlayerbotAI* ai) { return new GuildManageNearbyAction(ai); }
         static Action* use_trinket(PlayerbotAI* ai) { return new UseTrinketAction(ai); }
         static Action* reset(PlayerbotAI* ai) { return new ResetAction(ai); }
+        static Action* interrupt_current_spell(PlayerbotAI* ai) { return new InterruptCurrentSpellAction(ai); }
 
         // item helpers
         static Action* goblin_sapper(PlayerbotAI* ai) { return new UseGoblinSapperChargeAction(ai); }

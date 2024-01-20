@@ -18,8 +18,10 @@ HelpAction::~HelpAction()
 
 bool HelpAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     string param = event.getParam();
     string helpTopic;
+
     if(param.find("Hvalue:help") != string::npos)
     {
         helpTopic = ChatHelper::parseValue("help",param);
@@ -65,33 +67,33 @@ bool HelpAction::Execute(Event& event)
 
         for (auto& line : lines)
         {
-            ai->TellPlayerNoFacing(GetMaster(), line, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+            ai->TellPlayerNoFacing(requester, line, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
         }
 
         return true;
     }
     
-    TellChatCommands();
-    TellStrategies();
+    TellChatCommands(requester);
+    TellStrategies(requester);
 
     return true;
 }
 
-void HelpAction::TellChatCommands()
+void HelpAction::TellChatCommands(Player* requester)
 {
     ostringstream out;
     out << "私聊时以下任意一项: ";
     out << CombineSupported(chatContext->supports());
     out << ", [物品], [任务] 或者 [对象] 链接";
-    ai->TellError(out.str());
+    ai->TellPlayer(requester, out.str());
 }
 
-void HelpAction::TellStrategies()
+void HelpAction::TellStrategies(Player* requester)
 {
     ostringstream out;
     out << "可能的策略 (co/nc/dead commands): ";
     out << CombineSupported(ai->GetAiObjectContext()->GetSupportedStrategies());
-    ai->TellError(out.str());
+    ai->TellPlayer(requester, out.str());
 }
 
 string HelpAction::CombineSupported(set<string> commands)

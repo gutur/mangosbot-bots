@@ -3,21 +3,19 @@
 #include "SetHomeAction.h"
 #include "../../PlayerbotAIConfig.h"
 
-
 using namespace ai;
 
 bool SetHomeAction::Execute(Event& event)
 {
-    Player* master = GetMaster();
-
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     ObjectGuid selection = bot->GetSelectionGuid();
     bool isRpgAction = AI_VALUE(GuidPosition, "rpg target") == selection;
 
     if (!isRpgAction)
     {
-        if (master)
+        if (requester)
         {
-            selection = master->GetSelectionGuid();
+            selection = requester->GetSelectionGuid();
         }
         else
         {
@@ -34,7 +32,7 @@ bool SetHomeAction::Execute(Event& event)
             {
                 Creature* creature = ai->GetCreature(selection);                   
                 bot->GetSession()->SendBindPoint(creature);
-                ai->TellPlayer(GetMaster(), "这个旅馆是我的新家.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+                ai->TellPlayer(requester, "这个旅馆是我的新家", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
                 RESET_AI_VALUE(WorldPosition, "home bind");
                 return true;
             }
@@ -42,7 +40,7 @@ bool SetHomeAction::Execute(Event& event)
             {
                 Creature* creature = ai->GetCreature(selection);
                 bot->GetSession()->SendBindPoint(creature);
-                ai->TellPlayer(GetMaster(), "这个旅馆是我的新家.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+                ai->TellPlayer(requester, "这个旅馆是我的新家", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
                 RESET_AI_VALUE(WorldPosition, "home bind");
                 return true;
             }
@@ -57,11 +55,11 @@ bool SetHomeAction::Execute(Event& event)
             continue;
 
         bot->GetSession()->SendBindPoint(unit);
-        ai->TellPlayer(GetMaster(), "这个旅馆是我的新家.", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+        ai->TellPlayer(requester, "这个旅馆是我的新家", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         RESET_AI_VALUE(WorldPosition, "home bind");
         return true;
     }
 
-    ai->TellError("无法找到绑炉石的npc");
+    ai->TellPlayer(requester, "无法找到绑炉石的npc");
     return false;
 }

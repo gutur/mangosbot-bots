@@ -6,6 +6,7 @@
 #include "../../ServerFacade.h"
 #include "../generic/PullStrategy.h"
 #include "../NamedObjectContext.h"
+#include "../values/MoveStyleValue.h"
 #include "GenericSpellActions.h"
 
 namespace ai
@@ -32,7 +33,7 @@ namespace ai
             }
         }
 
-        virtual bool Execute(Event& event)
+        virtual bool Execute(Event& event) override
 		{
             Unit* target = GetTarget();
             if (target)
@@ -51,6 +52,13 @@ namespace ai
                     chaseDist = (chaseDist - sPlayerbotAIConfig.contactDistance);
                 }
 
+                if (MoveStyleValue::WaitForEnemy(ai) && target->m_movementInfo.HasMovementFlag(movementFlagsMask) &&
+                        sServerFacade.IsInFront(target, bot, sPlayerbotAIConfig.sightDistance, CAST_ANGLE_IN_FRONT) &&
+                        sServerFacade.IsDistanceGreaterThan(distanceToTarget, sPlayerbotAIConfig.tooCloseDistance))
+                {
+                    return true;
+                }                    
+                
                 if (inLos && isFriend && (range <= ai->GetRange("follow")))
                 {
                     return MoveNear(target, chaseDist);
@@ -64,7 +72,7 @@ namespace ai
             return false;
         }
 
-        virtual bool isUseful()
+        virtual bool isUseful() override
 		{
             // Do not move if stay strategy is set
             if (!ai->HasStrategy("stay", ai->GetState()))
@@ -73,10 +81,10 @@ namespace ai
                 if (target)
                 {
                     // Do not move while casting
-                    if (!bot->IsNonMeleeSpellCasted(true))
+                    if (!bot->IsNonMeleeSpellCasted(true, false, true))
                     {
                         // Check if the spell for which the reach action is used for can be casted
-                        if (!spellName.empty() && !ai->CanCastSpell(spellName, target, true, nullptr, true))
+                        if (!spellName.empty() && !ai->CanCastSpell(spellName, target, true, nullptr, true, true))
                         {
                             return false;
                         }
@@ -96,7 +104,7 @@ namespace ai
             return false;
         }
 
-        virtual string GetTargetName() { return "current target"; }
+        virtual string GetTargetName() override { return "current target"; }
         string GetSpellName() const { return spellName; }
 
         virtual Unit* GetTarget() override
@@ -104,8 +112,13 @@ namespace ai
             // Get the target from the qualifiers
             if (!qualifier.empty())
             {
+                string targetQualifier;
                 const string targetName = Qualified::getMultiQualifierStr(qualifier, 1, "::");
-                const string targetQualifier = Qualified::getMultiQualifierStr(qualifier, 2, "::");
+                if (targetName != "current target")
+                {
+                    targetQualifier = Qualified::getMultiQualifierStr(qualifier, 2, "::");
+                }
+
                 return targetQualifier.empty() ? AI_VALUE(Unit*, targetName) : AI_VALUE2(Unit*, targetName, targetQualifier);
             }
             else
@@ -124,7 +137,7 @@ namespace ai
     public:
         CastReachTargetSpellAction(PlayerbotAI* ai, string spell, float distance) : CastSpellAction(ai, spell), distance(distance) {}
 
-		virtual bool isUseful()
+		virtual bool isUseful() override
 		{
             // Do not move if stay strategy is set
             if (ai->HasStrategy("stay", ai->GetState()))
@@ -177,6 +190,6 @@ namespace ai
     {
     public:
         ReachPartyMemberToHealAction(PlayerbotAI* ai) : ReachTargetAction(ai, "reach party member to heal", ai->GetRange("heal")) {}
-        virtual string GetTargetName() { return "party member to heal"; }
+        virtual string GetTargetName() override { return "party member to heal"; }
     };
 }

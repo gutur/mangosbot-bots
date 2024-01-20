@@ -135,6 +135,55 @@ bool BotUseItemSpell::OpenLockCheck()
     return false;
 }
 
+vector<uint32> ParseItems(const string& text)
+{
+    vector<uint32> itemIds;
+
+    uint8 pos = 0;
+    while (true)
+    {
+        int i = text.find("Hitem:", pos);
+        if (i == -1)
+        {
+            break;
+        }
+
+        pos = i + 6;
+        int endPos = text.find(':', pos);
+        if (endPos == -1)
+        {
+            break;
+        }
+
+        string idC = text.substr(pos, endPos - pos);
+        uint32 id = atol(idC.c_str());
+        pos = endPos;
+        if (id)
+        {
+            itemIds.push_back(id);
+        }
+    }
+
+    return itemIds;
+}
+
+bool IsFoodOrDrink(ItemPrototype const* proto, uint32 spellCategory)
+{
+    return proto->Class == ITEM_CLASS_CONSUMABLE && 
+            (proto->SubClass == ITEM_SUBCLASS_FOOD || proto->SubClass == ITEM_SUBCLASS_CONSUMABLE) && 
+            proto->Spells[0].SpellCategory == spellCategory;
+}
+
+bool IsFood(ItemPrototype const* proto)
+{
+    return IsFoodOrDrink(proto, 11);
+}
+
+bool IsDrink(ItemPrototype const* proto)
+{
+    return IsFoodOrDrink(proto, 59);
+}
+
 bool UseItemAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
@@ -152,9 +201,21 @@ bool UseItemAction::Execute(Event& event)
         if (items.size() > 1)
         {
             list<Item*>::iterator i = items.begin();
-            Item* itemTarget = *i++;
-            Item* item = *i;
-            if(item->IsPotion() || item->GetProto()->Class == ITEM_CLASS_CONSUMABLE || itemTarget->GetProto() == item->GetProto())
+            Item* item = *i++;
+            Item* itemTarget = *i;
+
+            // Check if the items are in the correct order
+            const vector<uint32> itemIds = ParseItems(name);
+            if(!itemIds.empty() && item->GetEntry() != *itemIds.begin())
+            {
+                // Swap items to match command order
+                Item* tmp = item;
+                item = itemTarget;
+                itemTarget = tmp;
+            }
+
+            ItemPrototype const* proto = item->GetProto();
+            if(item->IsPotion() || IsFood(proto) || IsDrink(proto) || itemTarget->GetProto() == proto)
             {
                 return UseItemAuto(requester, item);
             }
@@ -188,7 +249,7 @@ bool UseItemAction::Execute(Event& event)
         }
     }
 
-    ai->TellPlayer(requester, "没有可用的物品.");
+    ai->TellPlayer(requester, "没有可用的物品");
     return false;
 }
 
@@ -207,7 +268,10 @@ bool UseItemAction::UseGameObject(Player* requester, ObjectGuid guid)
         || go->GetGoState() != GO_STATE_READY)
         return false;
 
-   go->Use(bot);
+    std::unique_ptr<WorldPacket> packet(new WorldPacket(CMSG_GAMEOBJ_USE));
+    *packet << guid;
+    bot->GetSession()->QueuePacket(std::move(packet));
+    
    ostringstream out; out << "正在使用 " << chat->formatGameobject(go);
    ai->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
    return true;
@@ -230,8 +294,8 @@ bool UseItemAction::UseItemAuto(Player* requester, Item* item)
     uint8 unk_flags = 0;
 
     ItemPrototype const* proto = item->GetProto();
-    bool isDrink = proto->Spells[0].SpellCategory == 59;
-    bool isFood = proto->Spells[0].SpellCategory == 11;
+    bool isDrink = IsDrink(proto);
+    bool isFood = IsFood(proto);
 
     for (uint8 i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
     {
@@ -288,14 +352,14 @@ bool UseItemAction::UseItemAuto(Player* requester, Item* item)
     packet.appendPackGUID(bot->GetObjectGuid());
 
     SetDuration(sPlayerbotAIConfig.globalCoolDown);
-    if (proto->Class == ITEM_CLASS_CONSUMABLE && (proto->SubClass == ITEM_SUBCLASS_FOOD || proto->SubClass == ITEM_SUBCLASS_CONSUMABLE) &&
-        (isFood || isDrink))
+    if (isFood || isDrink)
     {
         if (sServerFacade.IsInCombat(bot))
             return false;
 
         bot->addUnitState(UNIT_STAND_STATE_SIT);
         ai->InterruptSpell();
+        ai->StopMoving();
 
         float hp = bot->GetHealthPercent();
         float mp = bot->GetPower(POWER_MANA) * 100.0f / bot->GetMaxPower(POWER_MANA);
@@ -315,11 +379,30 @@ bool UseItemAction::UseItemAuto(Player* requester, Item* item)
             p = hp;
             TellConsumableUse(requester, item, "Eating", p);
         }
+        
+        bool waitForWellFed = false;
+        for (uint8 i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+        {
+            if (proto->Spells[i].SpellId > 0)
+            {
+                if (SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(proto->Spells[i].SpellId))
+                {
+                    for (uint8 j = 0; j < MAX_SPELL_EFFECTS; ++j)
+                    {
+                        if (spellInfo->Effect[j] == SPELL_EFFECT_APPLY_AURA && spellInfo->EffectApplyAuraName[j] == SPELL_AURA_PERIODIC_TRIGGER_SPELL)
+                        {
+                            waitForWellFed = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
         if(!bot->IsInCombat())
         {
             const float multiplier = bot->InBattleGround() ? 20000.0f : 27000.0f;
-            const float duration = multiplier * ((100 - p) / 100.0f);
+            const float duration = waitForWellFed ? 15000.0f : multiplier * ((100 - p) / 100.0f);
             SetDuration(duration);
         }
     }
@@ -337,7 +420,7 @@ bool UseItemAction::UseItemOnGameObject(Player* requester, Item* item, ObjectGui
 
 bool UseItemAction::UseItemOnItem(Player* requester, Item* item, Item* itemTarget)
 {
-   return UseItem(requester, item, ObjectGuid(), itemTarget);
+    return UseItem(requester, item, ObjectGuid(), itemTarget);
 }
 
 bool UseItemAction::UseItemOnTarget(Player* requester, Item* item, Unit* target)
@@ -408,26 +491,40 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
 #endif
 
     bool targetSelected = false;
-    ostringstream out; out << "Using " << chat->formatItem(item);
+
+    map<string, string> replyArgs;
+    replyArgs["%target"] = chat->formatItem(item);
+    ostringstream replyStr; replyStr << BOT_TEXT("use_command");
+
     if ((int)item->GetProto()->Stackable > 1)
     {
         uint32 count = item->GetCount();
         if (count > 1)
-            out << " (" << count << " available) ";
+        {
+            replyArgs["%amount"] = count;
+            replyStr << " " << BOT_TEXT("use_command_remaining");
+        }
         else
-            out << " (the last one!)";
+        {
+            replyStr << " " << BOT_TEXT("use_command_last");
+        }
     }
 
     if (goGuid)
     {
         GameObject* go = ai->GetGameObject(goGuid);
         if (!go || !sServerFacade.isSpawned(go))
+        {
             return false;
+        }
 
         targetFlag = TARGET_FLAG_GAMEOBJECT;
         packet << targetFlag;
         packet.appendPackGUID(goGuid.GetRawValue());
-        out << " 对它使用: " << chat->formatGameobject(go);
+
+        replyArgs["%gameobject"] = chat->formatGameobject(go);
+        replyStr << " " << BOT_TEXT("use_command_target_go");
+
         targetSelected = true;
     }
 
@@ -438,7 +535,9 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
         {
             bool fit = SocketItem(requester, itemTarget, item) || SocketItem(requester, itemTarget, item, true);
             if (!fit)
-                ai->TellPlayer(requester, "插槽不匹配", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            {
+                ai->TellPlayer(requester, BOT_TEXT("use_command_socket_error"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            }
 
             return fit;
         }
@@ -448,7 +547,10 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
             targetFlag = TARGET_FLAG_ITEM;
             packet << targetFlag;
             packet.appendPackGUID(itemTarget->GetObjectGuid());
-            out << " 对它使用: " << chat->formatItem(itemTarget);
+
+            replyArgs["%item"] = chat->formatItem(itemTarget);
+            replyStr << " " << BOT_TEXT("command_target_item");
+
             targetSelected = true;
 #ifndef MANGOSBOT_ZERO
         }
@@ -457,30 +559,57 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
 
     if (!targetSelected && !selfOnly)
     {
-        if (unitTarget)
+        // Prevent using a item target spell on a unit target
+        bool needsItemTarget = false;
+        for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; i++)
         {
-            if (item->IsTargetValidForItemUse(unitTarget))
+            spellId = item->GetProto()->Spells[i].SpellId;
+            if (spellId > 0)
             {
-                targetFlag = TARGET_FLAG_UNIT;
-                packet << targetFlag << unitTarget->GetObjectGuid().WriteAsPacked();
-                out << " 对它使用: " << unitTarget->GetName();
-                targetSelected = true;
+                const SpellEntry* const pSpellInfo = sServerFacade.LookupSpellInfo(spellId);
+                if (pSpellInfo->Targets & TARGET_FLAG_ITEM)
+                {
+                    needsItemTarget = true;
+                    unitTarget = nullptr;
+                }
+
+                break;
             }
         }
-        else
+        
+        if(!needsItemTarget)
         {
-            if (!targetSelected && requester && ai->HasActivePlayerMaster())
+            if (unitTarget)
             {
-                ObjectGuid requesterSelection = requester->GetSelectionGuid();
-                if (requesterSelection)
+                if (item->IsTargetValidForItemUse(unitTarget))
                 {
-                    Unit* unit = ai->GetUnit(requesterSelection);
-                    if (unit && item->IsTargetValidForItemUse(unit))
+                    targetFlag = TARGET_FLAG_UNIT;
+                    packet << targetFlag << unitTarget->GetObjectGuid().WriteAsPacked();
+
+                    replyArgs["%unit"] = unitTarget->GetName();
+                    replyStr << " " << BOT_TEXT("command_target_unit");
+
+                    targetSelected = true;
+                }
+            }
+            else
+            {
+                if (!targetSelected && requester && ai->HasActivePlayerMaster())
+                {
+                    ObjectGuid requesterSelection = requester->GetSelectionGuid();
+                    if (requesterSelection)
                     {
-                        targetFlag = TARGET_FLAG_UNIT;
-                        packet << targetFlag << requesterSelection.WriteAsPacked();
-                        out << " 对它使用: " << unit->GetName();
-                        targetSelected = true;
+                        Unit* unit = ai->GetUnit(requesterSelection);
+                        if (unit && item->IsTargetValidForItemUse(unit))
+                        {
+                            targetFlag = TARGET_FLAG_UNIT;
+                            packet << targetFlag << requesterSelection.WriteAsPacked();
+
+                            replyArgs["%unit"] = unit->GetName();
+                            replyStr << " " << BOT_TEXT("command_target_unit");
+
+                            targetSelected = true;
+                        }
                     }
                 }
             }
@@ -546,8 +675,10 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
             packet << questid;
             packet << uint32(0);
             bot->GetSession()->HandleQuestgiverAcceptQuestOpcode(packet);
-            ostringstream out; out << "得到任务 " << chat->formatQuest(qInfo);
-            ai->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+
+            map<string, string> args;
+            args["%quest"] = chat->formatQuest(qInfo);
+            ai->TellPlayerNoFacing(requester, BOT_TEXT2("use_command_quest_accepted", args), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             return true;
         }
     }
@@ -605,7 +736,7 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
                 targetFlag = TARGET_FLAG_TRADE_ITEM;
                 packet << targetFlag << (uint8)1 << (uint64)TRADE_SLOT_NONTRADED;
                 targetSelected = true;
-                out << " 对交易中的物品使用.";
+                replyStr << " " << BOT_TEXT("command_target_trade");
             }
             else
             {
@@ -613,7 +744,9 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
                 packet << targetFlag;
                 packet.appendPackGUID(itemForSpell->GetObjectGuid());
                 targetSelected = true;
-                out << " 对它使用: " << chat->formatItem(itemForSpell);
+
+                replyArgs["%item"] = chat->formatItem(itemForSpell);
+                replyStr << " " << BOT_TEXT("command_target_item");
             }
 
             Spell *spell = new Spell(bot, pSpellInfo, false);
@@ -629,14 +762,14 @@ bool UseItemAction::UseItem(Player* requester, Item* item, ObjectGuid goGuid, It
         packet << targetFlag;
         packet.appendPackGUID(bot->GetObjectGuid());
         targetSelected = true;
-        out << " 对自己使用.";
+        replyStr << " " << BOT_TEXT("command_target_self");
     }
 
     if (!spellId)
        return false;
 
     SetDuration(sPlayerbotAIConfig.globalCoolDown);
-    ai->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+    ai->TellPlayerNoFacing(requester, BOT_TEXT2(replyStr.str(), replyArgs), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 
     bot->GetSession()->HandleUseItemOpcode(packet);
     return true;
@@ -915,6 +1048,12 @@ bool UseItemIdAction::CastItemSpell(uint32 itemId, Unit* target, GameObject* goT
 
 bool UseItemIdAction::isUseful()
 {
+    if (!getQualifier().empty() && (getMultiQualifierStr(getQualifier(), 0, ",").find_first_not_of("0123456789") != std::string::npos))
+    {
+        sLog.outError("UseItemIdAction::isUseful with qualifier %s, should be number.", getQualifier().c_str());
+        return false;
+    }
+
     const ItemPrototype* proto = sObjectMgr.GetItemPrototype(GetItemId());
     if (proto)
     {
@@ -961,6 +1100,8 @@ bool UseHearthStoneAction::Execute(Event& event)
         {
             WorldPacket emptyPacket;
             bot->GetSession()->HandleCancelMountAuraOpcode(emptyPacket);
+            bot->UpdateSpeed(MOVE_RUN, true);
+            bot->UpdateSpeed(MOVE_RUN, false);
 
             if (bot->IsFlying())
                 bot->GetMotionMaster()->MoveFall();

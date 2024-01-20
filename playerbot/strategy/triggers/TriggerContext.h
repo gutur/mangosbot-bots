@@ -131,6 +131,7 @@ namespace ai
             creators["not facing target"] = &TriggerContext::not_facing_target;
             creators["far from master"] = &TriggerContext::far_from_master;
             creators["not near master"] = &TriggerContext::not_near_master;
+            creators["out of react range"] = &TriggerContext::out_of_react_range;
             creators["update follow"] = &TriggerContext::update_follow;
             creators["stop follow"] = &TriggerContext::stop_follow;
             creators["far from loot target"] = &TriggerContext::far_from_loot_target;
@@ -174,7 +175,11 @@ namespace ai
             creators["use trinket"] = &TriggerContext::use_trinket;
             creators["has blessing of salvation"] = &TriggerContext::has_blessing_of_salvation;
             creators["has greater blessing of salvation"] = &TriggerContext::has_greater_blessing_of_salvation;
+            creators["target of attacker"] = &TriggerContext::target_of_attacker;
+            creators["target of attacker close"] = &TriggerContext::target_of_attacker_close;
             creators["target of fear cast"] = &TriggerContext::target_of_fear_cast;
+            creators["heal target full health"] = &TriggerContext::heal_target_full_health;
+            creators["dispel enrage"] = &TriggerContext::dispel_enrage;
 
             creators["mounted"] = &TriggerContext::mounted;
             creators["rooted"] = &TriggerContext::rooted;
@@ -234,6 +239,9 @@ namespace ai
             creators["rpg duel"] = &TriggerContext::rpg_duel;
             creators["rpg item"] = &TriggerContext::rpg_item;
 
+            creators["random jump"] = &TriggerContext::random_jump;
+            creators["rtsc jump active"] = &TriggerContext::rtsc_jump_active;
+
             // racials
             creators["berserking"] = &TriggerContext::berserking;
             creators["blood fury"] = &TriggerContext::blood_fury;
@@ -264,7 +272,6 @@ namespace ai
             creators["end magmadar fight"] = &TriggerContext::magmadar_end_fight;
             creators["magmadar lava bomb"] = &TriggerContext::magmadar_lava_bomb;
             creators["magmadar too close"] = &TriggerContext::magmadar_too_close;
-            creators["magmadar enraged"] = &TriggerContext::magmadar_enraged;
 
             creators["fire protection potion ready"] = &TriggerContext::fire_protection_potion_ready;
 
@@ -348,6 +355,7 @@ namespace ai
         static Trigger* far_from_loot_target(PlayerbotAI* ai) { return new FarFromCurrentLootTrigger(ai); }
         static Trigger* far_from_master(PlayerbotAI* ai) { return new FarFromMasterTrigger(ai); }
         static Trigger* not_near_master(PlayerbotAI* ai) { return new NotNearMasterTrigger(ai); }
+        static Trigger* out_of_react_range(PlayerbotAI* ai) { return new OutOfReactRangeTrigger(ai); }
         static Trigger* update_follow(PlayerbotAI* ai) { return new UpdateFollowTrigger(ai); }
         static Trigger* stop_follow(PlayerbotAI* ai) { return new StopFollowTrigger(ai); }
         static Trigger* behind_target(PlayerbotAI* ai) { return new IsBehindTargetTrigger(ai); }
@@ -449,7 +457,11 @@ namespace ai
         static Trigger* in_raid_fight(PlayerbotAI* ai) { return new InRaidFightTrigger(ai); }
         static Trigger* has_blessing_of_salvation(PlayerbotAI* ai) { return new HasBlessingOfSalvationTrigger(ai); }
         static Trigger* has_greater_blessing_of_salvation(PlayerbotAI* ai) { return new HasGreaterBlessingOfSalvationTrigger(ai); }
+        static Trigger* target_of_attacker(PlayerbotAI* ai) { return new TargetOfAttacker(ai); }
+        static Trigger* target_of_attacker_close(PlayerbotAI* ai) { return new TargetOfAttackerClose(ai); }
         static Trigger* target_of_fear_cast(PlayerbotAI* ai) { return new TargetOfFearCastTrigger(ai); }
+        static Trigger* heal_target_full_health(PlayerbotAI* ai) { return new HealTargetFullHealthTrigger(ai); }
+        static Trigger* dispel_enrage(PlayerbotAI* ai) { return new DispelEnrageOnTargetTrigger(ai); }
 
         static Trigger* petition_signed(PlayerbotAI* ai) { return new PetitionTurnInTrigger(ai); }
         static Trigger* buy_tabard(PlayerbotAI* ai) { return new BuyTabardTrigger(ai); }        
@@ -482,6 +494,9 @@ namespace ai
         static Trigger* rpg_duel(PlayerbotAI* ai) { return new RpgDuelTrigger(ai); }
         static Trigger* rpg_item(PlayerbotAI* ai) { return new RpgItemTrigger(ai); }
 
+        static Trigger* random_jump(PlayerbotAI* ai) { return new RandomJumpTrigger(ai); }
+        static Trigger* rtsc_jump_active(PlayerbotAI* ai) { return new RtscJumpTrigger(ai); }
+
         // Dungeon Triggers
         static Trigger* onyxias_lair_enter(PlayerbotAI* ai) { return new OnyxiasLairEnterDungeonTrigger(ai); }
         static Trigger* onyxias_lair_leave(PlayerbotAI* ai) { return new OnyxiasLairLeaveDungeonTrigger(ai); }
@@ -500,7 +515,6 @@ namespace ai
         static Trigger* magmadar_end_fight(PlayerbotAI* ai) { return new MagmadarEndFightTrigger(ai); }
         static Trigger* magmadar_lava_bomb(PlayerbotAI* ai) { return new MagmadarLavaBombTrigger(ai); }
         static Trigger* magmadar_too_close(PlayerbotAI* ai) { return new MagmadarTooCloseTrigger(ai); }
-        static Trigger* magmadar_enraged(PlayerbotAI* ai) { return new MagmadarEnragedTrigger(ai); }
 
         static Trigger* fire_protection_potion_ready(PlayerbotAI* ai) { return new FireProtectionPotionReadyTrigger(ai); }
 

@@ -211,6 +211,7 @@ namespace ai
                 creators["berserker stance"] = &TriggerFactoryInternal::berserker_stance;
                 creators["shield block"] = &TriggerFactoryInternal::shield_block;
                 creators["sunder armor"] = &TriggerFactoryInternal::sunder_armor;
+                creators["demoralizing shout"] = &TriggerFactoryInternal::demoralizing_shout;
                 creators["devastate"] = &TriggerFactoryInternal::devastate;
                 creators["revenge"] = &TriggerFactoryInternal::revenge;
                 creators["overpower"] = &TriggerFactoryInternal::overpower;
@@ -220,6 +221,8 @@ namespace ai
                 creators["thunder clap on snare target"] = &TriggerFactoryInternal::thunder_clap_on_snare_target;
                 creators["thunder clap"] = &TriggerFactoryInternal::thunder_clap;
                 creators["bloodthirst"] = &TriggerFactoryInternal::bloodthirst;
+                creators["whirlwind"] = &TriggerFactoryInternal::whirlwind;
+                creators["heroic strike"] = &TriggerFactoryInternal::heroic_strike;
                 creators["berserker rage"] = &TriggerFactoryInternal::berserker_rage;
                 creators["pummel on enemy healer"] = &TriggerFactoryInternal::pummel_on_enemy_healer;
                 creators["pummel"] = &TriggerFactoryInternal::pummel;
@@ -258,6 +261,8 @@ namespace ai
             static Trigger* pummel_on_enemy_healer(PlayerbotAI* ai) { return new PummelInterruptEnemyHealerSpellTrigger(ai); }
             static Trigger* berserker_rage(PlayerbotAI* ai) { return new BerserkerRageBuffTrigger(ai); }
             static Trigger* bloodthirst(PlayerbotAI* ai) { return new BloodthirstBuffTrigger(ai); }
+            static Trigger* whirlwind(PlayerbotAI* ai) { return new WhirlwindTrigger(ai); }
+            static Trigger* heroic_strike(PlayerbotAI* ai) { return new HeroicStrikeTrigger(ai); }
             static Trigger* thunder_clap_on_snare_target(PlayerbotAI* ai) { return new ThunderClapSnareTrigger(ai); }
             static Trigger* thunder_clap(PlayerbotAI* ai) { return new ThunderClapTrigger(ai); }
             static Trigger* mortal_strike(PlayerbotAI* ai) { return new MortalStrikeDebuffTrigger(ai); }
@@ -267,6 +272,7 @@ namespace ai
             static Trigger* devastate(PlayerbotAI* ai) { return new DevastateAvailableTrigger(ai); }
             static Trigger* revenge(PlayerbotAI* ai) { return new RevengeAvailableTrigger(ai); }
             static Trigger* sunder_armor(PlayerbotAI* ai) { return new SunderArmorDebuffTrigger(ai); }
+            static Trigger* demoralizing_shout(PlayerbotAI* ai) { return new DemoralizingShoutDebuffTrigger(ai); }
             static Trigger* shield_block(PlayerbotAI* ai) { return new ShieldBlockTrigger(ai); }
             static Trigger* berserker_stance(PlayerbotAI* ai) { return new BerserkerStanceTrigger(ai); }
             static Trigger* defensive_stance(PlayerbotAI* ai) { return new DefensiveStanceTrigger(ai); }

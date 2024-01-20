@@ -118,7 +118,7 @@ void SuggestWhatToDoAction::instance()
     itemout << allowedInstances[urand(0, allowedInstances.size() - 1)];
     placeholders["%instance"] = itemout.str();
 
-    spam(BOT_TEXT2("suggest_instance", placeholders), urand(0, 1) ? 0x50 : 0, !urand(0, 2), !urand(0, 3));
+    spam(BOT_TEXT2("suggest_instance", placeholders), urand(0, 1) ? 0x50 : 0x18, !urand(0, 2), !urand(0, 3));
 }
 
 vector<uint32> SuggestWhatToDoAction::GetIncompletedQuests()
@@ -153,7 +153,7 @@ void SuggestWhatToDoAction::specificQuest()
     placeholders["%role"] = chat->formatClass(bot, AiFactory::GetPlayerSpecTab(bot));
     placeholders["%quest"] = chat->formatQuest(quest);
 
-    spam(BOT_TEXT2("suggest_quest", placeholders), urand(0, 1) ? 0x18 : 0, !urand(0, 2), !urand(0, 3));
+    spam(BOT_TEXT2("suggest_quest", placeholders), urand(0, 1) ? 0x18 : 0x50, !urand(0, 2), !urand(0, 3));
 }
 
 void SuggestWhatToDoAction::grindMaterials()
@@ -161,7 +161,7 @@ void SuggestWhatToDoAction::grindMaterials()
     if (bot->GetLevel() <= 5)
         return;
 
-    QueryResult *result = PlayerbotDatabase.PQuery("SELECT distinct category, multiplier FROM ahbot_category where category not in ('other', 'quest', 'trade', 'reagent') and multiplier > 3 order by multiplier desc limit 10");
+    auto result = PlayerbotDatabase.PQuery("SELECT distinct category, multiplier FROM ahbot_category where category not in ('other', 'quest', 'trade', 'reagent') and multiplier > 3 order by multiplier desc limit 10");
     if (!result)
         return;
 
@@ -171,7 +171,6 @@ void SuggestWhatToDoAction::grindMaterials()
         Field* fields = result->Fetch();
         categories[fields[0].GetCppString()] = fields[1].GetFloat();
     } while (result->NextRow());
-    delete result;
 
     for (map<string, double>::iterator i = categories.begin(); i != categories.end(); ++i)
     {
@@ -194,7 +193,7 @@ void SuggestWhatToDoAction::grindMaterials()
                     placeholders["%role"] = chat->formatClass(bot, AiFactory::GetPlayerSpecTab(bot));
                     placeholders["%category"] = item;
 
-                    spam(BOT_TEXT2("suggest_trade", placeholders), urand(0, 1) ? 0x3C : 0, !urand(0, 2), !urand(0, 3));
+                    spam(BOT_TEXT2("suggest_trade", placeholders), urand(0, 1) ? 0x3C : 0x18, !urand(0, 2), !urand(0, 3));
                     return;
                 }
             }
@@ -286,7 +285,7 @@ void SuggestWhatToDoAction::something()
     out << entry->area_name[_locale];
     placeholders["%zone"] = out.str();
 
-    spam(BOT_TEXT2("suggest_something", placeholders), urand(0, 1) ? 0x18 : 0, !urand(0, 2), !urand(0, 3));
+    spam(BOT_TEXT2("suggest_something", placeholders),  0x18, !urand(0, 2), !urand(0, 3));
 }
 
 void SuggestWhatToDoAction::spam(string msg, uint8 flags, bool worldChat, bool guild)
@@ -333,12 +332,19 @@ void SuggestWhatToDoAction::spam(string msg, uint8 flags, bool worldChat, bool g
         if (chn->GetName() == "World")
             continue;
 
-        if (flags != 0 && chn->GetFlags() != flags)
+        uint8 channel_flags = chn->GetFlags();
+#ifdef MANGOSBOT_ZERO
+        // vanilla dbc has no flags for LFG channel
+        if (chn->GetChannelId() == 24)
+            channel_flags |= Channel::ChannelFlags::CHANNEL_FLAG_LFG;
+#endif
+
+        if (flags != 0 && channel_flags != flags)
             continue;
 
         // skip local defense
-        //if (chn->GetFlags() == 0x18)
-        //    continue;
+        if (chn->GetChannelId() == 22)
+            continue;
 
         // no filter, pick several options
         if (flags == Channel::CHANNEL_FLAG_NONE)
@@ -465,6 +471,6 @@ bool SuggestTradeAction::Execute(Event& event)
     placeholders["%item"] = chat->formatItem(proto, count);
     placeholders["%gold"] = chat->formatMoney(price);
 
-    spam(BOT_TEXT2("suggest_sell", placeholders), urand(0, 1) ? 0x3C : 0, !urand(0, 2), !urand(0, 5));
+    spam(BOT_TEXT2("suggest_sell", placeholders), urand(0, 1) ? 0x3C : 0x18, !urand(0, 2), false);
     return true;
 }

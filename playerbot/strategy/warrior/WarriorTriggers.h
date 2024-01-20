@@ -13,6 +13,7 @@ namespace ai
     DEBUFF_TRIGGER(RendDebuffTrigger, "rend");
     DEBUFF_TRIGGER(DisarmDebuffTrigger, "disarm");
     DEBUFF_TRIGGER_A(SunderArmorDebuffTrigger, "sunder armor");
+    DEBUFF_TRIGGER(DemoralizingShoutDebuffTrigger, "demoralizing shout");
     DEBUFF_TRIGGER(MortalStrikeDebuffTrigger, "mortal strike");
     DEBUFF_ENEMY_TRIGGER(RendDebuffOnAttackerTrigger, "rend");
     CAN_CAST_TRIGGER(DevastateAvailableTrigger, "devastate");
@@ -34,7 +35,6 @@ namespace ai
     DEBUFF_TRIGGER(ShockwaveTrigger, "shockwave");
     BOOST_TRIGGER(DeathWishTrigger, "death wish");
     BOOST_TRIGGER(RecklessnessTrigger, "recklessness");
-    BUFF_TRIGGER(BloodthirstBuffTrigger, "bloodthirst");
     INTERRUPT_HEALER_TRIGGER(ShieldBashInterruptEnemyHealerSpellTrigger, "shield bash");
     INTERRUPT_TRIGGER(ShieldBashInterruptSpellTrigger, "shield bash");
     INTERRUPT_HEALER_TRIGGER(PummelInterruptEnemyHealerSpellTrigger, "pummel");
@@ -60,6 +60,54 @@ namespace ai
             }
 
             return false;
+        }
+    };
+
+    class BloodthirstBuffTrigger : public BuffTrigger
+    {
+    public:
+        BloodthirstBuffTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "bloodthirst") {}
+        bool IsActive() override
+        {
+#ifdef MANGOSBOT_ZERO
+            return BuffTrigger::IsActive() && (AI_VALUE2(uint8, "health", "current target") > 20 || ai->IsTank(bot));
+#elif MANGOSBOT_ONE
+            return BuffTrigger::IsActive() 
+                && (AI_VALUE2(uint8, "health", "current target") > 20 || AI_VALUE2(uint8, "rage", "self target") >= 40);
+#else
+            return BuffTrigger::IsActive();
+#endif
+
+        }
+    };
+
+    class WhirlwindTrigger : public SpellCanBeCastedTrigger
+    {
+    public:
+        WhirlwindTrigger(PlayerbotAI* ai) : SpellCanBeCastedTrigger(ai, "whirlwind") {}
+        bool IsActive() override
+        {
+#ifdef MANGOSBOT_TWO
+            return SpellCanBeCastedTrigger::IsActive();
+#else
+            return SpellCanBeCastedTrigger::IsActive() && AI_VALUE2(uint8, "health", "current target") > 20;
+#endif
+        }
+    };
+
+    class HeroicStrikeTrigger : public SpellCanBeCastedTrigger
+    {
+    public:
+        HeroicStrikeTrigger(PlayerbotAI* ai) : SpellCanBeCastedTrigger(ai, "heroic strike") {}
+        bool IsActive() override
+        {
+#ifdef MANGOSBOT_TWO
+            return SpellCanBeCastedTrigger::IsActive();
+#else
+            return SpellCanBeCastedTrigger::IsActive() 
+                && AI_VALUE2(uint8, "rage", "self target") >= 50
+                && (AI_VALUE2(uint8, "health", "current target") > 20 || ai->IsTank(bot));
+#endif
         }
     };
 }

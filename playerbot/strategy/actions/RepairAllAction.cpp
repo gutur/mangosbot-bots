@@ -8,6 +8,7 @@ using namespace ai;
 
 bool RepairAllAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     list<ObjectGuid> npcs = AI_VALUE(list<ObjectGuid>, "nearest npcs");
     for (list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
     {
@@ -71,11 +72,13 @@ bool RepairAllAction::Execute(Event& event)
         {
             ostringstream out;
             out << "维修: " << chat->formatMoney(totalCost) << " (" << unit->GetName() << ")";
-            ai->TellPlayerNoFacing(GetMaster(), out.str(),PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            ai->TellPlayerNoFacing(requester, out.str(),PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             if (sPlayerbotAIConfig.globalSoundEffects)
                 bot->PlayDistanceSound(1116);
 
             sPlayerbotAIConfig.logEvent(ai, "RepairAllAction", to_string(durability), to_string(totalCost));
+
+            ai->DoSpecificAction("equip upgrades", event, true);
         }
 
         context->GetValue<uint32>("death count")->Set(0);
@@ -83,6 +86,6 @@ bool RepairAllAction::Execute(Event& event)
         return durability < 100 && AI_VALUE(uint8, "durability") > durability;
     }
 
-    ai->TellError("没有找到任何可以维修的npc");
+    ai->TellPlayerNoFacing(requester, "没有找到任何可以维修的npc");
     return false;
 }

@@ -44,6 +44,11 @@ private:
     ACTION_NODE_A(judgement, "judgement", "exorcism");
 };
 
+RetributionPaladinStrategy::RetributionPaladinStrategy(PlayerbotAI* ai) : PaladinStrategy(ai)
+{
+    actionNodeFactories.Add(new RetributionPaladinStrategyActionNodeFactory());
+}
+
 #ifdef MANGOSBOT_ZERO // Vanilla
 
 NextAction** RetributionPaladinStrategy::GetDefaultCombatActions()
@@ -78,6 +83,10 @@ void RetributionPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& tri
         NextAction::array(0, new NextAction("hammer of wrath", ACTION_HIGH), NULL)));
 
     triggers.push_back(new TriggerNode(
+        "exorcism",
+        NextAction::array(0, new NextAction("exorcism", ACTION_NORMAL + 4), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "seal",
         NextAction::array(0, new NextAction("seal of command", ACTION_NORMAL + 3), NULL)));
 
@@ -86,7 +95,7 @@ void RetributionPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& tri
         NextAction::array(0, new NextAction("judgement", ACTION_NORMAL + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "very often",
+        "crusader strike",
         NextAction::array(0, new NextAction("crusader strike", ACTION_NORMAL), NULL)));
 }
 
@@ -137,10 +146,6 @@ void RetributionPaladinPvpStrategy::InitCombatTriggers(std::list<TriggerNode*>& 
 {
     RetributionPaladinStrategy::InitCombatTriggers(triggers);
     PaladinPvpStrategy::InitCombatTriggers(triggers);
-
-    triggers.push_back(new TriggerNode(
-        "enemy is close",
-        NextAction::array(0, new NextAction("consecration", ACTION_NORMAL + 4), NULL)));
 }
 
 void RetributionPaladinPvpStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
@@ -196,6 +201,10 @@ void RetributionPaladinAoeStrategy::InitCombatTriggers(std::list<TriggerNode*>& 
     triggers.push_back(new TriggerNode(
         "melee light aoe",
         NextAction::array(0, new NextAction("consecration", ACTION_HIGH + 1), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "consecration",
+        NextAction::array(0, new NextAction("consecration", ACTION_HIGH), NULL)));
 }
 
 void RetributionPaladinAoeStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
@@ -565,6 +574,10 @@ void RetributionPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& tri
         NextAction::array(0, new NextAction("hammer of wrath", ACTION_HIGH), NULL)));
 
     triggers.push_back(new TriggerNode(
+        "exorcism",
+        NextAction::array(0, new NextAction("exorcism", ACTION_NORMAL + 4), NULL)));
+
+    triggers.push_back(new TriggerNode(
         "seal",
         NextAction::array(0, new NextAction("seal of command", ACTION_NORMAL + 3), NULL)));
 
@@ -573,7 +586,7 @@ void RetributionPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& tri
         NextAction::array(0, new NextAction("judgement", ACTION_NORMAL + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "very often",
+        "crusader strike",
         NextAction::array(0, new NextAction("crusader strike", ACTION_NORMAL), NULL)));
 }
 
@@ -620,10 +633,6 @@ void RetributionPaladinPvpStrategy::InitCombatTriggers(std::list<TriggerNode*>& 
 {
     RetributionPaladinStrategy::InitCombatTriggers(triggers);
     PaladinPvpStrategy::InitCombatTriggers(triggers);
-
-    triggers.push_back(new TriggerNode(
-        "enemy is close",
-        NextAction::array(0, new NextAction("consecration", ACTION_NORMAL + 4), NULL)));
 }
 
 void RetributionPaladinPvpStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
@@ -679,6 +688,10 @@ void RetributionPaladinAoeStrategy::InitCombatTriggers(std::list<TriggerNode*>& 
     triggers.push_back(new TriggerNode(
         "melee light aoe",
         NextAction::array(0, new NextAction("consecration", ACTION_HIGH + 1), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "consecration",
+        NextAction::array(0, new NextAction("consecration", ACTION_HIGH), NULL)));
 }
 
 void RetributionPaladinAoeStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
@@ -1040,16 +1053,16 @@ void RetributionPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& tri
                              new NextAction("holy light", ACTION_EMERGENCY), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "art of war",
-        NextAction::array(0, new NextAction("exorcism", ACTION_HIGH + 2), NULL)));
-
-    triggers.push_back(new TriggerNode(
         "low mana",
         NextAction::array(0, new NextAction("seal of wisdom", ACTION_HIGH + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
         "target critical health",
         NextAction::array(0, new NextAction("hammer of wrath", ACTION_HIGH), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "exorcism",
+        NextAction::array(0, new NextAction("exorcism", ACTION_NORMAL + 4), NULL)));
 
     triggers.push_back(new TriggerNode(
         "seal",
@@ -1068,7 +1081,7 @@ void RetributionPaladinStrategy::InitCombatTriggers(std::list<TriggerNode*>& tri
         NextAction::array(0, new NextAction("divine storm", ACTION_NORMAL), NULL)));
 
     triggers.push_back(new TriggerNode(
-        "very often",
+        "crusader strike",
         NextAction::array(0, new NextAction("crusader strike", ACTION_NORMAL), NULL)));
 }
 
@@ -1115,10 +1128,6 @@ void RetributionPaladinPvpStrategy::InitCombatTriggers(std::list<TriggerNode*>& 
 {
     RetributionPaladinStrategy::InitCombatTriggers(triggers);
     PaladinPvpStrategy::InitCombatTriggers(triggers);
-
-    triggers.push_back(new TriggerNode(
-        "enemy is close",
-        NextAction::array(0, new NextAction("consecration", ACTION_NORMAL + 4), NULL)));
 }
 
 void RetributionPaladinPvpStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
@@ -1174,6 +1183,10 @@ void RetributionPaladinAoeStrategy::InitCombatTriggers(std::list<TriggerNode*>& 
     triggers.push_back(new TriggerNode(
         "melee light aoe",
         NextAction::array(0, new NextAction("consecration", ACTION_HIGH + 1), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "consecration",
+        NextAction::array(0, new NextAction("consecration", ACTION_HIGH), NULL)));
 }
 
 void RetributionPaladinAoeStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)

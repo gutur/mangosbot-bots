@@ -4,12 +4,14 @@
 
 namespace ai
 {
-    class AcceptInvitationAction : public Action {
+    class AcceptInvitationAction : public Action 
+    {
     public:
         AcceptInvitationAction(PlayerbotAI* ai) : Action(ai, "accept invitation") {}
 
         virtual bool Execute(Event& event)
         {
+            Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
             Group* grp = bot->GetGroupInvite();
             if (!grp)
                 return false;
@@ -38,16 +40,20 @@ namespace ai
             if (!bot->GetGroup() || !bot->GetGroup()->IsMember(inviter->GetObjectGuid()))
                 return false;
 
-            if (sRandomPlayerbotMgr.IsFreeBot(bot))
-                ai->SetMaster(inviter);
-
-            Player* master = inviter;
-
             ai->ResetStrategies();
-            ai->ChangeStrategy("+follow,-lfg,-bg", BotState::BOT_STATE_NON_COMBAT);
+
+            if (sRandomPlayerbotMgr.IsFreeBot(bot))
+            {
+                ai->SetMaster(inviter);
+                ai->ChangeStrategy("+follow", BotState::BOT_STATE_NON_COMBAT);
+            }
+            
+            ai->ChangeStrategy("-lfg,-bg", BotState::BOT_STATE_NON_COMBAT);
             ai->Reset();
 
             sPlayerbotAIConfig.logEvent(ai, "AcceptInvitationAction", grp->GetLeaderName(), to_string(grp->GetMembersCount()));
+
+            Player* master = inviter;
 
             if (master->GetPlayerbotAI()) //Copy formation from bot master.
             {
@@ -74,7 +80,10 @@ namespace ai
                 value->Load(masterFormation->getName());
             }
 
-            ai->TellPlayer(GetMaster(), BOT_TEXT("hello"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            ai->TellPlayer(requester, BOT_TEXT("hello"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+
+            ai->DoSpecificAction("reset raids", event, true);
+            ai->DoSpecificAction("update gear", event, true);
 
             return true;
         }

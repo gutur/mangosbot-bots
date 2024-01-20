@@ -203,7 +203,8 @@ bool Engine::DoNextAction(Unit* unit, int depth, bool minimal, bool isStunned)
                         }
                     }
 
-                    if (queue.Size() && relevance < oldRelevance && queue.Peek()->getRelevance() > relevance) //Relevance changed. Try again.
+                    ActionBasket* peekAction = queue.Peek();
+                    if (relevance < oldRelevance && peekAction && peekAction->getRelevance() > relevance) //Relevance changed. Try again.
                     {
                         PushAgain(actionNode, relevance, event);
                         if (pmo1) pmo1->finish();
@@ -365,6 +366,7 @@ bool Engine::MultiplyAndPush(NextAction** actions, float forceRelevance, bool sk
                 ActionNode* actionNode = CreateActionNode(nextAction->getName());
                 InitializeAction(actionNode);
 
+                bool shouldPush = false;
                 float k = nextAction->getRelevance();
                 if (forceRelevance > 0.0f)
                 {
@@ -373,9 +375,20 @@ bool Engine::MultiplyAndPush(NextAction** actions, float forceRelevance, bool sk
                 else if (strcmp(pushType, "default") == 0)
                 {
                     k -= 200.0f;
+                    shouldPush = true;
+                }
+                else if (strcmp(pushType, "prereq") == 0 || strcmp(pushType, "alt") == 0 || strcmp(pushType, "again") == 0)
+                {
+                    k = forceRelevance;
+                    shouldPush = true;
                 }
 
-                if (k > 0 || strcmp(pushType, "default") == 0)
+                if (!shouldPush)
+                {
+                    shouldPush = k > 0.0f;
+                }
+
+                if (shouldPush)
                 {
                     LogAction("PUSH:%s - %f (%s)", actionNode->getName().c_str(), k, pushType);
                     queue.Push(new ActionBasket(actionNode, k, skipPrerequisites, event));
@@ -714,7 +727,14 @@ bool Engine::ListenAndExecute(Action* action, Event& event)
             }
         }
 
-        ai->TellPlayerNoFacing(ai->GetMaster(), out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL,true, false);
+        if (ai->GetMaster())
+        {
+            ai->TellPlayerNoFacing(ai->GetMaster(), out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, true, false);
+        }
+        else
+        {
+            ai->GetBot()->Say(out.str(), (ai->GetBot()->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+        }
     }
 
     if (ai->HasStrategy("debug threat", BotState::BOT_STATE_NON_COMBAT))
@@ -772,7 +792,7 @@ void Engine::LogAction(const char* format, ...)
     }
 }
 
-void Engine::ChangeStrategy(const string& names, string engineType)
+void Engine::ChangeStrategy(const string& names)
 {
     vector<string> splitted = split(names, ',');
     for (vector<string>::iterator i = splitted.begin(); i != splitted.end(); i++)
@@ -795,16 +815,16 @@ void Engine::ChangeStrategy(const string& names, string engineType)
                 toggleStrategy(name+1);
                 break;
             }
-            case '?':
-            {
-                string engineStrategies = engineType;
-                engineStrategies.append(" Strategies: ");
-                engineStrategies.append(ListStrategies());
-                ai->TellPlayer(ai->GetMaster(), engineStrategies);
-                break;
-            }
         }
     }
+}
+
+void Engine::PrintStrategies(Player* requester, const string& engineType)
+{
+    string engineStrategies = engineType;
+    engineStrategies.append(" Strategies: ");
+    engineStrategies.append(ListStrategies());
+    ai->TellPlayer(requester, engineStrategies);
 }
 
 void Engine::LogValues()

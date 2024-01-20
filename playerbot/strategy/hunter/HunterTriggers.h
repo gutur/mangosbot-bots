@@ -5,53 +5,61 @@
 namespace ai
 {
     HAS_AURA_TRIGGER_TIME(FeignDeathTrigger, "feign death", 2);
+
     BEGIN_TRIGGER(HunterNoStingsActiveTrigger, Trigger)
-        END_TRIGGER()
+    END_TRIGGER()
 
-        class HunterAspectOfTheHawkTrigger : public BuffTrigger
+    class AspectOfTheHawkTrigger : public BuffTrigger
     {
     public:
-        HunterAspectOfTheHawkTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the hawk") {
-            checkInterval = 1;
-        }
-
-        virtual bool IsActive()
-        {
-            if (!BuffTrigger::IsActive())
-                return false;
-            Unit* target = AI_VALUE(Unit*, "current target");
-            return target && !sServerFacade.IsDistanceLessOrEqualThan(AI_VALUE2(float, "distance", "current target"), 5.0);
-        }
+        AspectOfTheHawkTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the hawk") {}
     };
 
-    class HunterAspectOfTheWildTrigger : public BuffTrigger
+    class AspectOfTheWildTrigger : public BuffTrigger
     {
     public:
-        HunterAspectOfTheWildTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the wild") {
-            checkInterval = 1;
-        }
+        AspectOfTheWildTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the wild") {}
     };
 
-    class HunterAspectOfTheViperTrigger : public BuffTrigger
+    class AspectOfTheViperTrigger : public BuffTrigger
     {
     public:
-        HunterAspectOfTheViperTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the viper") {}
-
-        virtual bool IsActive()
-        {
-            return SpellTrigger::IsActive() && !ai->HasAura(spell, GetTarget());
-        }
+        AspectOfTheViperTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the viper") {}
     };
 
-    class HunterAspectOfThePackTrigger : public BuffTrigger
+    class AspectOfThePackTrigger : public BuffTrigger
     {
     public:
-        HunterAspectOfThePackTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the pack") {}
+        AspectOfThePackTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the pack") {}
+    };
 
-        virtual bool IsActive()
+    class AspectOfTheMonkeyTrigger : public BuffTrigger
+    {
+    public:
+        AspectOfTheMonkeyTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the monkey") {}
+    };
+
+    class AspectOfTheBeastTrigger : public BuffTrigger
+    {
+    public:
+        AspectOfTheBeastTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the beast") {}
+    };
+
+    class AspectOfTheCheetahTrigger : public BuffTrigger
+    {
+    public:
+        AspectOfTheCheetahTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the cheetah") {}
+    };
+
+    class AspectOfTheDragonhawkTrigger : public BuffTrigger
+    {
+    public:
+        AspectOfTheDragonhawkTrigger(PlayerbotAI* ai) : BuffTrigger(ai, "aspect of the dragonhawk") {}
+    
+        bool IsActive() override
         {
-            return BuffTrigger::IsActive() && !ai->HasAura("aspect of the cheetah", GetTarget());
-        };
+            return BuffTrigger::IsActive() && !ai->HasAura("aspect of the hawk", bot);
+        }
     };
 
     BEGIN_TRIGGER(HuntersPetDeadTrigger, Trigger)
@@ -78,6 +86,69 @@ namespace ai
     {
     public:
         FreezingTrapTrigger(PlayerbotAI* ai) : HasCcTargetTrigger(ai, "freezing trap") {}
+
+#ifdef MANGOSBOT_ZERO
+        bool IsActive() override
+        {
+            // Check if feign death not on cooldown
+            if (sServerFacade.IsSpellReady(bot, 5384))
+            {
+                return HasCcTargetTrigger::IsActive();
+            }
+
+            return false;
+        }
+#endif
+    };
+
+    class FrostTrapTrigger : public MeleeLightAoeTrigger
+    {
+    public:
+        FrostTrapTrigger(PlayerbotAI* ai, string spell = "frost trap") : MeleeLightAoeTrigger(ai)
+        {
+            spellId = AI_VALUE2(uint32, "spell id", spell);
+        }
+
+        bool IsActive() override
+        {
+#ifdef MANGOSBOT_ZERO
+            // Check if feign death not on cooldown
+            if (!sServerFacade.IsSpellReady(bot, 5384))
+            {
+                return false;
+            }
+#endif
+
+            return sServerFacade.IsSpellReady(bot, spellId) && MeleeLightAoeTrigger::IsActive();
+        }
+
+    private:
+        uint32 spellId;
+    };
+
+    class ExplosiveTrapTrigger : public RangedMediumAoeTrigger
+    {
+    public:
+        ExplosiveTrapTrigger(PlayerbotAI* ai, string spell = "explosive trap") : RangedMediumAoeTrigger(ai)
+        {
+            spellId = AI_VALUE2(uint32, "spell id", spell);
+        }
+
+        bool IsActive() override
+        {
+#ifdef MANGOSBOT_ZERO
+            // Check if feign death not on cooldown
+            if (!sServerFacade.IsSpellReady(bot, 5384))
+            {
+                return false;
+            }
+#endif
+
+            return sServerFacade.IsSpellReady(bot, spellId) && RangedMediumAoeTrigger::IsActive();
+        }
+
+    private:
+        uint32 spellId;
     };
 
     class RapidFireTrigger : public BuffTrigger
@@ -107,9 +178,9 @@ namespace ai
     };
 
     BEGIN_TRIGGER(HunterPetNotHappy, Trigger)
-        END_TRIGGER()
+    END_TRIGGER()
 
-        class ConsussiveShotSnareTrigger : public SnareTargetTrigger
+    class ConsussiveShotSnareTrigger : public SnareTargetTrigger
     {
     public:
         ConsussiveShotSnareTrigger(PlayerbotAI* ai) : SnareTargetTrigger(ai, "concussive shot") {}
@@ -148,11 +219,23 @@ namespace ai
     public:
         SwitchToRangedTrigger(PlayerbotAI* ai) : Trigger(ai, "switch to ranged", 1) {}
 
-        virtual bool IsActive()
+        bool IsActive() override
         {
+#ifdef MANGOSBOT_ZERO
+            bool hasAmmo = ai->HasCheat(BotCheatMask::item) || AI_VALUE2(uint32, "item count", "ammo");
+#else
+            bool hasAmmo = ai->HasCheat(BotCheatMask::item) || bot->HasAura(46699) || AI_VALUE2(uint32, "item count", "ammo");
+#endif
+            if (!hasAmmo)
+                return false;
+
             Unit* target = AI_VALUE(Unit*, "current target");
-            return ai->HasStrategy("close", BotState::BOT_STATE_COMBAT) && target && (target->GetVictim() != bot ||
-                sServerFacade.IsDistanceGreaterThan(AI_VALUE2(float, "distance", "current target"), 8.0f));
+            float distance = AI_VALUE2(float, "distance", "current target");
+            return target && ai->HasStrategy("close", BotState::BOT_STATE_COMBAT) &&
+                (target->GetVictim() != bot ||
+                target->IsImmobilizedState() ||
+                (target->GetSpeed(MOVE_RUN) <= (bot->GetSpeed(MOVE_RUN) / 2) && !((!bot->GetPet() || bot->GetPet()->IsDead()) && target->IsCreature() && target->GetHealthPercent() < 50.f && target->GetHealth() < bot->GetHealth())) ||
+                distance > 8.0f);
         }
     };
 
@@ -161,15 +244,28 @@ namespace ai
     public:
         SwitchToMeleeTrigger(PlayerbotAI* ai) : Trigger(ai, "switch to melee", 1) {}
 
-        virtual bool IsActive()
+        bool IsActive() override
         {
+#ifdef MANGOSBOT_ZERO
+            bool hasAmmo = ai->HasCheat(BotCheatMask::item) || AI_VALUE2(uint32, "item count", "ammo");
+#else
+            bool hasAmmo = ai->HasCheat(BotCheatMask::item) || bot->HasAura(46699) || AI_VALUE2(uint32, "item count", "ammo");
+#endif
+            if (!hasAmmo)
+                return true;
+
             Unit* target = AI_VALUE(Unit*, "current target");
-            return ai->HasStrategy("ranged", BotState::BOT_STATE_COMBAT) && target && (target->GetVictim() == bot ||
-                sServerFacade.IsDistanceLessOrEqualThan(AI_VALUE2(float, "distance", "current target"), 8.0f));
+            return target && ((target->GetSpeed(MOVE_RUN) > (bot->GetSpeed(MOVE_RUN) / 2)) || ((!bot->GetPet() || bot->GetPet()->IsDead()) && target->GetHealthPercent() < 50.f && target->IsCreature() && target->GetHealth() < bot->GetHealth())) &&
+                !target->IsImmobilizedState() &&
+                ai->HasStrategy("ranged", BotState::BOT_STATE_COMBAT) &&
+                target->GetVictim() == bot &&
+                sServerFacade.IsDistanceLessOrEqualThan(AI_VALUE2(float, "distance", "current target"), 8.0f);
         }
     };
 
-    CAN_CAST_TRIGGER(MultishotCanCastTrigger, "multi shot");
+    CAN_CAST_TRIGGER(ChimeraShotCanCastTrigger, "chimera shot");
+    CAN_CAST_TRIGGER(ExplosiveShotCanCastTrigger, "explosive shot");
+    CAN_CAST_TRIGGER(MultishotCanCastTrigger, "multi-shot");
     SNARE_TRIGGER(IntimidationSnareTrigger, "intimidation");
     CAN_CAST_TRIGGER(CounterattackCanCastTrigger, "counterattack");
     SNARE_TRIGGER(WybernStingSnareTrigger, "wyvern sting");
@@ -219,7 +315,8 @@ namespace ai
         }
     };
 
-    class HunterNoPet : public Trigger {
+    class HunterNoPet : public Trigger 
+    {
     public:
         HunterNoPet(PlayerbotAI* ai) : Trigger(ai, "no beast", 1) {}
         virtual bool IsActive()
@@ -232,7 +329,8 @@ namespace ai
         }
     };
 
-    class StealthedNearbyTrigger : public Trigger {
+    class StealthedNearbyTrigger : public Trigger 
+    {
     public:
         StealthedNearbyTrigger(PlayerbotAI* ai) : Trigger(ai, "stealthed nearby", 5) {}
         virtual bool IsActive()

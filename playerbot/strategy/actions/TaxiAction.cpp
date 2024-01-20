@@ -8,6 +8,7 @@ using namespace ai;
 
 bool TaxiAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     ai->RemoveShapeshift();
 
     LastMovement& movement = context->GetValue<LastMovement&>("last taxi")->Get();
@@ -18,7 +19,7 @@ bool TaxiAction::Execute(Event& event)
     {
         movement.taxiNodes.clear();
         movement.Set(NULL);
-        ai->TellPlayer(GetMaster(), "我已准备好下一趟飞行.");
+        ai->TellPlayer(requester, "我已准备好下一趟飞行");
         return true;
     }
 
@@ -44,7 +45,7 @@ bool TaxiAction::Execute(Event& event)
 
         if (param == "?")
         {
-            ai->TellPlayerNoFacing(GetMaster(), "=== 航点 ===");
+            ai->TellPlayerNoFacing(requester, "=== 航点 ===");
             int index = 1;
             for (vector<uint32>::iterator i = nodes.begin(); i != nodes.end(); ++i)
             {
@@ -56,7 +57,7 @@ bool TaxiAction::Execute(Event& event)
 
                 ostringstream out;
                 out << index++ << ": " << dest->name[0];
-                ai->TellPlayerNoFacing(GetMaster(), out.str());
+                ai->TellPlayerNoFacing(requester, out.str());
             }
             return true;
         }
@@ -75,13 +76,16 @@ bool TaxiAction::Execute(Event& event)
         {
             movement.taxiNodes.clear();
             movement.Set(NULL);
-            ai->TellError("我不能和你一起飞行.");
+            if (!ai->GetMaster() || sServerFacade.GetDistance2d(bot, ai->GetMaster()) < sPlayerbotAIConfig.reactDistance || ai->HasStrategy("debug", BotState::BOT_STATE_NON_COMBAT))
+                ai->TellPlayerNoFacing(requester, "我不能和你一起飞行");
             return false;
         }
 
         return true;
     }
 
-    ai->TellError("找不到任何可以交谈的飞行管理员.");
+    if(!ai->GetMaster() || sServerFacade.GetDistance2d(bot, ai->GetMaster()) < sPlayerbotAIConfig.reactDistance || ai->HasStrategy("debug", BotState::BOT_STATE_NON_COMBAT))
+        ai->TellPlayerNoFacing(requester, "找不到任何可以交谈的飞行管理员");
+
     return false;
 }

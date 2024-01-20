@@ -38,6 +38,18 @@ namespace ai
         uint32 spellId;
     };
 
+    class CastPetSpellAction : public CastSpellAction
+    {
+    public:
+        CastPetSpellAction(PlayerbotAI* ai, string spell) : CastSpellAction(ai, spell) {}
+
+        virtual bool isPossible() override;
+
+    protected:
+        virtual string GetTargetName() override { return "current target"; }
+        string GetReachActionName() override { return ""; }
+    };
+
 	//---------------------------------------------------------------------------------------------------------------------
 	class CastAuraSpellAction : public CastSpellAction
 	{
@@ -387,7 +399,7 @@ namespace ai
         
     private:
         virtual string GetReachActionName() override { return "reach spell"; }
-        virtual string GetTargetName() override { return "snare target"; }
+        virtual string GetTargetName() override { return "cc target"; }
         virtual string GetTargetQualifier() override { return GetSpellName(); }
         virtual ActionThreatType getThreatType() { return ActionThreatType::ACTION_THREAT_NONE; }
     };
@@ -402,6 +414,14 @@ namespace ai
         virtual string GetReachActionName() override { return "reach spell"; }
         virtual string GetTargetName() override { return "party member to protect"; }
         virtual ActionThreatType getThreatType() override { return ActionThreatType::ACTION_THREAT_NONE; }
+    };
+
+    class InterruptCurrentSpellAction : public Action
+    {
+    public:
+        InterruptCurrentSpellAction(PlayerbotAI* ai) : Action(ai, "interrupt current spell") {}
+        virtual bool isUseful() override;
+        virtual bool Execute(Event& event) override;
     };
 
     //--------------------//

@@ -72,7 +72,7 @@ private:
         void DelayedFacingFix();
         void LoginFreeBots();
 public:
-        static void DatabasePing(QueryResult* result, uint32 pingStart, string db);
+        static void DatabasePing(std::unique_ptr<QueryResult> result, uint32 pingStart, string db);
         void SetDatabaseDelay(string db, uint32 delay) {databaseDelay[db] = delay;}
         uint32 GetDatabaseDelay(string db) {if(databaseDelay.find(db) == databaseDelay.end()) return 0; return databaseDelay[db];}
 
@@ -93,9 +93,9 @@ public:
         void OnPlayerLogin(Player* player);
         void OnPlayerLoginError(uint32 bot);
         Player* GetRandomPlayer();
-        PlayerBotMap GetPlayers() { return players; };
+        PlayerBotMap& GetPlayers() { return players; };
         Player* GetPlayer(uint32 playerGuid);
-        PlayerBotMap GetAllBots() { return playerBots; };
+        PlayerBotMap& GetAllBots() { return playerBots; };
         void PrintStats();
         double GetBuyMultiplier(Player* bot);
         double GetSellMultiplier(Player* bot);
@@ -137,6 +137,7 @@ public:
         void CheckPlayers();
         void SaveCurTime();
         void SyncEventTimers();
+        void AddOfflineGroupBots();
         static Item* CreateTempItem(uint32 item, uint32 count, Player const* player, uint32 randomPropertyId = 0);
 
         bool AddRandomBot(uint32 bot);
@@ -171,6 +172,7 @@ public:
         time_t LfgCheckTimer;
         time_t PlayersCheckTimer;
         time_t EventTimeSyncTimer;
+        time_t OfflineGroupBotsTimer;
         uint32 AddRandomBots();
         bool ProcessBot(uint32 bot);
         void ScheduleRandomize(uint32 bot, uint32 time);
@@ -198,6 +200,7 @@ public:
         typedef std::unordered_map <uint32, list<float>> botPerformanceMetric;
         std::unordered_map<string, botPerformanceMetric> botPerformanceMetrics;
         
+        std::vector<std::pair<uint32, uint32>> RpgLocationsNear(WorldLocation pos, uint32 areaId = 0, uint32 radius = 2000);
         void PushMetric(botPerformanceMetric& metric, const uint32 bot, const float value, const uint32 maxNum = 60) const;
         float GetMetricDelta(botPerformanceMetric& metric) const;
 
