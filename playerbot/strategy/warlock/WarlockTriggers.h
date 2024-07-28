@@ -1,5 +1,5 @@
 #pragma once
-#include "../triggers/GenericTriggers.h"
+#include "playerbot/strategy/triggers/GenericTriggers.h"
 
 namespace ai
 {
@@ -24,7 +24,7 @@ namespace ai
         bool IsActive() override;
 
     private:
-        string GetTargetName() override { return "current target"; }
+        std::string GetTargetName() override { return "current target"; }
     };
 
     class NoCurseOnAttackerTrigger : public Trigger
@@ -48,6 +48,13 @@ namespace ai
     {
     public:
         CorruptionOnAttackerTrigger(PlayerbotAI* ai) : DebuffOnAttackerTrigger(ai, "corruption") {}
+        bool IsActive() override;
+    };
+
+    class SeedOfCorruptionOnAttackerTrigger : public DebuffOnAttackerTrigger
+    {
+    public:
+        SeedOfCorruptionOnAttackerTrigger(PlayerbotAI* ai) : DebuffOnAttackerTrigger(ai, "seed of corruption") {}
         bool IsActive() override;
     };
 
@@ -142,7 +149,7 @@ namespace ai
     class WarlockConjuredItemTrigger : public ItemCountTrigger
     {
     public:
-        WarlockConjuredItemTrigger(PlayerbotAI* ai, string item) : ItemCountTrigger(ai, item, 1) {}
+        WarlockConjuredItemTrigger(PlayerbotAI* ai, std::string item) : ItemCountTrigger(ai, item, 1) {}
 
         virtual bool IsActive() { return ItemCountTrigger::IsActive() && (ai->HasCheat(BotCheatMask::item) || AI_VALUE2(uint32, "item count", "soul shard") > 0); }
     };
@@ -281,5 +288,13 @@ namespace ai
     {
     public:
         SpellLockEnemyHealerTrigger(PlayerbotAI* ai) : InterruptEnemyHealerTrigger(ai, "spell lock") {}
+    };
+
+    class SoulstoneTrigger : public ItemTargetTrigger
+    {
+    public:
+        SoulstoneTrigger(PlayerbotAI* ai) : ItemTargetTrigger(ai, "revive targets", true, true) {}
+        std::string GetTargetName() override { return "self target"; }
+        uint32 GetItemId() override;
     };
 }

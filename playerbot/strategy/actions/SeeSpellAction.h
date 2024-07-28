@@ -1,16 +1,16 @@
 #pragma once
 
-#include "../Action.h"
+#include "playerbot/strategy/Action.h"
 #include "MovementActions.h"
-#include "../values/LastMovementValue.h"
-#include "../values/RTSCValues.h"
+#include "playerbot/strategy/values/LastMovementValue.h"
+#include "playerbot/strategy/values/RTSCValues.h"
 
 namespace ai
 {
     class SeeSpellAction : public MovementAction
     {
     public:
-        SeeSpellAction(PlayerbotAI* ai, string name = "see spell") : MovementAction(ai, name) {}
+        SeeSpellAction(PlayerbotAI* ai, std::string name = "see spell") : MovementAction(ai, name) {}
         virtual bool Execute(Event& event);
 
         virtual bool isPossible() override { return true; }

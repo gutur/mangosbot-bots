@@ -1,20 +1,20 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "SaveManaAction.h"
-#include "../../AiFactory.h"
-#include "../ItemVisitors.h"
+#include "playerbot/AiFactory.h"
+#include "playerbot/strategy/ItemVisitors.h"
 
 using namespace ai;
 
 bool SaveManaAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    string text = event.getParam();
+    std::string text = event.getParam();
     double value = AI_VALUE(double, "mana save level");
 
     if (text == "?")
     {
-        ostringstream out; out << "法力保存等级: " << format(value);
+        std::ostringstream out; out << "法力保存等级: " << format(value);
         ai->TellPlayer(requester, out);
         return true;
     }
@@ -46,20 +46,20 @@ bool SaveManaAction::Execute(Event& event)
         value = atof(text.c_str());
     }
 
-    value = min(10.0, value);
-    value = max(1.0, value);
+    value = std::min(10.0, value);
+    value = std::max(1.0, value);
     value = floor(value * 100 + 0.5) / 100.0;
 
     ai->GetAiObjectContext()->GetValue<double>("mana save level")->Set(value);
 
-    ostringstream out; out << "法力保存等级设为: " << format(value);
+    std::ostringstream out; out << "法力保存等级设为: " << format(value);
     ai->TellPlayer(requester, out);
     return true;
 }
 
-string SaveManaAction::format(double value)
+std::string SaveManaAction::format(double value)
 {
-    ostringstream out;
+    std::ostringstream out;
     if (value <= 1.0)
         out << "|cFF808080";
     else if (value <= 5.0)

@@ -1,14 +1,12 @@
-#include "../botpch.h"
-#include "playerbot.h"
-#include "PlayerbotAIConfig.h"
+#include "playerbot/playerbot.h"
+#include "playerbot/PlayerbotAIConfig.h"
 #include "PlayerbotDbStore.h"
-#include "PlayerbotFactory.h"
-#include "RandomPlayerbotMgr.h"
-#include "ServerFacade.h"
-#include "TravelMgr.h"
+#include "playerbot/PlayerbotFactory.h"
+#include "playerbot/RandomPlayerbotMgr.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/TravelMgr.h"
 #include "Chat/ChannelMgr.h"
 #include "Social/SocialMgr.h"
-
 
 class LoginQueryHolder;
 class CharacterHandler;
@@ -16,13 +14,39 @@ class CharacterHandler;
 PlayerbotHolder::PlayerbotHolder() : PlayerbotAIBase()
 {
     for (uint32 spellId = 0; spellId < sServerFacade.GetSpellInfoRows(); spellId++)
+    {
         sServerFacade.LookupSpellInfo(spellId);
+    }
 }
 
 PlayerbotHolder::~PlayerbotHolder()
 {
 }
 
+void PlayerbotHolder::ForEachPlayerbot(std::function<void(Player*)> callback) const
+{
+    for (auto& itr : playerBots)
+    {
+        Player* bot = itr.second;
+        if (bot)
+        {
+            callback(bot);
+        }
+    }
+}
+
+void PlayerbotHolder::MovePlayerBot(uint32 guid, PlayerbotHolder* newHolder)
+{
+    if (newHolder)
+    {
+        auto it = playerBots.find(guid); 
+        if (it != playerBots.end() && it->second != nullptr)
+        {
+            newHolder->OnBotLogin(it->second);
+            playerBots[guid] = nullptr;
+        }
+    }
+}
 
 void PlayerbotHolder::UpdateAIInternal(uint32 elapsed, bool minimal)
 {
@@ -30,9 +54,8 @@ void PlayerbotHolder::UpdateAIInternal(uint32 elapsed, bool minimal)
 
 void PlayerbotHolder::UpdateSessions(uint32 elapsed)
 {
-    for (PlayerBotMap::const_iterator itr = GetPlayerBotsBegin(); itr != GetPlayerBotsEnd(); ++itr)
+    ForEachPlayerbot([&](Player* bot)
     {
-        Player* const bot = itr->second;
         if (bot->GetPlayerbotAI() && bot->IsBeingTeleported())
         {
             bot->GetPlayerbotAI()->HandleTeleportAck();
@@ -46,34 +69,38 @@ void PlayerbotHolder::UpdateSessions(uint32 elapsed)
         {
             LogoutPlayerBot(bot->GetObjectGuid().GetRawValue());
         }
+    });
+
+    Cleanup();
+}
+
+void PlayerbotHolder::Cleanup()
+{
+    auto it = playerBots.begin();
+    while (it != playerBots.end())
+    {
+        if (it->second == nullptr)
+        {
+            it = playerBots.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
     }
 }
 
 void PlayerbotHolder::LogoutAllBots()
-{    
-    /*
-    while (true)
+{
+    ForEachPlayerbot([&](Player* bot)
     {
-        PlayerBotMap::const_iterator itr = GetPlayerBotsBegin();
-        if (itr == GetPlayerBotsEnd()) break;
-        Player* bot= itr->second;
-        if (!bot->GetPlayerbotAI()->isRealPlayer())
-            LogoutPlayerBot(bot->GetObjectGuid().GetRawValue());
-    }
-    */    
-    PlayerBotMap bots = playerBots;
+        if (bot->GetPlayerbotAI() && !bot->GetPlayerbotAI()->IsRealPlayer())
+        {
+            LogoutPlayerBot(bot->GetGUIDLow());
+        }
+    });
 
-    for (auto& itr : bots)
-    {
-        Player* bot = itr.second;
-        if (!bot)
-            continue;
-
-        if (!bot->GetPlayerbotAI() || bot->GetPlayerbotAI()->IsRealPlayer())
-            continue;
-
-        LogoutPlayerBot(bot->GetGUIDLow());
-    }
+    Cleanup();
 }
 
 void PlayerbotMgr::CancelLogout()
@@ -82,37 +109,32 @@ void PlayerbotMgr::CancelLogout()
     if (!master)
         return;
 
-    for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
+    ForEachPlayerbot([&](Player* bot)
     {
-        Player* const bot = it->second;
         PlayerbotAI* ai = bot->GetPlayerbotAI();
-        if (!ai || ai->IsRealPlayer())
-            continue;
-
-        if (bot->IsStunnedByLogout() || bot->GetSession()->isLogingOut())
+        if (ai && !ai->IsRealPlayer())
         {
-            WorldPacket p;
-            bot->GetSession()->HandleLogoutCancelOpcode(p);
-            ai->TellPlayer(GetMaster(), BOT_TEXT("logout_cancel"));
+            if (bot->IsStunnedByLogout() || bot->GetSession()->isLogingOut())
+            {
+                WorldPacket p;
+                bot->GetSession()->HandleLogoutCancelOpcode(p);
+                ai->TellPlayer(GetMaster(), BOT_TEXT("logout_cancel"));
+            }
         }
-    }
+    });
 
-    for (PlayerBotMap::const_iterator it = sRandomPlayerbotMgr.GetPlayerBotsBegin(); it != sRandomPlayerbotMgr.GetPlayerBotsEnd(); ++it)
+    sRandomPlayerbotMgr.ForEachPlayerbot([&](Player* bot)
     {
-        Player* const bot = it->second;
         PlayerbotAI* ai = bot->GetPlayerbotAI();
-        if (!ai || ai->IsRealPlayer())
-            continue;
-
-        if (bot->GetPlayerbotAI()->GetMaster() != master)
-            continue;
-
-        if (bot->IsStunnedByLogout() || bot->GetSession()->isLogingOut())
+        if (ai && !ai->IsRealPlayer() && ai->GetMaster() == master)
         {
-            WorldPacket p;
-            bot->GetSession()->HandleLogoutCancelOpcode(p);
+            if (bot->IsStunnedByLogout() || bot->GetSession()->isLogingOut())
+            {
+                WorldPacket p;
+                bot->GetSession()->HandleLogoutCancelOpcode(p);
+            }
         }
-    }
+    });
 }
 
 void PlayerbotHolder::LogoutPlayerBot(uint32 guid)
@@ -124,10 +146,13 @@ void PlayerbotHolder::LogoutPlayerBot(uint32 guid)
         if (!ai)
             return;
 
-        Group *group = bot->GetGroup();
-        if (group && !bot->InBattleGround() && !bot->InBattleGroundQueue() && ai->HasActivePlayerMaster())
+        if (!sPlayerbotAIConfig.bExplicitDbStoreSave)
         {
-            sPlayerbotDbStore.Save(ai);
+           Group* group = bot->GetGroup();
+           if (group && !bot->InBattleGround() && !bot->InBattleGroundQueue() && ai->HasActivePlayerMaster())
+           {
+              sPlayerbotDbStore.Save(ai);
+           }
         }
         sLog.outDebug("Bot %s logging out", bot->GetName());
         bot->SaveToDB();
@@ -167,7 +192,9 @@ void PlayerbotHolder::LogoutPlayerBot(uint32 guid)
         if (!logout)
         {
             if (bot && (bot->IsStunnedByLogout() || bot->GetSession()->isLogingOut()))
+            {
                 return;
+            }
             else if (bot)
             {
                 ai->TellPlayer(ai->GetMaster(), BOT_TEXT("logout_start"));
@@ -175,28 +202,27 @@ void PlayerbotHolder::LogoutPlayerBot(uint32 guid)
                 botWorldSessionPtr->HandleLogoutRequestOpcode(p);
                 if (!bot)
                 {
-                    playerBots.erase(guid);
+                    playerBots[guid] = nullptr;
                     delete botWorldSessionPtr;    
                 }
+                
                 return;
             }
             else
             {
-                playerBots.erase(guid);     // deletes bot player ptr inside this WorldSession PlayerBotMap
+                playerBots[guid] = nullptr;  // deletes bot player ptr inside this WorldSession PlayerBotMap
                 delete botWorldSessionPtr;  // finally delete the bot's WorldSession
             }
+            
             return;
-        } // if instant logout possible, do it
+        } 
+        // if instant logout possible, do it
         else if (bot && (logout || !botWorldSessionPtr->isLogingOut()))
         {
             ai->TellPlayer(ai->GetMaster(), BOT_TEXT("goodbye"));
-            playerBots.erase(guid);    // deletes bot player ptr inside this WorldSession PlayerBotMap
-#ifdef CMANGOS
+            playerBots[guid] = nullptr;    // deletes bot player ptr inside this WorldSession PlayerBotMap
             botWorldSessionPtr->LogoutPlayer(); // this will delete the bot Player object and PlayerbotAI object
-#endif
-#ifdef MANGOS
             //botWorldSessionPtr->LogoutPlayer(true); // this will delete the bot Player object and PlayerbotAI object
-#endif
             if(!sWorld.FindSession(botWorldSessionPtr->GetAccountId())) //Real player sessions will get removed later.
                 delete botWorldSessionPtr;  // finally delete the bot's WorldSession
         }
@@ -213,16 +239,20 @@ void PlayerbotHolder::DisablePlayerBot(uint32 guid)
         MotionMaster& mm = *bot->GetMotionMaster();
         mm.Clear();
 
-        Group* group = bot->GetGroup();
-        if (group && !bot->InBattleGround() && !bot->InBattleGroundQueue() && bot->GetPlayerbotAI()->HasActivePlayerMaster())
+        if (!sPlayerbotAIConfig.bExplicitDbStoreSave)
         {
-            sPlayerbotDbStore.Save(bot->GetPlayerbotAI());
+           Group* group = bot->GetGroup();
+           if (group && !bot->InBattleGround() && !bot->InBattleGroundQueue() && bot->GetPlayerbotAI()->HasActivePlayerMaster())
+           {
+              sPlayerbotDbStore.Save(bot->GetPlayerbotAI());
+           }
         }
+
         sLog.outDebug("Bot %s logged out", bot->GetName());
         bot->SaveToDB();
 
         WorldSession* botWorldSessionPtr = bot->GetSession();
-        playerBots.erase(guid);    // deletes bot player ptr inside this WorldSession PlayerBotMap
+        playerBots[guid] = nullptr;    // deletes bot player ptr inside this WorldSession PlayerBotMap
 
         if (bot->GetPlayerbotAI()) 
         {
@@ -235,6 +265,91 @@ Player* PlayerbotHolder::GetPlayerBot(uint32 playerGuid) const
 {
     PlayerBotMap::const_iterator it = playerBots.find(playerGuid);
     return (it == playerBots.end()) ? nullptr : it->second ? it->second : nullptr;
+}
+
+void PlayerbotHolder::JoinChatChannels(Player* bot)
+{
+    // bots join World chat if not solo oriented
+    if (bot->GetLevel() >= 10 && sRandomPlayerbotMgr.IsFreeBot(bot) && bot->GetPlayerbotAI() && bot->GetPlayerbotAI()->GetGrouperType() != GrouperType::SOLO)
+    {
+        // TODO make action/config
+        // Make the bot join the world channel for chat
+        WorldPacket pkt(CMSG_JOIN_CHANNEL);
+#ifndef MANGOSBOT_ZERO
+        pkt << uint32(0) << uint8(0) << uint8(0);
+#endif
+        pkt << std::string("World");
+        pkt << ""; // Pass
+        bot->GetSession()->HandleJoinChannelOpcode(pkt);
+    }
+    // join standard channels
+    uint8 locale = BroadcastHelper::GetLocale();
+
+    AreaTableEntry const* current_zone = bot->GetPlayerbotAI()->GetCurrentZone();
+    ChannelMgr* cMgr = channelMgr(bot->GetTeam());
+    std::string current_zone_name = current_zone ? bot->GetPlayerbotAI()->GetLocalizedAreaName(current_zone) : "";
+
+    if (current_zone && cMgr)
+    {
+        for (uint32 i = 0; i < sChatChannelsStore.GetNumRows(); ++i)
+        {
+            ChatChannelsEntry const* channel = sChatChannelsStore.LookupEntry(i);
+            if (!channel) continue;
+
+            Channel* new_channel = nullptr;
+            switch (channel->ChannelID)
+            {
+                case ChatChannelId::GENERAL:
+                case ChatChannelId::LOCAL_DEFENSE:
+                {
+                    char new_channel_name_buf[100];
+                    snprintf(new_channel_name_buf, 100, channel->pattern[locale], current_zone_name.c_str());
+#ifdef MANGOSBOT_ZERO
+                    new_channel = cMgr->GetJoinChannel(new_channel_name_buf);
+#else
+                    new_channel = cMgr->GetJoinChannel(new_channel_name_buf, channel->ChannelID);
+#endif
+                    break;
+                }
+                case ChatChannelId::TRADE:
+                case ChatChannelId::GUILD_RECRUITMENT:
+                {
+                    char new_channel_name_buf[100];
+                    //3459 is ID for a zone named "City" (only exists for the sake of using its name)
+                    //Currently in magons TBC, if you switch zones, then you join "Trade - <zone>" and "GuildRecruitment - <zone>"
+                    //which is a core bug, should be "Trade - City" and "GuildRecruitment - City" in both 1.12 and TBC
+                    //but if you (actual player) logout in a city and log back in - you join "City" versions
+                    snprintf(
+                        new_channel_name_buf,
+                        100,
+                        channel->pattern[locale],
+                        bot->GetPlayerbotAI()->GetLocalizedAreaName(GetAreaEntryByAreaID(ImportantAreaId::CITY))
+                    );
+
+#ifdef MANGOSBOT_ZERO
+                    new_channel = cMgr->GetJoinChannel(new_channel_name_buf);
+#else
+                    new_channel = cMgr->GetJoinChannel(new_channel_name_buf, channel->ChannelID);
+#endif
+                    break;
+                }
+                case ChatChannelId::LOOKING_FOR_GROUP:
+                case ChatChannelId::WORLD_DEFENSE:
+                {
+#ifdef MANGOSBOT_ZERO
+                    new_channel = cMgr->GetJoinChannel(channel->pattern[locale]);
+#else
+                    new_channel = cMgr->GetJoinChannel(channel->pattern[locale], channel->ChannelID);
+#endif
+                    break;
+                }
+                default:
+                    break;
+            }
+            if (new_channel)
+                new_channel->Join(bot, "");
+        }
+    }
 }
 
 void PlayerbotHolder::OnBotLogin(Player * const bot)
@@ -251,7 +366,6 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
     playerBots[bot->GetGUIDLow()] = bot;
 
     Player* master = ai->GetMaster();
-
     if (!master && sPlayerbotAIConfig.IsFreeAltBot(bot))
     {
         ai->SetMaster(bot);
@@ -282,7 +396,7 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
                 }
             }
 
-            // Don't disband alt groups when master goes away 
+            // Don't disband alt groups when master goes away
             // (will need to manually disband with leave command)
             uint32 account = sObjectMgr.GetPlayerAccountIdByGUID(member);
             if (!sPlayerbotAIConfig.IsInRandomAccountList(account))
@@ -295,7 +409,7 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
         if (!groupValid)
         {
             WorldPacket p;
-            string member = bot->GetName();
+            std::string member = bot->GetName();
             p << uint32(PARTY_OP_LEAVE) << member << uint32(0);
             bot->GetSession()->HandleGroupDisbandOpcode(p);
         }
@@ -306,9 +420,6 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
     if (master && !master->IsTaxiFlying())
     {
         bot->GetMotionMaster()->MovementExpired();
-#ifdef MANGOS
-        bot->m_taxi.ClearTaxiDestinations();
-#endif
     }
 
     // check activity
@@ -318,81 +429,7 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
 
     ai->TellPlayer(ai->GetMaster(), BOT_TEXT("hello"));
 
-    // bots join World chat if not solo oriented
-    if (bot->GetLevel() >= 10 && sRandomPlayerbotMgr.IsFreeBot(bot) && bot->GetPlayerbotAI() && bot->GetPlayerbotAI()->GetGrouperType() != GrouperType::SOLO)
-    {
-        // TODO make action/config
-        // Make the bot join the world channel for chat
-        WorldPacket pkt(CMSG_JOIN_CHANNEL);
-#ifndef MANGOSBOT_ZERO
-        pkt << uint32(0) << uint8(0) << uint8(0);
-#endif
-        pkt << std::string("World");
-        pkt << ""; // Pass
-        bot->GetSession()->HandleJoinChannelOpcode(pkt);
-
-#ifdef MANGOSBOT_ZERO
-        // bots join World Defense
-        WorldPacket pkt2(CMSG_JOIN_CHANNEL);
-#ifndef MANGOSBOT_ZERO
-        pkt2 << uint32(0) << uint8(0) << uint8(0);
-#endif
-        pkt2 << std::string("WorldDefense");
-        pkt2 << ""; // Pass
-        bot->GetSession()->HandleJoinChannelOpcode(pkt2);
-#endif
-    }
-    // join standard channels
-    int32 locale = sConfig.GetIntDefault("DBC.Locale", 0 /*LocaleConstant::LOCALE_enUS*/); // bot->GetSession()->GetSessionDbcLocale();
-    // -- In case we're using auto detect on config file
-    if (locale == 255)
-        locale = static_cast<int32>(LocaleConstant::LOCALE_enUS);
-    
-    AreaTableEntry const* current_zone = GetAreaEntryByAreaID(sTerrainMgr.GetAreaId(bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ()));
-    ChannelMgr* cMgr = channelMgr(bot->GetTeam());
-    std::string current_zone_name = current_zone ? current_zone->area_name[locale] : "";
-
-    if (current_zone && cMgr)
-    {
-        for (uint32 i = 0; i < sChatChannelsStore.GetNumRows(); ++i)
-        {
-            ChatChannelsEntry const* channel = sChatChannelsStore.LookupEntry(i);
-            if (!channel) continue;
-
-#ifndef MANGOSBOT_ZERO
-            bool isLfg = (channel->flags & Channel::CHANNEL_DBC_FLAG_LFG) != 0;
-#else
-            bool isLfg = channel->ChannelID == 24;
-#endif
-
-            // skip non built-in channels or global channel without zone name in pattern
-            if (!isLfg && (!channel || (channel->flags & 4) == 4))
-                continue;
-
-            //  new channel
-            Channel* new_channel = nullptr;
-            if (isLfg)
-            {
-#ifndef MANGOSBOT_ZERO
-                new_channel = cMgr->GetJoinChannel(channel->pattern[locale], channel->ChannelID);
-#else
-                new_channel = cMgr->GetJoinChannel("LookingForGroup");
-#endif
-            }
-            else
-            {
-                char new_channel_name_buf[100];
-                snprintf(new_channel_name_buf, 100, channel->pattern[locale], current_zone_name.c_str());
-#ifndef MANGOSBOT_ZERO
-                new_channel = cMgr->GetJoinChannel(new_channel_name_buf, channel->ChannelID);
-#else
-                new_channel = cMgr->GetJoinChannel(new_channel_name_buf);
-#endif
-            }
-            if (new_channel)
-                new_channel->Join(bot, "");
-        }
-    }
+    JoinChatChannels(bot);
 
     if (sRandomPlayerbotMgr.IsRandomBot(bot))
     {
@@ -410,7 +447,7 @@ void PlayerbotHolder::OnBotLogin(Player * const bot)
     }
 }
 
-string PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, ObjectGuid masterguid, bool admin, uint32 masterAccountId, uint32 masterGuildId)
+std::string PlayerbotHolder::ProcessBotCommand(std::string cmd, ObjectGuid guid, ObjectGuid masterguid, bool admin, uint32 masterAccountId, uint32 masterGuildId)
 {
     if (!sPlayerbotAIConfig.enabled || guid.IsEmpty())
         return "Bot system is disabled";
@@ -497,12 +534,42 @@ string PlayerbotHolder::ProcessBotCommand(string cmd, ObjectGuid guid, ObjectGui
                 factory.EquipGear();
                 return "random gear equipped";
             }
+            if (cmd == "gear=green" || cmd == "gear=uncommon")
+            {
+                PlayerbotFactory factory(bot, bot->GetLevel(), ITEM_QUALITY_UNCOMMON);
+                factory.EquipGear();
+                return "random green gear equipped";
+            }
+            if (cmd == "gear=blue" || cmd == "gear=rare")
+            {
+                PlayerbotFactory factory(bot, bot->GetLevel(), ITEM_QUALITY_RARE);
+                factory.EquipGear();
+                return "random blue gear equipped";
+            }
+            if (cmd == "gear=purple" || cmd == "gear=epic")
+            {
+                PlayerbotFactory factory(bot, bot->GetLevel(), ITEM_QUALITY_EPIC);
+                factory.EquipGear();
+                return "random epic gear equipped";
+            }
             if (cmd == "equip=upgrade" || cmd == "gear=upgrade" || cmd == "upgrade" || cmd == "equip=sync")
             {
                 const bool syncWithMaster = cmd == "equip=sync";
                 PlayerbotFactory factory(bot, master->GetLevel(), ITEM_QUALITY_NORMAL);
                 factory.UpgradeGear(syncWithMaster);
                 return "gear upgraded";
+            }
+            if (cmd == "equip=best" || cmd == "gear=best")
+            {
+                PlayerbotFactory factory(bot, bot->GetLevel());
+                factory.EquipGearBest();
+                return "random best gear equipped";
+            }
+            if (cmd == "equip=partial" || cmd == "gear=partial")
+            {
+                PlayerbotFactory factory(bot, bot->GetLevel());
+                factory.EquipGearPartialUpgrade();
+                return "random gear upgraded to some slots";
             }
             if (cmd == "train" || cmd == "learn")
             {
@@ -650,11 +717,11 @@ bool PlayerbotMgr::HandlePlayerbotMgrCommand(ChatHandler* handler, char const* a
         return false;
     }
 
-    list<string> messages = mgr->HandlePlayerbotCommand(args, player);
+    std::list<std::string> messages = mgr->HandlePlayerbotCommand(args, player);
     if (messages.empty())
         return true;
 
-    for (list<string>::iterator i = messages.begin(); i != messages.end(); ++i)
+    for (std::list<std::string>::iterator i = messages.begin(); i != messages.end(); ++i)
     {
         handler->PSendSysMessage("%s",i->c_str());
     }
@@ -662,9 +729,9 @@ bool PlayerbotMgr::HandlePlayerbotMgrCommand(ChatHandler* handler, char const* a
     return true;
 }
 
-list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* master)
+std::list<std::string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* master)
 {
-    list<string> messages;
+    std::list<std::string> messages;
 
     if (!*args)
     {
@@ -672,7 +739,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
         return messages;
     }
 
-    string command = args;
+    std::string command = args;
 
     char *cmd = strtok ((char*)args, " ");
     const char *charname = strtok (NULL, " ");
@@ -701,7 +768,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
         if (sPlayerbotAIConfig.tweakValue > 2)
             sPlayerbotAIConfig.tweakValue = 0;
 
-        messages.push_back("Set tweakvalue to " + to_string(sPlayerbotAIConfig.tweakValue));
+        messages.push_back("Set tweakvalue to " + std::to_string(sPlayerbotAIConfig.tweakValue));
         return messages;
     }
 
@@ -725,7 +792,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
 
         ObjectGuid guid;
         uint32 accountId;
-        string alwaysName;
+        std::string alwaysName;
 
         if (!charname)
         {
@@ -759,7 +826,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
         {
             sRandomPlayerbotMgr.SetValue(guid.GetCounter(), "always", 1);
             messages.push_back("Enable offline player ai for " + alwaysName);
-            sPlayerbotAIConfig.freeAltBots.push_back(make_pair(accountId, guid.GetCounter()));
+            sPlayerbotAIConfig.freeAltBots.push_back(std::make_pair(accountId, guid.GetCounter()));
         }
         else
         {
@@ -824,7 +891,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
 
         if (!master)
         {
-            master = GetPlayerBotsBegin()->second;
+            master = playerBots[0];
         }
 
         PlayerbotAI* ai = master->GetPlayerbotAI();      
@@ -874,7 +941,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
     std::string cmdStr = cmd;
     std::string charnameStr = charname;
 
-    set<string> bots;
+    std::set<std::string> bots;
     if (charnameStr == "*" && master)
     {
         Group* group = master->GetGroup();
@@ -892,7 +959,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
 			if (member.GetRawValue() == master->GetObjectGuid().GetRawValue())
 				continue;
 
-			string bot;
+            std::string bot;
 			if (sObjectMgr.GetPlayerNameByGUID(member, bot))
 			    bots.insert(bot);
         }
@@ -900,18 +967,18 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
 
     if (charnameStr == "!" && master && master->GetSession()->GetSecurity() > SEC_GAMEMASTER)
     {
-        for (PlayerBotMap::const_iterator i = GetPlayerBotsBegin(); i != GetPlayerBotsEnd(); ++i)
-        {
-            Player* bot = i->second;
+       for (auto& itr : playerBots)
+       {
+            Player* bot = itr.second;
             if (bot && bot->IsInWorld())
                 bots.insert(bot->GetName());
         }
     }
 
-    vector<string> chars = split(charnameStr, ',');
-    for (vector<string>::iterator i = chars.begin(); i != chars.end(); i++)
+    std::vector<std::string> chars = split(charnameStr, ',');
+    for (std::vector<std::string>::iterator i = chars.begin(); i != chars.end(); i++)
     {
-        string s = *i;
+        std::string s = *i;
 
         uint32 accountId = GetAccountId(s);
         if (!accountId)
@@ -928,16 +995,16 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
             do
             {
                 Field* fields = results->Fetch();
-                string charName = fields[0].GetString();
+                std::string charName = fields[0].GetString();
                 bots.insert(charName);
             } while (results->NextRow());
         }
 	}
 
-    for (set<string>::iterator i = bots.begin(); i != bots.end(); ++i)
+    for (std::set<std::string>::iterator i = bots.begin(); i != bots.end(); ++i)
     {
-        string bot = *i;
-        ostringstream out;
+        std::string bot = *i;
+        std::ostringstream out;
         out << cmdStr << ": " << bot << " - ";
 
         ObjectGuid member = sObjectMgr.GetPlayerGuidByName(bot);
@@ -964,7 +1031,7 @@ list<string> PlayerbotHolder::HandlePlayerbotCommand(char const* args, Player* m
     return messages;
 }
 
-uint32 PlayerbotHolder::GetAccountId(string name)
+uint32 PlayerbotHolder::GetAccountId(std::string name)
 {
     uint32 accountId = 0;
 
@@ -978,10 +1045,10 @@ uint32 PlayerbotHolder::GetAccountId(string name)
     return accountId;
 }
 
-string PlayerbotHolder::ListBots(Player* master)
+std::string PlayerbotHolder::ListBots(Player* master)
 {
-    set<string> bots;
-    map<uint8,string> classNames;
+    std::set<std::string> bots;
+    std::map<uint8, std::string> classNames;
     classNames[CLASS_DRUID] = "Druid";
     classNames[CLASS_HUNTER] = "Hunter";
     classNames[CLASS_MAGE] = "Mage";
@@ -995,14 +1062,18 @@ string PlayerbotHolder::ListBots(Player* master)
     classNames[CLASS_DEATH_KNIGHT] = "DeathKnight";
 #endif
 
-    map<string, string> online;
-    list<string> names;
-    map<string, string> classes;
+    std::map<std::string, std::string> online;
+    std::list<std::string> names;
+    std::map<std::string, std::string> classes;
 
-    for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
+    for (auto& itr : playerBots)
     {
-        Player* const bot = it->second;
-        string name = bot->GetName();
+        Player* bot = itr.second;
+
+        if (!bot)
+          continue;
+
+        std::string name = bot->GetName();
         bots.insert(name);
 
         names.push_back(name);
@@ -1020,7 +1091,7 @@ string PlayerbotHolder::ListBots(Player* master)
             {
                 Field* fields = results->Fetch();
                 uint8 cls = fields[0].GetUInt8();
-                string name = fields[1].GetString();
+                std::string name = fields[1].GetString();
                 if (bots.find(name) == bots.end() && name != master->GetSession()->GetPlayerName())
                 {
                     names.push_back(name);
@@ -1042,7 +1113,7 @@ string PlayerbotHolder::ListBots(Player* master)
             Player *member = sObjectMgr.GetPlayer(itr->guid);
             if (member && sRandomPlayerbotMgr.IsFreeBot(member))
             {
-                string name = member->GetName();
+                std::string name = member->GetName();
 
                 names.push_back(name);
                 online[name] = "+";
@@ -1051,19 +1122,33 @@ string PlayerbotHolder::ListBots(Player* master)
         }
     }
 
-    ostringstream out;
+    std::ostringstream out;
     bool first = true;
     out << "Bot roster: ";
-    for (list<string>::iterator i = names.begin(); i != names.end(); ++i)
+    for (std::list<std::string>::iterator i = names.begin(); i != names.end(); ++i)
     {
         if (first) first = false; else out << ", ";
-        string name = *i;
+        std::string name = *i;
         out << online[name] << name << " " << classes[name];
     }
 
     return out.str();
 }
 
+
+uint32 PlayerbotHolder::GetPlayerbotsAmount() const
+{
+    uint32 amount = 0;
+    for (const auto& pair : playerBots)
+    {
+        if (pair.second)
+        {
+            amount++;
+        }
+    }
+
+    return amount;
+}
 
 PlayerbotMgr::PlayerbotMgr(Player* const master) : PlayerbotHolder(),  master(master), lastErrorTell(0)
 {
@@ -1079,7 +1164,7 @@ void PlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool minimal)
     CheckTellErrors(elapsed);
 }
 
-void PlayerbotMgr::HandleCommand(uint32 type, const string& text, uint32 lang)
+void PlayerbotMgr::HandleCommand(uint32 type, const std::string& text, uint32 lang)
 {
     Player *master = GetMaster();
     if (!master)
@@ -1088,69 +1173,57 @@ void PlayerbotMgr::HandleCommand(uint32 type, const string& text, uint32 lang)
     if (!sPlayerbotAIConfig.enabled)
         return;
 
-    if (text.find(sPlayerbotAIConfig.commandSeparator) != string::npos)
+    if (text.find(sPlayerbotAIConfig.commandSeparator) != std::string::npos)
     {
-        vector<string> commands;
+        std::vector<std::string> commands;
         split(commands, text, sPlayerbotAIConfig.commandSeparator.c_str());
-        for (vector<string>::iterator i = commands.begin(); i != commands.end(); ++i)
+        for (std::vector<std::string>::iterator i = commands.begin(); i != commands.end(); ++i)
         {
             HandleCommand(type, *i,lang);
         }
         return;
     }
 
-    for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
+    ForEachPlayerbot([&](Player *bot)
     {
-        Player* const bot = it->second;
-
         if (type == CHAT_MSG_SAY)
             if (bot->GetMapId() != master->GetMapId() || sServerFacade.GetDistance2d(bot, master) > 25)
-                continue;
+                return;
 
         if (type == CHAT_MSG_YELL)
             if (bot->GetMapId() != master->GetMapId() || sServerFacade.GetDistance2d(bot, master) > 300)
-                continue;
+               return;
 
         bot->GetPlayerbotAI()->HandleCommand(type, text, *master, lang);
-    }
+    });
 
-    for (PlayerBotMap::const_iterator it = sRandomPlayerbotMgr.GetPlayerBotsBegin(); it != sRandomPlayerbotMgr.GetPlayerBotsEnd(); ++it)
+    sRandomPlayerbotMgr.ForEachPlayerbot([&](Player* bot)
     {
-        Player* const bot = it->second;
-
         if (type == CHAT_MSG_SAY)
             if (bot->GetMapId() != master->GetMapId() || sServerFacade.GetDistance2d(bot, master) > 25)
-                continue;
+               return;
 
         if (type == CHAT_MSG_YELL)
             if (bot->GetMapId() != master->GetMapId() || sServerFacade.GetDistance2d(bot, master) > 300)
-                continue;
+               return;
 
         if (bot->GetPlayerbotAI()->GetMaster() == master)
             bot->GetPlayerbotAI()->HandleCommand(type, text, *master, lang);
-    }
+    });
 }
 
 void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
 {
-    for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
+    ForEachPlayerbot([&](Player* bot)
     {
-        Player* const bot = it->second;
-        if (!bot)
-            continue;
-
         bot->GetPlayerbotAI()->HandleMasterIncomingPacket(packet);
-    }
+    });
 
-    for (PlayerBotMap::const_iterator it = sRandomPlayerbotMgr.GetPlayerBotsBegin(); it != sRandomPlayerbotMgr.GetPlayerBotsEnd(); ++it)
+    sRandomPlayerbotMgr.ForEachPlayerbot([&](Player* bot)
     {
-        Player* const bot = it->second;
-        if (!bot)
-            continue;
-
         if (bot->GetPlayerbotAI()->GetMaster() == GetMaster())
             bot->GetPlayerbotAI()->HandleMasterIncomingPacket(packet);
-    }
+    });
 
     switch (packet.GetOpcode())
     {
@@ -1170,42 +1243,33 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
 }
 void PlayerbotMgr::HandleMasterOutgoingPacket(const WorldPacket& packet)
 {
-    for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
-    {
-        Player* const bot = it->second;
-        if (!bot)
-            continue;
-
+   ForEachPlayerbot([&](Player* bot)
+   {
         if (!bot->GetPlayerbotAI())
-            continue;
+            return;
 
         bot->GetPlayerbotAI()->HandleMasterOutgoingPacket(packet);
-    }
+    });
 
-    for (PlayerBotMap::const_iterator it = sRandomPlayerbotMgr.GetPlayerBotsBegin(); it != sRandomPlayerbotMgr.GetPlayerBotsEnd(); ++it)
+    sRandomPlayerbotMgr.ForEachPlayerbot([&](Player* bot)
     {
-        Player* const bot = it->second;
-        if (!bot)
-            continue;
-
         if (bot->GetPlayerbotAI()->GetMaster() == GetMaster())
             bot->GetPlayerbotAI()->HandleMasterOutgoingPacket(packet);
-    }
+    });
 }
 
 void PlayerbotMgr::SaveToDB()
 {
-    for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
+    ForEachPlayerbot([&](Player* bot)
     {
-        Player* const bot = it->second;
         bot->SaveToDB();
-    }
-    for (PlayerBotMap::const_iterator it = sRandomPlayerbotMgr.GetPlayerBotsBegin(); it != sRandomPlayerbotMgr.GetPlayerBotsEnd(); ++it)
+    });
+
+    sRandomPlayerbotMgr.ForEachPlayerbot([&](Player* bot)
     {
-        Player* const bot = it->second;
         if (bot->GetPlayerbotAI()->GetMaster() == GetMaster())
             bot->SaveToDB();
-    }
+    });
 }
 
 void PlayerbotMgr::OnBotLoginInternal(Player * const bot)
@@ -1229,26 +1293,27 @@ void PlayerbotMgr::OnPlayerLogin(Player* player)
 
     uint32 accountId = player->GetSession()->GetAccountId();
     auto results = CharacterDatabase.PQuery(
-        "SELECT name FROM characters WHERE account = '%u'",
+        "SELECT guid, name FROM characters WHERE account = '%u'",
         accountId);
     if (results)
     {
-        ostringstream out; out << "add ";
+        std::ostringstream out; out << "add ";
         bool first = true;
         do
         {
             Field* fields = results->Fetch();
             if (first) first = false; else out << ",";
-            out << fields[0].GetString();
+            if(sPlayerbotAIConfig.botAutologin == 2 && !sPlayerbotAIConfig.IsFreeAltBot(fields[0].GetUInt32())) continue;
+            out << fields[1].GetString();
         } while (results->NextRow());
 
         HandlePlayerbotCommand(out.str().c_str(), player);
     }
 }
 
-void PlayerbotMgr::TellError(string botName, string text)
+void PlayerbotMgr::TellError(std::string botName, std::string text)
 {
-    set<string> names = errors[text];
+    std::set<std::string> names = errors[text];
     if (names.find(botName) == names.end())
     {
         names.insert(botName);
@@ -1266,12 +1331,12 @@ void PlayerbotMgr::CheckTellErrors(uint32 elapsed)
 
     for (PlayerBotErrorMap::iterator i = errors.begin(); i != errors.end(); ++i)
     {
-        string text = i->first;
-        set<string> names = i->second;
+        std::string text = i->first;
+        std::set<std::string> names = i->second;
 
-        ostringstream out;
+        std::ostringstream out;
         bool first = true;
-        for (set<string>::iterator j = names.begin(); j != names.end(); ++j)
+        for (std::set<std::string>::iterator j = names.begin(); j != names.end(); ++j)
         {
             if (!first) out << ", "; else first = false;
             out << *j;

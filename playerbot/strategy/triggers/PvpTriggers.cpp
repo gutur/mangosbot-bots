@@ -1,11 +1,11 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "PvpTriggers.h"
-#include "ServerFacade.h"
-#include "BattleGroundWS.h"
-#include "strategy/values/PositionValue.h"
+#include "playerbot/ServerFacade.h"
+#include "BattleGround/BattleGroundWS.h"
+#include "playerbot/strategy/values/PositionValue.h"
 #ifndef MANGOSBOT_ZERO
-#include "BattleGroundEY.h"
+#include "BattleGround/BattleGroundEY.h"
 #endif
 
 using namespace ai;
@@ -79,16 +79,6 @@ bool BgActiveTrigger::IsActive()
     return false;
 }
 
-bool BgEndedTrigger::IsActive()
-{
-    if (bot->InBattleGround())
-    {
-        if (bot->GetBattleGround() && bot->GetBattleGround()->GetStatus() == STATUS_WAIT_LEAVE)
-            return true;
-    }
-    return false;
-}
-
 bool BgInviteActiveTrigger::IsActive()
 {
     if (bot->InBattleGround() || !bot->InBattleGroundQueue())
@@ -112,6 +102,16 @@ bool BgInviteActiveTrigger::IsActive()
                 return true;
             }
         }
+    }
+    return false;
+}
+
+bool BgEndedTrigger::IsActive()
+{
+    if (bot->InBattleGround())
+    {
+        if (bot->GetBattleGround() && bot->GetBattleGround()->GetStatus() == STATUS_WAIT_LEAVE)
+            return true;
     }
     return false;
 }
@@ -243,7 +243,7 @@ bool PlayerWantsInBattlegroundTrigger::IsActive()
 
 bool VehicleNearTrigger::IsActive()
 {
-    list<ObjectGuid> npcs = AI_VALUE(list<ObjectGuid>, "nearest vehicles");
+    std::list<ObjectGuid> npcs = AI_VALUE(std::list<ObjectGuid>, "nearest vehicles");
     return npcs.size();
 }
 

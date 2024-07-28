@@ -1,8 +1,8 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "HelpAction.h"
 #include "ChatActionContext.h"
-#include "PlayerbotHelpMgr.h"
+#include "playerbot/PlayerbotHelpMgr.h"
 
 using namespace ai;
 
@@ -19,14 +19,14 @@ HelpAction::~HelpAction()
 bool HelpAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    string param = event.getParam();
-    string helpTopic;
+    std::string param = event.getParam();
+    std::string helpTopic;
 
-    if(param.find("Hvalue:help") != string::npos)
+    if(param.find("Hvalue:help") != std::string::npos)
     {
         helpTopic = ChatHelper::parseValue("help",param);
     }
-    else if (param.find("[h:") != string::npos)
+    else if (param.find("[h:") != std::string::npos)
     {
         helpTopic = param.substr(3,param.size()-4);
     }
@@ -36,12 +36,12 @@ bool HelpAction::Execute(Event& event)
         helpTopic = "help:main";
     }
 
-    ostringstream out;
-    string helpTekst = sPlayerbotHelpMgr.GetBotText(helpTopic);
+    std::ostringstream out;
+    std::string helpTekst = sPlayerbotHelpMgr.GetBotText(helpTopic);
 
     if (helpTopic.empty() && !param.empty())
     {
-        vector<string> list = sPlayerbotHelpMgr.FindBotText(param);
+        std::vector<std::string> list = sPlayerbotHelpMgr.FindBotText(param);
 
         if(list.size() == 1)
             helpTekst = sPlayerbotHelpMgr.GetBotText(list.front());
@@ -50,7 +50,7 @@ bool HelpAction::Execute(Event& event)
             std::sort(list.begin(), list.end());
             helpTekst = sPlayerbotHelpMgr.GetBotText("help:search");
 
-            string topics = sPlayerbotHelpMgr.makeList(list, "[h:<part>|<part>]");
+            std::string topics = sPlayerbotHelpMgr.makeList(list, "[h:<part>|<part>]");
 
             if (!helpTekst.empty())
                 sPlayerbotHelpMgr.replace(helpTekst, "<found>", topics);
@@ -63,7 +63,7 @@ bool HelpAction::Execute(Event& event)
 
     if (!helpTekst.empty())
     {
-        vector<string> lines = Qualified::getMultiQualifiers(helpTekst, "\n");
+        std::vector<std::string> lines = Qualified::getMultiQualifiers(helpTekst, "\n");
 
         for (auto& line : lines)
         {
@@ -81,26 +81,26 @@ bool HelpAction::Execute(Event& event)
 
 void HelpAction::TellChatCommands(Player* requester)
 {
-    ostringstream out;
-    out << "私聊时以下任意一项: ";
+    std::ostringstream out;
+    out << "私聊以下任意一项: ";
     out << CombineSupported(chatContext->supports());
-    out << ", [物品], [任务] 或者 [对象] 链接";
+    out << ", [物品], [任务] 或 [对象] 链接";
     ai->TellPlayer(requester, out.str());
 }
 
 void HelpAction::TellStrategies(Player* requester)
 {
-    ostringstream out;
+    std::ostringstream out;
     out << "可能的策略 (co/nc/dead commands): ";
     out << CombineSupported(ai->GetAiObjectContext()->GetSupportedStrategies());
     ai->TellPlayer(requester, out.str());
 }
 
-string HelpAction::CombineSupported(set<string> commands)
+std::string HelpAction::CombineSupported(std::set<std::string> commands)
 {
-    ostringstream out;
+    std::ostringstream out;
 
-    for (set<string>::iterator i = commands.begin(); i != commands.end(); )
+    for (std::set<std::string>::iterator i = commands.begin(); i != commands.end(); )
 	{
         out << *i;
 		if (++i != commands.end())

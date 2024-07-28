@@ -1,13 +1,13 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "CheckValuesAction.h"
 
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
 
-#include "../../TravelMgr.h"
-#include "../../TravelNode.h"
-#include "../values/LastMovementValue.h"
+#include "playerbot/TravelMgr.h"
+#include "playerbot/TravelNode.h"
+#include "playerbot/strategy/values/LastMovementValue.h"
 using namespace ai;
 
 CheckValuesAction::CheckValuesAction(PlayerbotAI* ai) : Action(ai, "check values")
@@ -31,13 +31,12 @@ bool CheckValuesAction::Execute(Event& event)
         sTravelNodeMap.manageNodes(bot, ai->HasStrategy("map full", BotState::BOT_STATE_NON_COMBAT));
     }
 
-    list<ObjectGuid> possible_targets = AI_VALUE(list<ObjectGuid>, "possible targets");
-    list<ObjectGuid> all_targets = AI_VALUE(list<ObjectGuid>, "all targets");
-    list<ObjectGuid> npcs = AI_VALUE(list<ObjectGuid>, "nearest npcs");
-    list<ObjectGuid> corpses = AI_VALUE(list<ObjectGuid>, "nearest corpses");
-    list<ObjectGuid> gos = AI_VALUE(list<ObjectGuid>, "nearest game objects");
-    list<ObjectGuid> nfp = AI_VALUE(list<ObjectGuid>, "nearest friendly players");
-    //if (!ai->HasStrategy("debug", BotState::BOT_STATE_NON_COMBAT))
-    //    context->ClearExpiredValues();
+    std::list<ObjectGuid> possible_targets = AI_VALUE(std::list<ObjectGuid>, "possible targets");
+    std::list<ObjectGuid> all_targets = AI_VALUE(std::list<ObjectGuid>, "all targets");
+    std::list<ObjectGuid> npcs = AI_VALUE(std::list<ObjectGuid>, "nearest npcs");
+    std::list<ObjectGuid> corpses = AI_VALUE(std::list<ObjectGuid>, "nearest corpses");
+    std::list<ObjectGuid> gos = AI_VALUE(std::list<ObjectGuid>, "nearest game objects no los");
+    std::list<ObjectGuid> nfp = AI_VALUE(std::list<ObjectGuid>, "nearest friendly players");
+
     return true;
 }

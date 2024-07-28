@@ -1,5 +1,5 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "AttackersValue.h"
 #include "PossibleTargetsValue.h"
 #include "EnemyPlayerValue.h"
@@ -7,9 +7,9 @@
 using namespace ai;
 using namespace MaNGOS;
 
-list<ObjectGuid> AttackersValue::Calculate()
+std::list<ObjectGuid> AttackersValue::Calculate()
 {
-    list<ObjectGuid> result;
+    std::list<ObjectGuid> result;
     if (!ai->AllowActivity(ALL_ACTIVITY))
         return result;
 
@@ -22,13 +22,14 @@ list<ObjectGuid> AttackersValue::Calculate()
     if (bot->IsFlying() && WorldPosition(bot).currentHeight() > 10.0f)
         return result;
 
+    // lost control, e.g. BG ended
     if (bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CLIENT_CONTROL_LOST))
         return result;
 
     if (!sPlayerbotAIConfig.tweakValue)
     {
         // Try to get the value from nearby friendly bots.
-        list<ObjectGuid> nearGuids = ai->GetAiObjectContext()->GetValue<list<ObjectGuid> >("nearest friendly players")->Get();
+        std::list<ObjectGuid> nearGuids = ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid> >("nearest friendly players")->Get();
         for (auto& i : nearGuids)
         {
             Player* player = sObjectMgr.GetPlayer(i);
@@ -50,7 +51,7 @@ list<ObjectGuid> AttackersValue::Calculate()
             if (!botAi)
                 continue;
 
-            string valueName = "attackers" + !qualifier.empty() ? "::" + qualifier : "";
+            std::string valueName = "attackers" + !qualifier.empty() ? "::" + qualifier : "";
 
             // Ignore bots without the value.
             if (!PHAS_AI_VALUE(valueName))
@@ -75,9 +76,9 @@ list<ObjectGuid> AttackersValue::Calculate()
 
             calculatePos = pAttackersValue->calculatePos;
 
-            result = PAI_VALUE(list<ObjectGuid>, valueName);
+            result = PAI_VALUE(std::list<ObjectGuid>, valueName);
 
-            vector<string> specificTargetNames = { "current target","old target","attack target","pull target" };
+            std::vector<std::string> specificTargetNames = { "current target","old target","attack target","pull target" };
             Unit* target;
 
             //Remove bot specific targets of the other bot.
@@ -96,13 +97,27 @@ list<ObjectGuid> AttackersValue::Calculate()
                     result.push_back(target->GetObjectGuid());
             }
 
+            //Validate these targets.
+            std::list<ObjectGuid> filter;
+
+            for (auto& guid : result)
+            {
+                target = ai->GetUnit(guid);
+
+                if (!IsValid(target, bot, bot))
+                    filter.push_back(guid);
+            }
+
+            for(auto& guid : filter)
+                result.remove(guid);
+
             return result;
         }
     }
     
     calculatePos = bot;
 
-    set<Unit*> targets;
+    std::set<Unit*> targets;
 
     // Check if we only need one attacker
     bool getOne = false;
@@ -111,7 +126,7 @@ list<ObjectGuid> AttackersValue::Calculate()
         getOne = stoi(qualifier);
     }
 
-    set<ObjectGuid> invalidTargets;
+    std::set<ObjectGuid> invalidTargets;
 
     // Add the targets of the bot
     AddTargetsOf(bot, targets, invalidTargets, getOne);
@@ -140,7 +155,7 @@ list<ObjectGuid> AttackersValue::Calculate()
     return result;
 }
 
-void AttackersValue::AddTargetsOf(Group* group, set<Unit*>& targets, set<ObjectGuid>& invalidTargets, bool getOne)
+void AttackersValue::AddTargetsOf(Group* group, std::set<Unit*>& targets, std::set<ObjectGuid>& invalidTargets, bool getOne)
 {
     Group::MemberSlotList const& groupSlot = group->GetMemberSlots();
     for (Group::member_citerator itr = groupSlot.begin(); itr != groupSlot.end(); itr++)
@@ -165,12 +180,12 @@ void AttackersValue::AddTargetsOf(Group* group, set<Unit*>& targets, set<ObjectG
     }
 }
 
-void AttackersValue::AddTargetsOf(Player* player, set<Unit*>& targets, set<ObjectGuid>& invalidTargets, bool getOne)
+void AttackersValue::AddTargetsOf(Player* player, std::set<Unit*>& targets, std::set<ObjectGuid>& invalidTargets, bool getOne)
 {
     // If the player is available
     if (ai->IsSafe(player))
     {
-        set<Unit*> units;
+        std::set<Unit*> units;
 
         // If the player is a bot
         PlayerbotAI* playerBot = player->GetPlayerbotAI();
@@ -178,10 +193,10 @@ void AttackersValue::AddTargetsOf(Player* player, set<Unit*>& targets, set<Objec
         {
             // Get all the units around the player
             // NOTE: We don't validate the value here because it will be validated later on
-            const string ignoreValidate = std::to_string(true);
-            const string range = std::to_string((int32)GetRange());
-            const vector<string> qualifiers = { range, ignoreValidate };
-            const list<ObjectGuid> possibleTargets = PAI_VALUE2(list<ObjectGuid>, "possible targets", Qualified::MultiQualify(qualifiers, ":"));
+            const std::string ignoreValidate = std::to_string(true);
+            const std::string range = std::to_string((int32)GetRange());
+            const std::vector<std::string> qualifiers = { range, ignoreValidate };
+            const std::list<ObjectGuid> possibleTargets = PAI_VALUE2(std::list<ObjectGuid>, "possible targets", Qualified::MultiQualify(qualifiers, ":"));
             for (const ObjectGuid& guid : possibleTargets)
             {
                 if (Unit* unit = ai->GetUnit(guid))
@@ -363,20 +378,78 @@ bool AttackersValue::IsValid(Unit* target, Player* player, Player* owner, bool c
             {
                 return false;
             }
-        }
-
-        if (WorldPosition(player).isOverworld() &&  target->AI() && target->AI()->IsPreventingDeath())
-        {
-            return false;
-        }
+        }        
     }
+
+    if (IgnoreTarget(target, playerToCheckAgainst))
+        return false;
 
     return true;
 }
 
-string AttackersValue::Format()
+bool AttackersValue::IgnoreTarget(Unit* target, Player* playerToCheckAgainst)
 {
-    ostringstream out;
+    if (!playerToCheckAgainst->GetPlayerbotAI())
+        return false; 
+
+    PlayerbotAI* ai = playerToCheckAgainst->GetPlayerbotAI();
+    AiObjectContext* context = ai->GetAiObjectContext();
+
+    //Ignore Hard hostiles while not already fighting.
+    if (target->GetLevel() > (playerToCheckAgainst->GetLevel() + 5) && ai->GetState() == BotState::BOT_STATE_NON_COMBAT)
+    {
+        //When traveling a long distance.
+        if (AI_VALUE(TravelTarget*, "travel target")->isTraveling() && AI_VALUE2(float, "distance", "travel target") > sPlayerbotAIConfig.reactDistance)
+            return true;
+
+        //When moving to master far away.
+        if (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && AI_VALUE2(bool, "trigger active", "out of react range"))
+            return true;
+
+        if (ai->GetMaster() && !ai->HasActivePlayerMaster())
+        {
+            Player* player = ai->GetMaster();
+
+            //When master is traveling a long distance.
+            if (PAI_VALUE(TravelTarget*, "travel target")->isTraveling() && PAI_VALUE2(float, "distance", "travel target") > sPlayerbotAIConfig.reactDistance)
+                return true;
+        }
+    }
+
+    Player* enemyPlayer = dynamic_cast<Player*>(target);
+
+    if (!enemyPlayer)
+    {
+        bool isDummy = false;
+
+
+        if (WorldPosition(playerToCheckAgainst).isOverworld() && target->AI() && target->AI()->IsPreventingDeath())
+        {
+
+            isDummy = true;
+        }
+
+#define TRAINING_DUMMY_NPC_ENTRY1 190013
+#define TRAINING_DUMMY_NPC_ENTRY2 190014
+#define TRAINING_DUMMY_NPC_ENTRY3 190015
+
+        if (target->GetEntry() == TRAINING_DUMMY_NPC_ENTRY1 ||
+            target->GetEntry() == TRAINING_DUMMY_NPC_ENTRY2 ||
+            target->GetEntry() == TRAINING_DUMMY_NPC_ENTRY3)
+        {
+            isDummy = true;
+        }
+
+        if (isDummy && ai->GetFixedBotNumer(BotTypeNumber::DUMMY_ATTACK_NUMBER, 10, 0.2f)) //90% of bots, cycle every 5 min.
+            return true;
+    }
+
+    return false;
+}
+
+std::string AttackersValue::Format()
+{
+    std::ostringstream out;
 
     for (auto& target : value)
     {
@@ -398,7 +471,7 @@ std::list<ObjectGuid> AttackersTargetingMeValue::Calculate()
 {
     std::list<ObjectGuid> result;
 
-    const list<ObjectGuid>& attackers = AI_VALUE(list<ObjectGuid>, "attackers");
+    const std::list<ObjectGuid>& attackers = AI_VALUE(std::list<ObjectGuid>, "attackers");
     for (const ObjectGuid& attackerGuid : attackers)
     {
         Unit* attacker = ai->GetUnit(attackerGuid);

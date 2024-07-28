@@ -1,17 +1,18 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "LootAction.h"
 
-#include "AhBotConfig.h"
+#include "ahbot/AhBotConfig.h"
 
-#include "../../LootObjectStack.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../../ahbot/AhBot.h"
-#include "../../RandomPlayerbotMgr.h"
-#include "../../ServerFacade.h"
-#include "../values/LootStrategyValue.h"
-#include "../values/ItemUsageValue.h"
-#include "../../ServerFacade.h"
+#include "playerbot/LootObjectStack.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "ahbot/AhBot.h"
+#include "playerbot/RandomPlayerbotMgr.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/strategy/values/LootStrategyValue.h"
+#include "playerbot/strategy/values/ItemUsageValue.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/strategy/values/SharedValueContext.h"
 
 
 using namespace ai;
@@ -73,11 +74,7 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
     if (creature && sServerFacade.GetDistance2d(bot, creature) > INTERACTION_DISTANCE)
         return false;
 
-    if (creature && creature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE)
-#ifdef CMANGOS
-            && !creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE)
-#endif
-            )
+    if (creature && creature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE) && !creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE))
     {        
         if (!lootObject.IsLootPossible(bot)) //Clear loot if bot can't loot it.
             return true;
@@ -121,19 +118,30 @@ bool OpenLootAction::DoLoot(LootObject& lootObject)
     if (go && sServerFacade.GetDistance2d(bot, go) > INTERACTION_DISTANCE)
         return false;
 
-    if (go && (
-#ifdef CMANGOS
-        go->IsInUse() || 
-#endif
-        go->GetGoState() != GO_STATE_READY
-        ))
+    if (go && (go->IsInUse() || go->GetGoState() != GO_STATE_READY))
         return false;
 
     if (lootObject.skillId == SKILL_MINING)
         return ai->HasSkill(SKILL_MINING) ? ai->CastSpell(MINING, bot) : false;
 
     if (lootObject.skillId == SKILL_HERBALISM)
-        return ai->HasSkill(SKILL_HERBALISM) ? ai->CastSpell(HERB_GATHERING, bot) : false;
+    {
+        // herb-like quest objects
+        bool isForQuest = false;
+        if (go && sObjectMgr.IsGameObjectForQuests(lootObject.guid.GetEntry()))
+        {
+            if (go->ActivateToQuest(bot))
+            {
+                std::list<uint32> lootItems = GAI_VALUE2(std::list<uint32>, "entry loot list", -1*int32(go->GetEntry()));
+                isForQuest = !lootItems.empty() || go->GetLootState() != GO_READY;
+            }
+        }
+
+        if (!isForQuest)
+        {
+            return ai->HasSkill(SKILL_HERBALISM) ? ai->CastSpell(HERB_GATHERING, bot) : false;
+        }
+    }
 
     uint32 spellId = GetOpeningSpell(lootObject);
     if (!spellId)
@@ -302,6 +310,20 @@ bool StoreLootAction::Execute(Event& event)
         ItemPrototype const *proto = sItemStorage.LookupEntry<ItemPrototype>(itemid);
         if (!proto)
             continue;
+
+        Loot* loot = sLootMgr.GetLoot(bot);
+
+        if (!loot)
+            continue;
+
+        LootItem* lootItem = loot->GetLootItemInSlot(itemindex);
+
+        if (!lootItem)
+            continue;
+
+        //have no right to loot
+        if (lootItem->isBlocked || lootItem->GetSlotTypeForSharedLoot(bot, loot) == MAX_LOOT_SLOT_TYPE)
+            continue;
        
         Player* master = ai->GetMaster();
         if (sRandomPlayerbotMgr.IsRandomBot(bot) && master)
@@ -320,33 +342,19 @@ bool StoreLootAction::Execute(Event& event)
 
         if (requester && (ai->HasStrategy("debug", BotState::BOT_STATE_NON_COMBAT) || (requester->GetMapId() != bot->GetMapId() || WorldPosition(requester).sqDistance2d(bot) > (sPlayerbotAIConfig.sightDistance * sPlayerbotAIConfig.sightDistance))))
         {
-            map<string, string> args;
+            std::map<std::string, std::string> args;
             args["%item"] = chat->formatItem(itemQualifier);
             ai->TellPlayerNoFacing(requester, BOT_TEXT2("loot_command", args), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         }
 
-        if (sPlayerbotAIConfig.guildFeedbackRate && frand(0, 100) <= sPlayerbotAIConfig.guildFeedbackRate && bot->GetGuildId() && !urand(0, 10) && proto->Quality >= ITEM_QUALITY_RARE && sRandomPlayerbotMgr.IsFreeBot(bot))
-        {
-            Guild* guild = sGuildMgr.GetGuildById(bot->GetGuildId());
+        sPlayerbotAIConfig.logEvent(ai, "StoreLootAction", proto->Name1, std::to_string(proto->ItemId));
 
-            if (guild)
-            {
-                map<string, string> placeholders;
-                placeholders["%name"] = chat->formatItem(itemQualifier);
-
-                if (urand(0, 3))
-                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("耶!我拾取了 %name!", placeholders), LANG_UNIVERSAL);
-                else
-                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("猜猜谁得到了 %name? 是我!", placeholders), LANG_UNIVERSAL);
-            }
-        }
-
-        sPlayerbotAIConfig.logEvent(ai, "StoreLootAction", proto->Name1, to_string(proto->ItemId));
+        BroadcastHelper::BroadcastLootingItem(ai, bot, proto, itemQualifier);
     }
 
     AI_VALUE(LootObjectStack*, "available loot")->Remove(guid);
     RESET_AI_VALUE(LootObject, "loot target");
-    RESET_AI_VALUE2(bool, "should loot object", to_string(guid.GetRawValue()));
+    RESET_AI_VALUE2(bool, "should loot object", std::to_string(guid.GetRawValue()));
 
     // release loot
     WorldPacket packet(CMSG_LOOT_RELEASE, 8);
@@ -366,11 +374,11 @@ bool StoreLootAction::IsLootAllowed(ItemQualifier& itemQualifier, PlayerbotAI *a
     if (!proto)
         return false;
 
-    set<uint32>& lootItems = AI_VALUE(set<uint32>&, "always loot list");
+    std::set<uint32>& lootItems = AI_VALUE(std::set<uint32>&, "always loot list");
     if (lootItems.find(itemQualifier.GetId()) != lootItems.end())
         return true;
 
-    set<uint32>& skipItems = AI_VALUE(set<uint32>&, "skip loot list");
+    std::set<uint32>& skipItems = AI_VALUE(std::set<uint32>&, "skip loot list");
     if (skipItems.find(itemQualifier.GetId()) != skipItems.end())
         return false;
 
@@ -421,16 +429,16 @@ bool StoreLootAction::IsLootAllowed(ItemQualifier& itemQualifier, PlayerbotAI *a
 
 bool ReleaseLootAction::Execute(Event& event)
 {
-    list<ObjectGuid> gos = context->GetValue<list<ObjectGuid> >("nearest game objects")->Get();
-    for (list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
+    std::list<ObjectGuid> gos = context->GetValue<std::list<ObjectGuid> >("nearest game objects no los")->Get();
+    for (std::list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
     {
         WorldPacket packet(CMSG_LOOT_RELEASE, 8);
         packet << *i;
         bot->GetSession()->HandleLootReleaseOpcode(packet);
     }
 
-    list<ObjectGuid> corpses = context->GetValue<list<ObjectGuid> >("nearest corpses")->Get();
-    for (list<ObjectGuid>::iterator i = corpses.begin(); i != corpses.end(); i++)
+    std::list<ObjectGuid> corpses = context->GetValue<std::list<ObjectGuid> >("nearest corpses")->Get();
+    for (std::list<ObjectGuid>::iterator i = corpses.begin(); i != corpses.end(); i++)
     {
         WorldPacket packet(CMSG_LOOT_RELEASE, 8);
         packet << *i;

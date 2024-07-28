@@ -1,11 +1,11 @@
-#include "botpch.h"
-#include "../../playerbot.h"
-#include "../../ServerFacade.h"
+
+#include "playerbot/playerbot.h"
+#include "playerbot/ServerFacade.h"
 #include "ReactionStrategy.h"
 
 using namespace ai;
 
-void ReactionStrategy::InitReactionTriggers(list<TriggerNode*> &triggers)
+void ReactionStrategy::InitReactionTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
         "combat start",

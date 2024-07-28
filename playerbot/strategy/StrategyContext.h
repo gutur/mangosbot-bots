@@ -42,6 +42,7 @@
 #include "generic/GroupStrategy.h"
 #include "generic/GuildStrategy.h"
 #include "generic/FocusTargetStrategy.h"
+#include "generic/AvoidMobsStrategy.h"
 
 #include "generic/DungeonStrategy.h"
 #include "generic/OnyxiasLairDungeonStrategies.h"
@@ -70,6 +71,7 @@ namespace ai
             creators["ready check"] = &StrategyContext::ready_check;
             creators["dead"] = &StrategyContext::dead;
             creators["flee"] = &StrategyContext::flee;
+            creators["avoid mobs"] = &StrategyContext::avoid_mobs;
             creators["duel"] = &StrategyContext::duel;
             creators["start duel"] = &StrategyContext::start_duel;
             creators["kite"] = &StrategyContext::kite;
@@ -134,10 +136,11 @@ namespace ai
             creators["avoid aoe"] = &StrategyContext::avoid_aoe;
             creators["wait for attack"] = &StrategyContext::wait_for_attack;
             creators["pull back"] = &StrategyContext::pull_back;
-            creators["focus heal target"] = &StrategyContext::focus_heal_target;
+            creators["focus heal targets"] = &StrategyContext::focus_heal_targets;
             creators["heal interrupt"] = &StrategyContext::heal_interrupt;
             creators["preheal"] = &StrategyContext::preheal;
             creators["wbuff"] = &StrategyContext::world_buff;
+            creators["silent"] = &StrategyContext::silent;
 
             // Dungeon Strategies
             creators["dungeon"] = &StrategyContext::dungeon;
@@ -176,6 +179,7 @@ namespace ai
         static Strategy* duel(PlayerbotAI* ai) { return new DuelStrategy(ai); }
         static Strategy* start_duel(PlayerbotAI* ai) { return new StartDuelStrategy(ai); }
         static Strategy* flee(PlayerbotAI* ai) { return new FleeStrategy(ai); }
+        static Strategy* avoid_mobs(PlayerbotAI* ai) { return new AvoidMobsStrategy(ai); }
         static Strategy* dead(PlayerbotAI* ai) { return new DeadStrategy(ai); }
         static Strategy* racials(PlayerbotAI* ai) { return new RacialsStrategy(ai); }
         static Strategy* loot(PlayerbotAI* ai) { return new LootNonCombatStrategy(ai); }
@@ -233,10 +237,11 @@ namespace ai
         static Strategy* avoid_aoe(PlayerbotAI* ai) { return new AvoidAoeStrategy(ai); }
         static Strategy* wait_for_attack(PlayerbotAI* ai) { return new WaitForAttackStrategy(ai); }
         static Strategy* pull_back(PlayerbotAI* ai) { return new PullBackStrategy(ai); }
-        static Strategy* focus_heal_target(PlayerbotAI* ai) { return new FocusHealTargetStrategy(ai); }
+        static Strategy* focus_heal_targets(PlayerbotAI* ai) { return new FocusHealTargetsStrategy(ai); }
         static Strategy* heal_interrupt(PlayerbotAI* ai) { return new HealInterruptStrategy(ai); }
         static Strategy* preheal(PlayerbotAI* ai) { return new PreHealStrategy(ai); }
         static Strategy* world_buff(PlayerbotAI* ai) { return new WorldBuffStrategy(ai); }
+        static Strategy* silent(PlayerbotAI* ai) { return new SilentStrategy(ai); }
 
         // Dungeon Strategies
         static Strategy* dungeon(PlayerbotAI* ai) { return new DungeonStrategy(ai); }

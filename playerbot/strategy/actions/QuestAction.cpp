@@ -1,8 +1,8 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "QuestAction.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
 
 using namespace ai;
 
@@ -30,15 +30,15 @@ bool QuestAction::Execute(Event& event)
     }
 
     bool result = false;
-    list<ObjectGuid> npcs = AI_VALUE(list<ObjectGuid>, "nearest npcs");
-    for (list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
+    std::list<ObjectGuid> npcs = AI_VALUE(std::list<ObjectGuid>, "nearest npcs");
+    for (std::list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
     {
         Unit* unit = ai->GetUnit(*i);
         if (unit && bot->GetDistance(unit) <= INTERACTION_DISTANCE)
             result |= ProcessQuests(unit);
     }
-    list<ObjectGuid> gos = AI_VALUE(list<ObjectGuid>, "nearest game objects");
-    for (list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
+    std::list<ObjectGuid> gos = AI_VALUE(std::list<ObjectGuid>, "nearest game objects no los");
+    for (std::list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
     {
         GameObject* go = ai->GetGameObject(*i);
         if (go && bot->GetDistance(go) <= INTERACTION_DISTANCE)
@@ -199,8 +199,8 @@ bool QuestAction::AcceptQuest(Player* requester, Quest const* quest, uint64 ques
     bool success = false;
     const uint32 questId = quest->GetQuestId();
 
-    string outputMessage;
-    map<string, string> args;
+    std::string outputMessage;
+    std::map<std::string, std::string> args;
     args["%quest"] = chat->formatQuest(quest);
     
     if (bot->GetQuestStatus(questId) == QUEST_STATUS_COMPLETE)
@@ -242,7 +242,9 @@ bool QuestAction::AcceptQuest(Player* requester, Quest const* quest, uint64 ques
 
         if (bot->GetQuestStatus(questId) != QUEST_STATUS_NONE && bot->GetQuestStatus(questId) != QUEST_STATUS_AVAILABLE)
         {
-            sPlayerbotAIConfig.logEvent(ai, "AcceptQuestAction", quest->GetTitle(), to_string(quest->GetQuestId()));
+            BroadcastHelper::BroadcastQuestAccepted(ai, bot, quest);
+
+            sPlayerbotAIConfig.logEvent(ai, "AcceptQuestAction", quest->GetTitle(), std::to_string(quest->GetQuestId()));
             outputMessage = BOT_TEXT2("quest_accepted", args);
             success = true;
         }
@@ -254,9 +256,11 @@ bool QuestAction::AcceptQuest(Player* requester, Quest const* quest, uint64 ques
     return success;
 }
 
-bool QuestObjectiveCompletedAction::Execute(Event& event)
+/*
+* For creature or gameobject
+*/
+bool QuestUpdateAddKillAction::Execute(Event& event)
 {
-    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     WorldPacket p(event.getPacket());
     p.rpos(0);
 
@@ -264,25 +268,172 @@ bool QuestObjectiveCompletedAction::Execute(Event& event)
     ObjectGuid guid;
     p >> questId >> entry >> available >> required >> guid;
 
-    if (entry & 0x80000000)
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
+
+    Quest const* qInfo = sObjectMgr.GetQuestTemplate(questId);
+
+    if (qInfo && (entry & 0x80000000))
     {
         entry &= 0x7FFFFFFF;
         GameObjectInfo const* info = sObjectMgr.GetGameObjectInfo(entry);
         if (info)
         {
             ai->TellPlayer(requester, chat->formatQuestObjective(info->name, available, required), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+
+            BroadcastHelper::BroadcastQuestUpdateAddKill(ai, bot, qInfo, available, required, info->name);
         }
     }
-    else
+    else if (qInfo)
     {
         CreatureInfo const* info = sObjectMgr.GetCreatureTemplate(entry);
         if (info)
         {
             ai->TellPlayer(requester, chat->formatQuestObjective(info->Name, available, required), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+
+            BroadcastHelper::BroadcastQuestUpdateAddKill(ai, bot, qInfo, available, required, info->Name);
         }
     }
+    else
+    {
+
+        std::map<std::string, std::string> placeholders;
+        placeholders["%quest_id"] = questId;
+        placeholders["%available"] = available;
+        placeholders["%required"] = required;
+
+        ai->TellPlayer(
+            requester,
+            BOT_TEXT2("%available/%required for questId: %quest_id", placeholders),
+            PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL,
+            false
+        );
+    }
+
+    sPlayerbotAIConfig.logEvent(ai, "QuestUpdateAddKillAction", std::to_string(questId), std::to_string((float)available / (float)required));
+    return false;
+}
+
+bool QuestUpdateAddItemAction::Execute(Event& event)
+{
+    WorldPacket p(event.getPacket());
+    p.rpos(0);
+
+    uint32 itemId, count;
+    p >> itemId >> count;
+
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
+
+    ItemPrototype const* itemPrototype = sObjectMgr.GetItemPrototype(itemId);
+
+    if (itemPrototype)
+    {
+        std::map<std::string, std::string> placeholders;
+        placeholders["%item_link"] = ai->GetChatHelper()->formatItem(itemPrototype);
+        uint32 availableItemsCount = ai->GetInventoryItemsCountWithId(itemId);
+        placeholders["%quest_obj_available"] = std::to_string(availableItemsCount);
+
+        for (const auto& pair : ai->GetCurrentQuestsRequiringItemId(itemId))
+        {
+            placeholders["%quest_link"] = chat->formatQuest(pair.first);
+            uint32 requiredItemsCount = pair.second;
+            placeholders["%quest_obj_required"] = std::to_string(requiredItemsCount);
+            ai->TellPlayer(
+                requester,
+                BOT_TEXT2("%quest_link - %item_link %quest_obj_available/%quest_obj_required", placeholders),
+                PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL,
+                false
+            );
+
+            BroadcastHelper::BroadcastQuestUpdateAddItem(ai, bot, pair.first, availableItemsCount, requiredItemsCount, itemPrototype);
+        }
+    }
+    else {
+        std::map<std::string, std::string> placeholders;
+        placeholders["%item_id"] = itemId;
+        placeholders["%count"] = count;
+
+        ai->TellPlayer(
+            requester,
+            BOT_TEXT2("Got %count of itemId: %item_id for quest", placeholders),
+            PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL,
+            false
+        );
+    }
+
+    sPlayerbotAIConfig.logEvent(ai, "QuestUpdateAddItemAction", std::to_string(itemId), "count: " + std::to_string(count));
+    return false;
+}
+
+bool QuestUpdateFailedAction::Execute(Event& event)
+{
+    //opcode SMSG_QUESTUPDATE_FAILED is never sent...(yet?)
+    return false;
+}
+
+bool QuestUpdateFailedTimerAction::Execute(Event& event)
+{
+    WorldPacket p(event.getPacket());
+    p.rpos(0);
+
+    uint32 questId;
+    p >> questId;
+
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
 
     Quest const* qInfo = sObjectMgr.GetQuestTemplate(questId);
-    sPlayerbotAIConfig.logEvent(ai, "QuestObjectiveCompletedAction", qInfo->GetTitle(), to_string((float)available / (float)required));
+
+    if (qInfo)
+    {
+        std::map<std::string, std::string> placeholders;
+        placeholders["%quest_link"] = ai->GetChatHelper()->formatQuest(qInfo);
+
+        ai->TellPlayer(requester, BOT_TEXT2("Failed timer for %quest_link, abandoning", placeholders), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+
+        BroadcastHelper::BroadcastQuestUpdateFailedTimer(ai, bot, qInfo);
+    }
+    else
+    {
+        std::map<std::string, std::string> placeholders;
+        placeholders["%quest_id"] = std::to_string(questId);
+
+        ai->TellPlayer(requester, BOT_TEXT2("Failed timer for %quest_id", placeholders), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+    }
+
+    //drop quest
+    bot->GetPlayerbotAI()->DropQuest(questId);
+
+    sPlayerbotAIConfig.logEvent(ai, "QuestUpdateFailedTimerAction", std::to_string(questId), "FailedTimer");
+    return false;
+}
+
+bool QuestUpdateCompleteAction::Execute(Event& event)
+{
+    WorldPacket p(event.getPacket());
+    p.rpos(0);
+
+    uint32 questId;
+    p >> questId;
+
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
+
+    Quest const* qInfo = sObjectMgr.GetQuestTemplate(questId);
+
+    if (qInfo)
+    {
+        std::map<std::string, std::string> placeholders;
+        placeholders["%quest_link"] = ai->GetChatHelper()->formatQuest(qInfo);
+
+        ai->TellPlayer(requester, BOT_TEXT2("Completed %quest_link", placeholders), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+
+        BroadcastHelper::BroadcastQuestUpdateComplete(ai, bot, qInfo);
+    }
+    else {
+        std::map<std::string, std::string> placeholders;
+        placeholders["%quest_id"] = std::to_string(questId);
+
+        ai->TellPlayer(requester, BOT_TEXT2("Completed %quest_id", placeholders), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+    }
+
+    sPlayerbotAIConfig.logEvent(ai, "QuestUpdateCompleteAction", std::to_string(questId), "Complete");
     return false;
 }

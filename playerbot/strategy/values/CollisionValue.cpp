@@ -1,12 +1,12 @@
-#include "botpch.h"
-#include "../../playerbot.h"
-#include "CollisionValue.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
 
-#include "GridNotifiers.h"
-#include "GridNotifiersImpl.h"
-#include "CellImpl.h"
+#include "playerbot/playerbot.h"
+#include "CollisionValue.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
+
+#include "Grids/GridNotifiers.h"
+#include "Grids/GridNotifiersImpl.h"
+#include "Grids/CellImpl.h"
 
 using namespace ai;
 
@@ -16,16 +16,19 @@ bool CollisionValue::Calculate()
     if (!target)
         return false;
 
-    list<Unit*> targets;
+    std::list<Unit*> targets;
     float range = sPlayerbotAIConfig.contactDistance;
     MaNGOS::AnyUnitInObjectRangeCheck u_check(bot, range);
     MaNGOS::UnitListSearcher<MaNGOS::AnyUnitInObjectRangeCheck> searcher(targets, u_check);
     Cell::VisitAllObjects(bot, searcher, range);
 
-    for (list<Unit*>::iterator i = targets.begin(); i != targets.end(); ++i)
+    for (std::list<Unit*>::iterator i = targets.begin(); i != targets.end(); ++i)
     {
         Unit* target = *i;
         if (bot == target) continue;
+
+        if (!target->isVisibleFor(bot, bot))
+            continue;
 
         float dist = sServerFacade.GetDistance2d(bot, target->GetPositionX(), target->GetPositionY());
         if (sServerFacade.IsDistanceLessThan(dist, target->GetObjectBoundingRadius())) return true;

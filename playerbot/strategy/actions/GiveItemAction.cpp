@@ -1,12 +1,12 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "GiveItemAction.h"
 
-#include "../values/ItemCountValue.h"
+#include "playerbot/strategy/values/ItemCountValue.h"
 
 using namespace ai;
 
-vector<string> split(const string &s, char delim);
+std::vector<std::string> split(const std::string &s, char delim);
 
 bool GiveItemAction::Execute(Event& event)
 {
@@ -25,8 +25,8 @@ bool GiveItemAction::Execute(Event& event)
         return true;
 
     bool moved = false;
-    list<Item*> items = ai->InventoryParseItems(item, IterateItemsMask::ITERATE_ITEMS_IN_BAGS);
-    for (list<Item*>::iterator j = items.begin(); j != items.end(); j++)
+    std::list<Item*> items = ai->InventoryParseItems(item, IterateItemsMask::ITERATE_ITEMS_IN_BAGS);
+    for (std::list<Item*>::iterator j = items.begin(); j != items.end(); j++)
     {
         Item* item = *j;
 
@@ -42,14 +42,14 @@ bool GiveItemAction::Execute(Event& event)
             receiver->MoveItemToInventory(dest, item, true);
             moved = true;
 
-            ostringstream out;
-            out << "获取 " << chat->formatItem(item, item->GetCount()) << " 来自: " << bot->GetName();
+            std::ostringstream out;
+            out << "得到 " << chat->formatItem(item, item->GetCount()) << " 来自 " << bot->GetName();
             receiverAi->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         }
         else
         {
-            ostringstream out;
-            out << "不能获取 " << chat->formatItem(item, item->GetCount()) << " 来自 " << bot->GetName() << "- 我背包满了";
+            std::ostringstream out;
+            out << "不能得到 " << chat->formatItem(item, item->GetCount()) << " 来自 " << bot->GetName() << "- 我的背包满了";
             receiverAi->TellPlayerNoFacing(requester, out.str());
         }
     }

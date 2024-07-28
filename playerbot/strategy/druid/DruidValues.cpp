@@ -1,7 +1,7 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "DruidValues.h"
-#include "../../ServerFacade.h"
+#include "playerbot/ServerFacade.h"
 
 using namespace ai;
 
@@ -22,7 +22,7 @@ public:
 	}
 
 private:
-	vector<string> auras;
+	std::vector<std::string> auras;
 };
 
 Unit* PartyTankWithoutLifebloomValue::Calculate()

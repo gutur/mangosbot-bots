@@ -1,6 +1,5 @@
 #pragma once
-#include "../ServerFacade.h"
-#include "../ServerFacade.h"
+#include "playerbot/ServerFacade.h"
 #include "values/ItemUsageValue.h"
 
 char * strstri (const char* str1, const char* str2);
@@ -28,14 +27,14 @@ namespace ai
             return true;
         }
 
-        list<Item*>& GetResult() { return result; }
+        std::list<Item*>& GetResult() { return result; }
 
     protected:
         virtual bool Accept(const ItemPrototype* proto) = 0;
         virtual bool Accept(Item* item) { return false; };
 
     private:
-        list<Item*> result;
+        std::list<Item*> result;
     };
 
     class FindAllItemVisitor : public FindItemVisitor {
@@ -86,7 +85,7 @@ namespace ai
             return true;
         }
 
-        list<Item*>& GetResult()
+        std::list<Item*>& GetResult()
         {
             return result;
         }
@@ -94,7 +93,7 @@ namespace ai
     private:
         uint32 quality;
         int count;
-        list<Item*> result;
+        std::list<Item*> result;
     };
 
     class FindItemsToTradeByQualityVisitor : public FindItemsByQualityVisitor
@@ -126,7 +125,7 @@ namespace ai
             return true;
         }
 
-        list<Item*>& GetResult()
+        std::list<Item*>& GetResult()
         {
             return result;
         }
@@ -134,7 +133,7 @@ namespace ai
     private:
         uint32 itemClass;
         uint32 itemSubClass;
-        list<Item*> result;
+        std::list<Item*> result;
     };
 
     class FindItemsToTradeByClassVisitor : public IterateItemsVisitor
@@ -158,7 +157,7 @@ namespace ai
             return true;
         }
 
-        list<Item*>& GetResult()
+        std::list<Item*>& GetResult()
         {
             return result;
         }
@@ -167,7 +166,7 @@ namespace ai
         uint32 itemClass;
         uint32 itemSubClass;
         int count;
-        list<Item*> result;
+        std::list<Item*> result;
     };
 
     class QueryItemCountVisitor : public IterateItemsVisitor
@@ -198,7 +197,7 @@ namespace ai
     class QueryNamedItemCountVisitor : public QueryItemCountVisitor
     {
     public:
-        QueryNamedItemCountVisitor(string name) : QueryItemCountVisitor(0)
+        QueryNamedItemCountVisitor(std::string name) : QueryItemCountVisitor(0)
         {
             this->name = name;
         }
@@ -213,12 +212,12 @@ namespace ai
         }
 
     private:
-        string name;
+        std::string name;
     };
 
     class FindNamedItemVisitor : public FindItemVisitor {
     public:
-        FindNamedItemVisitor(Player* bot, string name) : FindItemVisitor()
+        FindNamedItemVisitor(Player* bot, std::string name) : FindItemVisitor()
         {
             this->name = name;
         }
@@ -229,7 +228,7 @@ namespace ai
         }
 
     private:
-        string name;
+        std::string name;
     };
 
     class FindItemByIdVisitor : public FindItemVisitor {
@@ -288,8 +287,8 @@ namespace ai
     public:
         ListItemsVisitor() : IterateItemsVisitor() {}
 
-        map<uint32, int> items;
-        map<uint32, bool> soulbound;
+        std::map<uint32, int> items;
+        std::map<uint32, bool> soulbound;
 
         virtual bool Visit(Item* item)
         {
@@ -320,7 +319,7 @@ namespace ai
         }
 
     public:
-        map<uint32, int> count;
+        std::map<uint32, int> count;
     };
 
 

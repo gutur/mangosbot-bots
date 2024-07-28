@@ -1,14 +1,13 @@
-#include "../../../botpch.h"
-#include "../../playerbot.h"
+#include "playerbot/playerbot.h"
 #include "SharedValueContext.h"
 #include "LootValues.h"
-#include "../actions/LootAction.h"
+#include "playerbot/strategy/actions/LootAction.h"
 
 using namespace ai;
 
-vector<LootItem*> LootAccess::GetLootContentFor(Player* player) const
+std::vector<LootItem*> LootAccess::GetLootContentFor(Player* player) const
 {
-	vector<LootItem*> retvec;
+	std::vector<LootItem*> retvec;
 
 	for (LootItemList::const_iterator lootItemItr = m_lootItems.begin(); lootItemItr != m_lootItems.end(); ++lootItemItr)
 	{
@@ -133,9 +132,20 @@ DropMap* DropMapValue::Calculate()
 
 		LootTemplateAccess const* lTemplateA = GetLootTemplate(ObjectGuid(HIGHGUID_UNIT, entry, uint32(1)), LOOT_CORPSE);
 
-		if(lTemplateA)
+		if (lTemplateA)
+		{
 			for (LootStoreItem const& lItem : lTemplateA->Entries)
-				dropMap->insert(make_pair(lItem.itemid,sEntry));
+				dropMap->insert(std::make_pair(lItem.itemid, sEntry));
+
+			for (LootLootGroupAccess const& group : lTemplateA->Groups)
+			{
+				for (LootStoreItem const& lItem : group.ExplicitlyChanced)
+					dropMap->insert(std::make_pair(lItem.itemid, sEntry));
+
+				for (LootStoreItem const& lItem : group.EqualChanced)
+					dropMap->insert(std::make_pair(lItem.itemid, sEntry));
+			}
+		}
 	}
 
 	for (uint32 entry = 0; entry < sGOStorage.GetMaxEntry(); entry++)
@@ -144,22 +154,33 @@ DropMap* DropMapValue::Calculate()
 
 		LootTemplateAccess const* lTemplateA = GetLootTemplate(ObjectGuid(HIGHGUID_GAMEOBJECT, entry, uint32(1)), LOOT_CORPSE);
 
-		if(lTemplateA)
+		if (lTemplateA)
+		{
 			for (LootStoreItem const& lItem : lTemplateA->Entries)
-				dropMap->insert(make_pair(lItem.itemid, -sEntry));
+				dropMap->insert(std::make_pair(lItem.itemid, -sEntry));
+
+			for (LootLootGroupAccess const& group : lTemplateA->Groups)
+			{
+				for (LootStoreItem const& lItem : group.ExplicitlyChanced)
+					dropMap->insert(std::make_pair(lItem.itemid, sEntry));
+
+				for (LootStoreItem const& lItem : group.EqualChanced)
+					dropMap->insert(std::make_pair(lItem.itemid, sEntry));
+			}
+		}
 	}
 
 	return dropMap;
 }
 
 //What items does this entry have in its loot list?
-list<int32> ItemDropListValue::Calculate()
+std::list<int32> ItemDropListValue::Calculate()
 {
 	uint32 itemId = stoi(getQualifier());
 
 	DropMap* dropMap = GAI_VALUE(DropMap*, "drop map");
 
-	list<int32> entries;
+	std::list<int32> entries;
 
 	auto range = dropMap->equal_range(itemId);
 
@@ -170,22 +191,20 @@ list<int32> ItemDropListValue::Calculate()
 }
 
 //What items does this entry have in its loot list?
-list<uint32> EntryLootListValue::Calculate()
+std::list<uint32> EntryLootListValue::Calculate()
 {
 	int32 entry = stoi(getQualifier());
 
-	list<uint32> items;
+	std::list<uint32> items;
 
-	LootTemplateAccess const* lTemplateA;
-
-	if (entry > 0)
-		lTemplateA = DropMapValue::GetLootTemplate(ObjectGuid(HIGHGUID_UNIT, entry, uint32(1)), LOOT_CORPSE);
-	else
-		lTemplateA = DropMapValue::GetLootTemplate(ObjectGuid(HIGHGUID_GAMEOBJECT, entry, uint32(1)), LOOT_CORPSE);
-
-	if (lTemplateA)
-		for (LootStoreItem const& lItem : lTemplateA->Entries)
-			items.push_back(lItem.itemid);
+	DropMap* dropMap = GAI_VALUE(DropMap*, "drop map");
+	for (auto it = dropMap->begin(); it != dropMap->end(); ++it)
+	{
+		if (it->second == entry)
+		{
+			items.push_back(it->first);
+		}
+	}
 
 	return items;
 }
@@ -203,10 +222,23 @@ float LootChanceValue::Calculate()
 	else
 		lTemplateA = DropMapValue::GetLootTemplate(ObjectGuid(HIGHGUID_GAMEOBJECT, entry, uint32(1)), LOOT_CORPSE);
 
-	if(lTemplateA)
+	if (lTemplateA)
+	{
 		for (auto item : lTemplateA->Entries)
 			if (item.itemid == itemId)
 				return item.chance;
+
+		for (LootLootGroupAccess const& group : lTemplateA->Groups)
+		{
+			for (LootStoreItem const& item : group.ExplicitlyChanced)
+				if (item.itemid == itemId)
+					return item.chance;
+
+			for (LootStoreItem const& item : group.EqualChanced)
+				if (item.itemid == itemId)
+					return item.chance;
+		}
+	}
 
 	return 0.0f;
 }
@@ -215,7 +247,7 @@ itemUsageMap EntryLootUsageValue::Calculate()
 {
 	itemUsageMap items;
 
-	for (auto itemId : GAI_VALUE2(list<uint32>, "entry loot list", getQualifier()))
+	for (auto itemId : GAI_VALUE2(std::list<uint32>, "entry loot list", getQualifier()))
 	{
 		items[AI_VALUE2(ItemUsage, "item usage", itemId)].push_back(itemId);
 	}
@@ -235,6 +267,9 @@ uint32 StackSpaceForItem::Calculate()
 	if (!proto) 
 		return maxValue;
 
+	if (proto->MaxCount > 0 && AI_VALUE2(uint32, "item count", proto->Name1) >= proto->MaxCount)
+		return proto->MaxCount - AI_VALUE2(uint32, "item count", proto->Name1);
+
 	if (ai->HasActivePlayerMaster())
 		return maxValue;
 	
@@ -245,7 +280,7 @@ uint32 StackSpaceForItem::Calculate()
 	if (maxStack == 1)
 		return 0;
 
-	list<Item*> found = AI_VALUE2(list < Item*>, "inventory items", chat->formatItem(proto));
+	std::list<Item*> found = AI_VALUE2(std::list < Item*>, "inventory items", chat->formatItem(proto));
 
 	maxValue = 0;
 
@@ -343,9 +378,9 @@ void ActiveRolls::CleanUp(Player* bot, LootRollMap& rollMap, ObjectGuid guid, ui
 	}
 }
 
-string ActiveRolls::Format()
+std::string ActiveRolls::Format()
 {
-	ostringstream out;
+	std::ostringstream out;
 
 	for (auto& roll : value)
 	{
@@ -356,7 +391,7 @@ string ActiveRolls::Format()
 		else
 			out << roll.first;
 
-		string itemLink;
+		std::string itemLink;
 
 		Loot* loot = sLootMgr.GetLoot(bot, roll.first);
 		if (loot)

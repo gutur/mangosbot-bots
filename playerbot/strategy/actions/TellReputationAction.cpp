@@ -1,7 +1,7 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "TellReputationAction.h"
-#include "../../ServerFacade.h"
+#include "playerbot/ServerFacade.h"
 
 using namespace ai;
 
@@ -28,7 +28,7 @@ bool TellReputationAction::Execute(Event& event)
             (faction);
     int32 reputation = bot->GetReputationMgr().GetReputation(faction);
 
-    ostringstream out;
+    std::ostringstream out;
     out << entry->name[0] << ": ";
     out << "|cff";
     ReputationRank rank = bot->GetReputationMgr().GetRank(entry);
@@ -40,7 +40,7 @@ bool TellReputationAction::Execute(Event& event)
             out << "ff0000敌对";
             break;
         case REP_UNFRIENDLY:
-            out << "ee6622敌对";
+            out << "ee6622不友好";
             break;
         case REP_NEUTRAL:
             out << "ffff00中立";
@@ -52,10 +52,10 @@ bool TellReputationAction::Execute(Event& event)
             out << "00ff88尊敬";
             break;
         case REP_REVERED:
-            out << "00ffcc尊敬";
+            out << "00ffcc崇敬";
             break;
         case REP_EXALTED:
-            out << "00ffff尊敬";
+            out << "00ffff崇拜";
             break;
         default:
             out << "808080未知";

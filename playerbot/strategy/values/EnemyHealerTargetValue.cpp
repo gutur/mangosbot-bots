@@ -1,18 +1,18 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "EnemyHealerTargetValue.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
 
 using namespace ai;
 
 Unit* EnemyHealerTargetValue::Calculate()
 {
-    string spell = qualifier;
+    std::string spell = qualifier;
 
-    list<ObjectGuid> attackers = ai->GetAiObjectContext()->GetValue<list<ObjectGuid>>("possible attack targets")->Get();
+    std::list<ObjectGuid> attackers = ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid>>("possible attack targets")->Get();
     Unit* target = ai->GetAiObjectContext()->GetValue<Unit*>("current target")->Get();
-    for (list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); ++i)
+    for (std::list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); ++i)
     {
         Unit* unit = ai->GetUnit(*i);
         if (!unit || unit == target)

@@ -1,13 +1,13 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "TravelAction.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
-#include "GridNotifiers.h"
-#include "GridNotifiersImpl.h"
-#include "CellImpl.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
+#include "Grids/GridNotifiers.h"
+#include "Grids/GridNotifiersImpl.h"
+#include "Grids/CellImpl.h"
 #include "World/WorldState.h"
-#include "../../TravelMgr.h"
+#include "playerbot/TravelMgr.h"
 
 
 using namespace ai;
@@ -23,7 +23,7 @@ bool TravelAction::Execute(Event& event)
     target->setStatus(TravelStatus::TRAVEL_STATUS_WORK);
 
      Unit* newTarget;
-    list<Unit*> targets;
+    std::list<Unit*> targets;
     AnyUnitInObjectRangeCheck u_check(bot, sPlayerbotAIConfig.sightDistance * 2);
     UnitListSearcher<AnyUnitInObjectRangeCheck> searcher(targets, u_check);
     Cell::VisitAllObjects(bot, searcher, sPlayerbotAIConfig.sightDistance * 2);

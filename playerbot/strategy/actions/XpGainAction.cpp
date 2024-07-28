@@ -1,7 +1,7 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "XpGainAction.h"
-#include "../../LootObjectStack.h"
+#include "playerbot/LootObjectStack.h"
 #ifdef MANGOS
 #include "luaEngine.h"
 #endif
@@ -28,31 +28,18 @@ bool XpGainAction::Execute(Event& event)
 
     if (sPlayerbotAIConfig.hasLog("bot_events.csv"))
     {
-        sPlayerbotAIConfig.logEvent(ai, "XpGainAction", guid, to_string(xpgain));
+        sPlayerbotAIConfig.logEvent(ai, "XpGainAction", guid, std::to_string(xpgain));
     }
 
     AI_VALUE(LootObjectStack*, "available loot")->Add(guid);
     ai->AccelerateRespawn(guid);
 
-    if (sPlayerbotAIConfig.guildFeedbackRate && frand(0, 100) <= sPlayerbotAIConfig.guildFeedbackRate && !urand(0,10) && sRandomPlayerbotMgr.IsFreeBot(bot) && (!ai->HasRealPlayerMaster() || !urand(0,10)))
+    Creature* creature = ai->GetCreature(guid);
+
+    //if (creature && ((creature->IsElite() && !creature->GetMap()->IsDungeon()) || creature->IsWorldBoss() || creature->GetLevel() > DEFAULT_MAX_LEVEL + 1 || creature->GetLevel() > bot->GetLevel() + 4))
+    if (creature && !creature->GetMap()->IsDungeon())
     {
-        Creature* creature = ai->GetCreature(guid); 
-
-        if (creature && ((creature->IsElite() && !creature->GetMap()->IsDungeon()) || creature->IsWorldBoss() || creature->GetLevel() > DEFAULT_MAX_LEVEL + 1 || creature->GetLevel() > bot->GetLevel() + 4))
-        {
-            Guild* guild = sGuildMgr.GetGuildById(bot->GetGuildId());
-
-            if (guild)
-            {
-                map<string, string> placeholders;
-                placeholders["%name"] = creature->GetName();
-
-                if(urand(0,3))
-                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("我刚刚杀了谁? %name!", placeholders), LANG_UNIVERSAL);
-                else
-                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("太棒了 %name 死的真快!", placeholders), LANG_UNIVERSAL);
-            }
-        }
+        BroadcastHelper::BroadcastKill(ai, bot, creature);
     }
 
     if (!sRandomPlayerbotMgr.IsFreeBot(bot) || sPlayerbotAIConfig.playerbotsXPrate == 1)

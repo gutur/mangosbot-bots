@@ -1,7 +1,7 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "AreaTriggerAction.h"
-#include "../../PlayerbotAIConfig.h"
+#include "playerbot/PlayerbotAIConfig.h"
 
 using namespace ai;
 
@@ -34,7 +34,7 @@ bool ReachAreaTriggerAction::Execute(Event& event)
 
     if (bot->GetMapId() != atEntry->mapid || sqrt(bot->GetDistance(atEntry->x, atEntry->y, atEntry->z)) > sPlayerbotAIConfig.sightDistance)
     {
-        ai->TellError(requester, "我不会跟随你:你太远了.");
+        ai->TellError(requester, "我不会跟随你:你太远了");
         return true;
     }
 

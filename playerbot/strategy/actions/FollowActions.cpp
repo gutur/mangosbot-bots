@@ -1,11 +1,11 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "FollowActions.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
-#include "../values/Formations.h"
-#include "../../TravelMgr.h"
-#include "../../LootObjectStack.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/strategy/values/Formations.h"
+#include "playerbot/TravelMgr.h"
+#include "playerbot/LootObjectStack.h"
 
 using namespace ai;
 
@@ -71,6 +71,12 @@ bool FollowAction::isUseful()
     }
 
     if (sServerFacade.IsDistanceGreaterThan(distance, sPlayerbotAIConfig.sightDistance))
+    {
+        return true;
+    }
+
+    // maybe jump is faster?
+    if (ai->HasStrategy("follow jump", BotState::BOT_STATE_NON_COMBAT) && ai->AllowActivity())
     {
         return true;
     }

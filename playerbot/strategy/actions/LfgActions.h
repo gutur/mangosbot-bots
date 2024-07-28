@@ -1,9 +1,9 @@
 #pragma once
 #include "MovementActions.h"
-#include "AiFactory.h"
-#include "PlayerbotAIConfig.h"
-#include "../ItemVisitors.h"
-#include "RandomPlayerbotMgr.h"
+#include "playerbot/AiFactory.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/strategy/ItemVisitors.h"
+#include "playerbot/RandomPlayerbotMgr.h"
 #ifdef MANGOSBOT_ZERO
 #include "LFG/LFGMgr.h"
 #include "LFG/LFGDefines.h"
@@ -13,9 +13,9 @@
 #include "LFG/LFGMgr.h"
 #include "LFG/LFG.h"
 #endif
-#include "BattleGround.h"
-#include "BattleGroundMgr.h"
-#include "BattleGroundWS.h"
+#include "BattleGround/BattleGround.h"
+#include "BattleGround/BattleGroundMgr.h"
+#include "BattleGround/BattleGroundWS.h"
 #include "ChooseTargetActions.h"
 #include "CheckMountStateAction.h"
 #include "G3D/Vector3.h"
@@ -25,7 +25,7 @@ namespace ai
     class LfgJoinAction : public Action
     {
     public:
-        LfgJoinAction(PlayerbotAI* ai, string name = "lfg join") : Action(ai, name) {}
+        LfgJoinAction(PlayerbotAI* ai, std::string name = "lfg join") : Action(ai, name) {}
         virtual bool Execute(Event& event) override;
         virtual bool isUseful();
 

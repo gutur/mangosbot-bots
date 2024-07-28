@@ -1,10 +1,12 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "GenericTriggers.h"
-#include "../../LootObjectStack.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../values/PositionValue.h"
-#include "../values/AoeValues.h"
+#include "playerbot/LootObjectStack.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/strategy/values/PositionValue.h"
+#include "playerbot/strategy/values/AoeValues.h"
+
+#include <regex>
 
 using namespace ai;
 
@@ -103,7 +105,7 @@ bool OutNumberedTrigger::IsActive()
     int32 botLevel = bot->GetLevel();
     float healthMod = bot->GetHealthPercent() / 100.0f;
     uint32 friendPower = 100 + 100 * healthMod, foePower = 0;
-    for (auto &attacker : ai->GetAiObjectContext()->GetValue<list<ObjectGuid>>("possible attack targets")->Get())
+    for (auto &attacker : ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid>>("possible attack targets")->Get())
     {
         Creature* creature = ai->GetCreature(attacker);
         if (!creature)
@@ -123,7 +125,7 @@ bool OutNumberedTrigger::IsActive()
     if (!foePower)
         return false;
 
-    for (auto & helper : ai->GetAiObjectContext()->GetValue<list<ObjectGuid> >("nearest friendly players")->Get())
+    for (auto & helper : ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid> >("nearest friendly players")->Get())
     {
         Unit* player = ai->GetUnit(helper);
 
@@ -278,25 +280,23 @@ bool DebuffTrigger::IsActive()
 
 bool DebuffTrigger::HasMaxDebuffs()
 {
-    bool maxDebuffs = false;
-
-#ifndef MANGOSBOT_TWO
+#ifdef MANGOSBOT_TWO
+    return false;
+#else
     Unit* target = GetTarget();
     if(target)
     {
 #ifdef MANGOSBOT_ONE
-        uint32 debuffLimit = 40;
+        constexpr uint32 debuffLimit = 40;
 #else
-        uint32 debuffLimit = 16;
+        constexpr uint32 debuffLimit = 16;
 #endif
 
-        std::vector<Aura*> auras = ai->GetAuras(target);
-        maxDebuffs = auras.size() >= debuffLimit;
+        return ai->GetAuras(target, false, false).size() >= debuffLimit;
     }
-
 #endif
 
-    return maxDebuffs;
+    return false;
 }
 
 bool SpellTrigger::IsActive()
@@ -332,7 +332,7 @@ bool RandomTrigger::IsActive()
 
 bool AndTrigger::IsActive()
 {
-    vector<string> tnames = getMultiQualifiers(getQualifier(), ",");
+    std::vector<std::string> tnames = getMultiQualifiers(getQualifier(), ",");
 
     for (auto tname : tnames)
     {
@@ -344,10 +344,10 @@ bool AndTrigger::IsActive()
     return true;
 }
 
-string AndTrigger::getName()
+std::string AndTrigger::getName()
 {
-    string name;
-    vector<string> tnames = getMultiQualifiers(getQualifier(), ",");
+    std::string name;
+    std::vector<std::string> tnames = getMultiQualifiers(getQualifier(), ",");
 
     for (auto tname : tnames)
     {
@@ -361,7 +361,7 @@ string AndTrigger::getName()
 
 bool OrTrigger::IsActive()
 {
-    vector<string> tnames = getMultiQualifiers(getQualifier(), ",");
+    std::vector<std::string> tnames = getMultiQualifiers(getQualifier(), ",");
 
     for (auto tname : tnames)
     {
@@ -373,10 +373,10 @@ bool OrTrigger::IsActive()
     return false;
 }
 
-string OrTrigger::getName()
+std::string OrTrigger::getName()
 {
-    string name;
-    vector<string> tnames = getMultiQualifiers(getQualifier(), ",");
+    std::string name;
+    std::vector<std::string> tnames = getMultiQualifiers(getQualifier(), ",");
 
     for (auto tname : tnames)
     {
@@ -402,7 +402,7 @@ bool TwoTriggers::IsActive()
     return trigger1->IsActive() && trigger2->IsActive();
 }
 
-string TwoTriggers::getName()
+std::string TwoTriggers::getName()
 {
     std::string name;
     name = name1 + " and " + name2;
@@ -411,7 +411,19 @@ string TwoTriggers::getName()
 
 bool BoostTrigger::IsActive()
 {
-	return ai->IsStateActive(BotState::BOT_STATE_COMBAT) && BuffTrigger::IsActive() && AI_VALUE(uint8, "balance") <= balance;
+    if (ai->IsStateActive(BotState::BOT_STATE_COMBAT) && BuffTrigger::IsActive())
+    {
+        if (!ai->HasRealPlayerMaster())
+        {
+            return AI_VALUE(uint8, "balance") <= balance;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool ItemCountTrigger::IsActive()
@@ -471,8 +483,76 @@ bool DeflectSpellTrigger::IsActive()
 
 bool HasAuraTrigger::IsActive()
 {
-	return ai->HasAura(getName(), GetTarget(), false, false, -1, false, 0, auraTypeId);
+   if (!name.empty())
+	{
+      return ai->HasAura(name, GetTarget(), false, false, -1, false, 0, auraTypeId);
+   }
+
+   std::string str = getQualifier();
+   std::regex pattern(R"(spellid::(\d+)::([^:]*)::(\d+))");
+   std::smatch match;
+
+   if (std::regex_search(str, match, pattern) && match.size() == 4)
+   {
+      uint32 spell_id = atoi(match[1].str().c_str());
+
+      if (Aura* aura = ai->GetAura(spell_id, GetTarget()))
+      {
+         uint32 count = atoi(match[3].str().c_str());
+         uint32 stack_size = aura->GetStackAmount();
+         std::string comp_symb = match[2].str();
+
+         if (comp_symb == "equal")
+         {
+            return stack_size == count;
+         }
+         else if (comp_symb == "greater or equal")
+         {
+            return stack_size >= count;
+         }
+         else if (comp_symb == "lesser or equal")
+         {
+            return stack_size <= count;
+         }
+         else if (comp_symb == "greater")
+         {
+            return stack_size > count;
+         }
+         else if (comp_symb == "lesser")
+         {
+            return stack_size < count;
+         }
+         else
+         {
+            return false;
+         }
+      }
+   };
+
+   pattern = R"(spellid::(\d+))";
+
+   if (std::regex_search(str, match, pattern) && match.size() == 2)
+   {
+
+      uint32 spell_id = atoi(match[1].str().c_str());
+      return ai->HasAura(spell_id, GetTarget());
+   }
+
+   return false;
 }
+
+std::string HasAuraTrigger::getName()
+{
+   if (!name.empty())
+   {
+      return name;
+   }
+
+   std::ostringstream ss;
+   ss << "has aura with " << getQualifier();
+   return ss.str();
+}
+
 
 bool HasNoAuraTrigger::IsActive()
 {
@@ -487,6 +567,13 @@ bool TankAssistTrigger::IsActive()
     Unit* currentTarget = AI_VALUE(Unit*, "current target");
     if (!currentTarget)
         return true;
+
+    // do not switch if enemy target
+    Unit* enemy = AI_VALUE(Unit*, "enemy player target");
+    if (enemy)
+    {
+        return currentTarget != enemy;
+    }
 
     Unit* tankTarget = AI_VALUE(Unit*, "tank target");
     if (!tankTarget || currentTarget == tankTarget)
@@ -534,7 +621,7 @@ bool NoMovementTrigger::IsActive()
 
 bool NoPossibleTargetsTrigger::IsActive()
 {
-    list<ObjectGuid> targets = AI_VALUE(list<ObjectGuid>, "possible targets");
+    std::list<ObjectGuid> targets = AI_VALUE(std::list<ObjectGuid>, "possible targets");
     return !targets.size();
 }
 
@@ -610,13 +697,13 @@ bool IsSwimmingTrigger::IsActive()
 
 bool HasNearestAddsTrigger::IsActive()
 {
-    list<ObjectGuid> targets = AI_VALUE(list<ObjectGuid>, "nearest adds");
+    std::list<ObjectGuid> targets = AI_VALUE(std::list<ObjectGuid>, "nearest adds");
     return targets.size();
 }
 
 bool HasItemForSpellTrigger::IsActive()
 {
-	string spell = getName();
+    std::string spell = getName();
     uint32 spellId = AI_VALUE2(uint32, "spell id", spell);
     return spellId && AI_VALUE2(Item*, "item for spell", spellId);
 }
@@ -732,7 +819,7 @@ bool GreaterBuffOnPartyTrigger::IsActive()
 
 bool TargetOfAttacker::IsActive()
 {
-    return !AI_VALUE(list<ObjectGuid>, "attackers targeting me").empty();
+    return !AI_VALUE(std::list<ObjectGuid>, "attackers targeting me").empty();
 }
 
 bool TargetOfAttackerInRange::IsActive()
@@ -743,7 +830,7 @@ bool TargetOfAttackerInRange::IsActive()
 
 bool TargetOfCastedAuraTypeTrigger::IsActive()
 {
-    const list<ObjectGuid>& attackers = AI_VALUE(list<ObjectGuid>, "attackers");
+    const std::list<ObjectGuid>& attackers = AI_VALUE(std::list<ObjectGuid>, "attackers");
     for (const ObjectGuid& attackerGuid : attackers)
     {
         // Check against the given creature id
@@ -831,4 +918,120 @@ bool DispelOnTargetTrigger::IsActive()
 bool RtscJumpTrigger::IsActive()
 {
     return AI_VALUE2(WorldPosition, "RTSC saved location", "jump point") && AI_VALUE2(WorldPosition, "RTSC saved location", "jump");
+}
+
+bool SpellTargetTrigger::IsActive()
+{
+    if (IsSpellReady())
+    {
+        // Check for assigned targets
+        const std::list<ObjectGuid>& possibleTargets = AI_VALUE(std::list<ObjectGuid>, targetsValue);
+        if (!possibleTargets.empty())
+        {
+            for (const ObjectGuid& possibleTargetGuid : possibleTargets)
+            {
+                if (IsTargetValid(ai->GetUnit(possibleTargetGuid)))
+                {
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            // Check for the default target
+            if (IsTargetValid(GetTarget()))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool SpellTargetTrigger::IsTargetValid(Unit* target)
+{
+    return target &&
+           ai->IsSafe(target) &&
+           (bot == target || sServerFacade.GetDistance2d(bot, target) < sPlayerbotAIConfig.sightDistance) &&
+           (bot->IsInGroup(target)) &&
+           (!aliveCheck || !target->IsDead()) &&
+           (!auraCheck || !ai->HasAura(spell, target));
+}
+
+bool SpellTargetTrigger::IsSpellReady()
+{
+    uint32 spellId = AI_VALUE2(uint32, "spell id", spell);
+    return spellId && bot->IsSpellReady(spellId);
+}
+
+bool ItemTargetTrigger::IsTargetValid(Unit* target)
+{
+    if (SpellTargetTrigger::IsTargetValid(target))
+    {
+        if (itemAuraCheck)
+        {
+            const uint32 itemId = GetItemId();
+            const ItemPrototype* proto = sObjectMgr.GetItemPrototype(itemId);
+            if (proto)
+            {
+                for (uint8 i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+                {
+#ifdef MANGOSBOT_ZERO
+                    if (proto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_USE || proto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_NO_DELAY_USE)
+#else
+                    if (proto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
+#endif
+                    {
+                        if (proto->Spells[i].SpellId > 0 && ai->HasAura(proto->Spells[i].SpellId, target))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool ItemTargetTrigger::IsSpellReady()
+{
+    const uint32 itemId = GetItemId();
+    if (!ai->HasCheat(BotCheatMask::item) && !bot->HasItemCount(itemId, 1))
+        return false;
+
+    const ItemPrototype* proto = sObjectMgr.GetItemPrototype(itemId);
+    if (proto)
+    {
+        for (uint8 i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+        {
+#ifdef MANGOSBOT_ZERO
+            if (proto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_USE || proto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_NO_DELAY_USE)
+#else
+            if (proto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
+#endif
+            {
+                if (proto->Spells[i].SpellId > 0)
+                {
+                    if (!sServerFacade.IsSpellReady(bot, proto->Spells[i].SpellId) ||
+                        !sServerFacade.IsSpellReady(bot, proto->Spells[i].SpellId, itemId))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    return false;
 }

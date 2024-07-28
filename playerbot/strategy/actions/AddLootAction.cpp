@@ -1,14 +1,14 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "AddLootAction.h"
 
-#include "../../LootObjectStack.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
+#include "playerbot/LootObjectStack.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
 
-#include "GridNotifiers.h"
-#include "GridNotifiersImpl.h"
-#include "CellImpl.h"
+#include "Grids/GridNotifiers.h"
+#include "Grids/GridNotifiersImpl.h"
+#include "Grids/CellImpl.h"
 
 using namespace ai;
 using namespace MaNGOS;
@@ -29,12 +29,12 @@ bool AddAllLootAction::Execute(Event& event)
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     bool added = false;
 
-    list<ObjectGuid> gos = context->GetValue<list<ObjectGuid> >("nearest game objects")->Get();
-    for (list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
+    std::list<ObjectGuid> gos = context->GetValue<std::list<ObjectGuid> >("nearest game objects no los")->Get();
+    for (std::list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
         added |= AddLoot(requester, *i);
 
-    list<ObjectGuid> corpses = context->GetValue<list<ObjectGuid> >("nearest corpses")->Get();
-    for (list<ObjectGuid>::iterator i = corpses.begin(); i != corpses.end(); i++)
+    std::list<ObjectGuid> corpses = context->GetValue<std::list<ObjectGuid> >("nearest corpses")->Get();
+    for (std::list<ObjectGuid>::iterator i = corpses.begin(); i != corpses.end(); i++)
         added |= AddLoot(requester, *i);
 
     return added;
@@ -99,15 +99,15 @@ bool AddGatheringLootAction::AddLoot(Player* requester, ObjectGuid guid)
     if (!loot.IsLootPossible(bot))
         return false;
 
-    if (sServerFacade.IsDistanceGreaterThan(sServerFacade.GetDistance2d(bot, wo), INTERACTION_DISTANCE))
+    if (sServerFacade.IsDistanceGreaterThan(sServerFacade.GetDistance2d(bot, wo), INTERACTION_DISTANCE) && sServerFacade.IsDistanceLessThan(sServerFacade.GetDistance2d(bot, requester), sPlayerbotAIConfig.reactDistance))
     {
-        list<Unit*> targets;
+        std::list<Unit*> targets;
         MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck u_check(bot, sPlayerbotAIConfig.lootDistance);
         MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck> searcher(targets, u_check);
         Cell::VisitAllObjects(wo, searcher, sPlayerbotAIConfig.spellDistance * 1.5);
         if (!targets.empty())
         {
-            ostringstream out;
+            std::ostringstream out;
             out << "杀了那个 " << targets.front()->GetName() << " 我好捡点东西";
             ai->TellError(requester, out.str());
             return false;

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../../ServerFacade.h"
-#include "../Action.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/strategy/Action.h"
 #include "MovementActions.h"
-#include "../values/LastMovementValue.h"
+#include "playerbot/strategy/values/LastMovementValue.h"
 #include "ReviveFromCorpseAction.h"
 
 namespace ai
@@ -11,7 +11,7 @@ namespace ai
     class ReleaseSpiritAction : public ChatCommandAction
     {
     public:
-        ReleaseSpiritAction(PlayerbotAI* ai, string name = "release") : ChatCommandAction(ai, name) {}
+        ReleaseSpiritAction(PlayerbotAI* ai, std::string name = "release") : ChatCommandAction(ai, name) {}
 
     public:
         virtual bool Execute(Event& event) override
@@ -31,6 +31,7 @@ namespace ai
                 ai->TellPlayerNoFacing(requester, "释放灵魂中...", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             else
                 ai->TellPlayerNoFacing(requester, "请在墓地与我会合", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+
             sLog.outDetail("Bot #%d %s:%d <%s> released", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName());
 
             WorldPacket packet(CMSG_REPOP_REQUEST);
@@ -51,7 +52,7 @@ namespace ai
     class AutoReleaseSpiritAction : public ReleaseSpiritAction 
     {
     public:
-        AutoReleaseSpiritAction(PlayerbotAI* ai, string name = "auto release") : ReleaseSpiritAction(ai, name) {}
+        AutoReleaseSpiritAction(PlayerbotAI* ai, std::string name = "auto release") : ReleaseSpiritAction(ai, name) {}
 
         virtual bool Execute(Event& event) override
         {
@@ -120,7 +121,7 @@ namespace ai
     class RepopAction : public SpiritHealerAction 
     {
     public:
-        RepopAction(PlayerbotAI* ai, string name = "repop") : SpiritHealerAction(ai, name) {}
+        RepopAction(PlayerbotAI* ai, std::string name = "repop") : SpiritHealerAction(ai, name) {}
 
     public:
         virtual bool Execute(Event& event)
@@ -140,10 +141,7 @@ namespace ai
                 sLog.outBasic("Bot #%d %s:%d <%s> repops at spirit healer", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName());
                 PlayerbotChatHandler ch(bot);
                 bot->ResurrectPlayer(0.5f, !ai->HasCheat(BotCheatMask::repair));
-                if (!ai->HasCheat(BotCheatMask::repair))
-                {
-                    bot->DurabilityLossAll(0.25f, true);
-                }
+                bot->DurabilityLossAll(0.25f, true);
 
                 bot->SpawnCorpseBones();
                 bot->SaveToDB();
@@ -174,7 +172,7 @@ namespace ai
     class SelfResurrectAction : public ChatCommandAction
     {
     public:
-        SelfResurrectAction(PlayerbotAI* ai, string name = "self resurrect") : ChatCommandAction(ai, name) {}
+        SelfResurrectAction(PlayerbotAI* ai, std::string name = "self resurrect") : ChatCommandAction(ai, name) {}
 
     public:
         bool Execute(Event& event) override

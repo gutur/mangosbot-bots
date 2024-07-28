@@ -1,9 +1,8 @@
-#include "botpch.h"
-#include "../../playerbot.h"
-#include "GuildManagementActions.h"
-#include "../../ServerFacade.h"
 
-using namespace std;
+#include "playerbot/playerbot.h"
+#include "GuildManagementActions.h"
+#include "playerbot/ServerFacade.h"
+
 using namespace ai;
 
 Player* GuidManageAction::GetPlayer(Event event)
@@ -19,7 +18,7 @@ Player* GuidManageAction::GetPlayer(Event event)
             return player;
     }
 
-    string text = event.getParam();
+    std::string text = event.getParam();
 
     if (!text.empty())
     {
@@ -72,7 +71,7 @@ bool GuildManageNearbyAction::Execute(Event& event)
     Guild* guild = sGuildMgr.GetGuildById(bot->GetGuildId());
     MemberSlot* botMember = guild->GetMemberSlot(bot->GetObjectGuid());
 
-    list<ObjectGuid> nearGuids = ai->GetAiObjectContext()->GetValue<list<ObjectGuid> >("nearest friendly players")->Get();
+    std::list<ObjectGuid> nearGuids = ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid> >("nearest friendly players")->Get();
     for (auto& guid : nearGuids)
     {
         Player* player = sObjectMgr.GetPlayer(guid);
@@ -91,13 +90,7 @@ bool GuildManageNearbyAction::Execute(Event& event)
 
             if (!urand(0, 30) && dCount < 2 && guild->HasRankRight(botMember->RankId, GR_RIGHT_PROMOTE))
             {
-                if (sPlayerbotAIConfig.guildFeedbackRate && frand(0, 100) <= sPlayerbotAIConfig.guildFeedbackRate && bot->GetGuildId() && !urand(0, 10) && sRandomPlayerbotMgr.IsFreeBot(bot))
-                {
-                    map<string, string> placeholders;
-                    placeholders["%name"] = player->GetName();
-
-                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("干得好,%name.你值得这个奖励.", placeholders), LANG_UNIVERSAL);
-                }
+                BroadcastHelper::BroadcastGuildMemberPromotion(ai, bot, player);
 
                 ai->DoSpecificAction("guild promote", Event("guild management", guid), true);
                 continue;
@@ -105,13 +98,7 @@ bool GuildManageNearbyAction::Execute(Event& event)
 
             if (!urand(0, 30) && dCount > 2 && guild->HasRankRight(botMember->RankId, GR_RIGHT_DEMOTE))
             {
-                if (sPlayerbotAIConfig.guildFeedbackRate && frand(0, 100) <= sPlayerbotAIConfig.guildFeedbackRate && bot->GetGuildId() && !urand(0, 10) && sRandomPlayerbotMgr.IsFreeBot(bot))
-                {
-                    map<string, string> placeholders;
-                    placeholders["%name"] = player->GetName();
-
-                    guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("真糟糕,%name.我很不愿意这样做,但是...", placeholders), LANG_UNIVERSAL);
-                }
+                BroadcastHelper::BroadcastGuildMemberDemotion(ai, bot, player);
 
                 ai->DoSpecificAction("guild demote", Event("guild management", guid), true);
                 continue;
@@ -126,7 +113,7 @@ bool GuildManageNearbyAction::Execute(Event& event)
         if (guild->GetMemberSize() > 1000)
             return false;
 
-        if (guild->HasRankRight(botMember->RankId, GR_RIGHT_INVITE))
+        if (!guild->HasRankRight(botMember->RankId, GR_RIGHT_INVITE))
             continue;
 
         if (player->GetGuildIdInvited())
@@ -142,7 +129,7 @@ bool GuildManageNearbyAction::Execute(Event& event)
             if (botAi->GetGuilderType() == GuilderType::SOLO && !botAi->HasRealPlayerMaster()) //Do not invite solo players.
                 continue;
             
-            if (botAi->HasActivePlayerMaster()) //Do not invite alts of active players. 
+            if (botAi->HasActivePlayerMaster() && !sRandomPlayerbotMgr.IsRandomBot(player)) //Do not invite alts of active players. 
                 continue;
         }
 
@@ -151,16 +138,20 @@ bool GuildManageNearbyAction::Execute(Event& event)
         if (!sameGroup && sServerFacade.GetDistance2d(bot, player) > sPlayerbotAIConfig.spellDistance)
             continue;
 
-        if (sPlayerbotAIConfig.inviteChat && sRandomPlayerbotMgr.IsFreeBot(bot))
+        if (sPlayerbotAIConfig.inviteChat && (sRandomPlayerbotMgr.IsFreeBot(bot) || !ai->HasActivePlayerMaster()))
         {
-            map<string, string> placeholders;
+            std::map<std::string, std::string> placeholders;
             placeholders["%name"] = player->GetName();
-            placeholders["%members"] = guild->GetMemberSize();
+            placeholders["%members"] = std::to_string(guild->GetMemberSize());
             placeholders["%guildname"] = guild->GetName();
-            placeholders["%place"] = WorldPosition(player).getAreaName(false, false);
+            AreaTableEntry const* current_area = GetAreaEntryByAreaID(sServerFacade.GetAreaId(bot));
+            AreaTableEntry const* current_zone = GetAreaEntryByAreaID(sTerrainMgr.GetZoneId(bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ()));
+            placeholders["%area_name"] = current_area ? current_area->area_name[BroadcastHelper::GetLocale()] : BOT_TEXT("string_unknown_area");
+            placeholders["%zone_name"] = current_zone ? current_zone->area_name[BroadcastHelper::GetLocale()] : BOT_TEXT("string_unknown_area");
 
-            vector<string> lines;
+            std::vector<std::string> lines;
 
+            //TODO - Move these hardcoded texts to sql!
             switch ((urand(0, 10)* urand(0, 10))/10)
             {
             case 0:
@@ -179,16 +170,16 @@ bool GuildManageNearbyAction::Execute(Event& event)
                 lines.push_back(BOT_TEXT2("嘿,%name,你想加入 %guildname 吗?我们有 %members 名成员,力争成为服务器第一.", placeholders));
                 break;
             case 5:
-                lines.push_back(BOT_TEXT2("我不太擅长闲聊.你想加入我的公会 %name 吗/r?", placeholders));
+                lines.push_back(BOT_TEXT2("我不太擅长闲聊.你能不能加入我的公会 %name/r ?", placeholders));
                 break;
             case 6:
                 lines.push_back(BOT_TEXT2("欢迎来到 %place... 你想加入我的公会 %name 吗?", placeholders));
                 break;
             case 7:
-                lines.push_back(BOT_TEXT2("%name,你应该加入我的公会!", placeholders));
+                lines.push_back(BOT_TEXT2("%name, 你应该加入我的公会!", placeholders));
                 break;
             case 8:
-                lines.push_back(BOT_TEXT2("%name,我有个公会....", placeholders));
+                lines.push_back(BOT_TEXT2("%name, 我有个公会....", placeholders));
                 break;
             case 9:
                 lines.push_back(BOT_TEXT2("你真的要加入我的公会 %name 吗?", placeholders));
@@ -245,18 +236,24 @@ bool GuildLeaveAction::Execute(Event& event)
     Player* owner = event.getOwner();
     if (owner && !ai->GetSecurity()->CheckLevelFor(PlayerbotSecurityLevel::PLAYERBOT_SECURITY_INVITE, false, owner, true))
     {
-        ai->TellError(requester, "对不起,我很高兴待在我的公会 :)");
+        ai->TellError(requester, "对不起,我很高兴待在现在的公会 :)");
         return false;
     }
 
     Guild* guild = sGuildMgr.GetGuildById(bot->GetGuildId()); 
     
-    if (guild->GetMemberSize() >= 1000)
+    if (guild->GetMemberSize() >= sPlayerbotAIConfig.guildMaxBotLimit)
     {
-        guild->BroadcastToGuild(bot->GetSession(), "I am leaving this guild to prevent it from reaching the 1064 member limit.", LANG_UNIVERSAL);
+        std::map<std::string, std::string> placeholders;
+        placeholders["%guild_bot_limit"] = std::to_string(sPlayerbotAIConfig.guildMaxBotLimit);
+        guild->BroadcastToGuild(
+            bot->GetSession(),
+            BOT_TEXT2("我正在推出这个工会以防止达到 %guild_bot_limit 的数量限制.", placeholders),
+            LANG_UNIVERSAL
+        );
     }
 
-    sPlayerbotAIConfig.logEvent(ai, "GuildLeaveAction", guild->GetName(), to_string(guild->GetMemberSize()));
+    sPlayerbotAIConfig.logEvent(ai, "GuildLeaveAction", guild->GetName(), std::to_string(guild->GetMemberSize()));
 
     WorldPacket packet;
     bot->GetSession()->HandleGuildLeaveOpcode(packet);

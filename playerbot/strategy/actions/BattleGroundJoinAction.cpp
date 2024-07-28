@@ -1,31 +1,31 @@
-#include "ObjectGuid.h"
-#include "botpch.h"
-#include "../../playerbot.h"
-#include "../../PlayerbotAI.h"
+#include "Entities/ObjectGuid.h"
+
+#include "playerbot/playerbot.h"
+#include "playerbot/PlayerbotAI.h"
 #include "LfgActions.h"
-#include "../../AiFactory.h"
-//#include "../../PlayerbotAIConfig.h"
-//#include "../ItemVisitors.h"
-#include "../../RandomPlayerbotMgr.h"
+#include "playerbot/AiFactory.h"
+//#include "playerbot/PlayerbotAIConfig.h"
+//#include "playerbot/strategy/ItemVisitors.h"
+#include "playerbot/RandomPlayerbotMgr.h"
 //#include "../../../../game/LFGMgr.h"
 //#include "strategy/values/PositionValue.h"
-//#include "ServerFacade.h"
-#include "GridNotifiers.h"
-#include "GridNotifiersImpl.h"
-#include "CellImpl.h"
-#include "Object.h"
-#include "ObjectMgr.h"
-#include "strategy/values/LastMovementValue.h"
-#include "strategy/actions/LogLevelAction.h"
-#include "strategy/values/LastSpellCastValue.h"
-#include "../values/PositionValue.h"
+//#include "playerbot/ServerFacade.h"
+#include "Grids/GridNotifiers.h"
+#include "Grids/GridNotifiersImpl.h"
+#include "Grids/CellImpl.h"
+#include "Entities/Object.h"
+#include "Globals/ObjectMgr.h"
+#include "playerbot/strategy/values/LastMovementValue.h"
+#include "playerbot/strategy/actions/LogLevelAction.h"
+#include "playerbot/strategy/values/LastSpellCastValue.h"
+#include "playerbot/strategy/values/PositionValue.h"
 #include "MovementActions.h"
-#include "MotionMaster.h"
-#include "MovementGenerator.h"
-//#include "../values/PositionValue.h"
+#include "MotionGenerators/MotionMaster.h"
+#include "MotionGenerators/MovementGenerator.h"
+//#include "playerbot/strategy/values/PositionValue.h"
 #include "MotionGenerators/TargetedMovementGenerator.h"
-#include "BattleGround.h"
-#include "BattleGroundMgr.h"
+#include "BattleGround/BattleGround.h"
+#include "BattleGround/BattleGroundMgr.h"
 #include "BattleGroundJoinAction.h"
 #ifndef MANGOSBOT_ZERO
 #ifdef CMANGOS
@@ -81,7 +81,7 @@ bool BGJoinAction::Execute(Event& event)
         {
             isArena = true;
 
-            vector<uint32>::iterator i = find(ratedList.begin(), ratedList.end(), queueTypeId);
+            std::vector<uint32>::iterator i = find(ratedList.begin(), ratedList.end(), queueTypeId);
             if (i != ratedList.end())
                 isRated = true;
 
@@ -98,7 +98,7 @@ bool BGJoinAction::Execute(Event& event)
         // set bg type and bm guid
         //ai->GetAiObjectContext()->GetValue<ObjectGuid>("bg master")->Set(BmGuid);
 
-        string _bgType;
+        std::string _bgType;
 
         switch (bgTypeId)
         {
@@ -133,7 +133,7 @@ bool BGJoinAction::Execute(Event& event)
 
         ai->GetAiObjectContext()->GetValue<uint32>("bg type")->Set(queueTypeId);
         queueType = queueTypeId;
-        sPlayerbotAIConfig.logEvent(ai, "BGJoinAction", _bgType, to_string(queueTypeId));
+        sPlayerbotAIConfig.logEvent(ai, "BGJoinAction", _bgType, std::to_string(queueTypeId));
     }
 
    return JoinQueue(queueType);
@@ -171,7 +171,7 @@ bool BGJoinAction::gatherArenaTeam(ArenaType type)
         return false;
     }
 
-    vector<uint32> members;
+    std::vector<uint32> members;
 
     // search for arena team members and make them online
     for (ArenaTeam::MemberList::iterator itr = arenateam->GetMembers().begin(); itr != arenateam->GetMembers().end(); ++itr)
@@ -678,7 +678,7 @@ bool BGJoinAction::JoinQueue(uint32 type)
    bool isRated = false;
    uint8 arenaslot = 0;
    uint8 asGroup = false;
-   string _bgType;
+   std::string _bgType;
 
 // check if arena
 #ifndef MANGOSBOT_ZERO
@@ -999,6 +999,10 @@ bool BGLeaveAction::Execute(Event& event)
         ai->GetAiObjectContext()->GetValue<uint32>("bg type")->Set(0);
         ai->GetAiObjectContext()->GetValue<uint32>("bg role")->Set(0);
         ai->GetAiObjectContext()->GetValue<uint32>("arena type")->Set(0);
+        ai::PositionMap& posMap = context->GetValue<ai::PositionMap&>("position")->Get();
+        ai::PositionEntry pos = context->GetValue<ai::PositionMap&>("position")->Get()["bg objective"];
+        pos.Reset();
+        posMap["bg objective"] = pos;
 
         return true;
     }
@@ -1052,7 +1056,7 @@ bool BGStatusAction::Execute(Event& event)
     uint32 statusid;
     uint32 Time1;
     uint32 Time2;
-    string _bgType;
+    std::string _bgType;
     uint8 isRated = 0;
 
 #ifndef MANGOSBOT_ZERO
@@ -1314,8 +1318,9 @@ bool BGStatusAction::Execute(Event& event)
 #endif
 #endif
                     sLog.outBasic("Bot #%u %s:%d <%s>: Force join %s %s", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName(), isArena ? "Arena" : "BG", _bgType.c_str());
-                    WorldPacket emptyPacket;
-                    bot->GetSession()->HandleCancelMountAuraOpcode(emptyPacket);
+                    
+                    ai->Unmount();
+
                     action = 0x1;
                     // bg started so players should get invites by now
                     sRandomPlayerbotMgr.NeedBots[queueTypeId][bracketId][isArena ? isRated : GetTeamIndexByTeamId(bot->GetTeam())] = false;
@@ -1326,12 +1331,7 @@ bool BGStatusAction::Execute(Event& event)
 #else
                     packet << type << unk2 << (uint32)_bgTypeId << unk << action;
 #endif
-#ifdef MANGOS
-                    bot->GetSession()->HandleBattleFieldPortOpcode(packet);
-#endif
-#ifdef CMANGOS
                     bot->GetSession()->HandleBattlefieldPortOpcode(packet);
-#endif
 
                     ai->ResetStrategies(false);
                     context->GetValue<uint32>("bg role")->Set(urand(0, 9));
@@ -1439,8 +1439,9 @@ bool BGStatusAction::Execute(Event& event)
 #else
         sLog.outBasic("Bot #%d %s:%d <%s> joined %s - %s", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName(), isArena ? "Arena" : "BG", _bgType.c_str());
 #endif
-        WorldPacket emptyPacket;
-        bot->GetSession()->HandleCancelMountAuraOpcode(emptyPacket);
+
+        ai->Unmount();
+
         action = 0x1;
         // bg started so players should get invites by now
         sRandomPlayerbotMgr.NeedBots[queueTypeId][bracketId][isArena ? isRated : GetTeamIndexByTeamId(bot->GetTeam())] = false;
@@ -1451,12 +1452,8 @@ bool BGStatusAction::Execute(Event& event)
 #else
         packet << type << unk2 << (uint32)_bgTypeId << unk << action;
 #endif
-#ifdef MANGOS
-        bot->GetSession()->HandleBattleFieldPortOpcode(packet);
-#endif
-#ifdef CMANGOS
+
         bot->GetSession()->HandleBattlefieldPortOpcode(packet);
-#endif
 
         ai->ResetStrategies(false);
         context->GetValue<uint32>("bg role")->Set(urand(0, 9));

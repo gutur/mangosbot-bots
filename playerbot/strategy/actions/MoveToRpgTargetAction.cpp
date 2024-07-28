@@ -1,11 +1,11 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "MoveToRpgTargetAction.h"
 #include "ChooseRpgTargetAction.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
-#include "../values/PossibleRpgTargetsValue.h"
-#include "../../TravelMgr.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/strategy/values/PossibleRpgTargetsValue.h"
+#include "playerbot/TravelMgr.h"
 
 using namespace ai;
 
@@ -36,13 +36,13 @@ bool MoveToRpgTargetAction::Execute(Event& event)
 
             if (guidPP.IsPlayer())
             {
-                AI_VALUE(set<ObjectGuid>&,"ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
+                AI_VALUE(std::set<ObjectGuid>&,"ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
 
                 RESET_AI_VALUE(GuidPosition, "rpg target");
 
                 if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
                 {
-                    ai->TellPlayerNoFacing(GetMaster(), "Rpg玩家目标正在瞄准我.取消目标");
+                    ai->TellPlayerNoFacing(GetMaster(), "玩家目标正在瞄准我.取消目标");
                 }
                 return false;
             }
@@ -51,46 +51,46 @@ bool MoveToRpgTargetAction::Execute(Event& event)
 
     if (unit && unit->IsMoving() && !urand(0, 20) && guidP.sqDistance2d(bot) < INTERACTION_DISTANCE * INTERACTION_DISTANCE * 2)
     {
-        AI_VALUE(set<ObjectGuid>&,"ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
+        AI_VALUE(std::set<ObjectGuid>&,"ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
 
         RESET_AI_VALUE(GuidPosition,"rpg target");
 
         if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
         {
-            ai->TellPlayerNoFacing(GetMaster(), "Rpg目标正在移动.随机取消目标.");
+            ai->TellPlayerNoFacing(GetMaster(), "目标正在移动.随机取消目标.");
         }
         return false;
     }
 
     if (!AI_VALUE2(bool, "can free move to", GuidPosition(wo).to_string()))
     {
-        AI_VALUE(set<ObjectGuid>&, "ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
+        AI_VALUE(std::set<ObjectGuid>&, "ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
 
         RESET_AI_VALUE(GuidPosition, "rpg target");
 
         if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
         {
-            ai->TellPlayerNoFacing(GetMaster(), "Rpg目标远离主人.随机取消目标.");
+            ai->TellPlayerNoFacing(GetMaster(), "目标远离主人.随机取消目标.");
         }
         return false;
     }
 
     if (guidP.distance(bot) > sPlayerbotAIConfig.reactDistance * 2)
     {
-        AI_VALUE(set<ObjectGuid>&, "ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
+        AI_VALUE(std::set<ObjectGuid>&, "ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
 
         RESET_AI_VALUE(GuidPosition, "rpg target");
 
         if (ai->HasStrategy("debug rpg", BotState::BOT_STATE_NON_COMBAT))
         {
-            ai->TellPlayerNoFacing(GetMaster(), "Rpg目标超出反应距离.取消目标");
+            ai->TellPlayerNoFacing(GetMaster(), "目标超出反应距离.取消目标");
         }
         return false;
     }
 
     if (guidP.IsGameObject() && guidP.sqDistance2d(bot) < INTERACTION_DISTANCE * INTERACTION_DISTANCE && guidP.distance(bot) > INTERACTION_DISTANCE * 1.5 && !urand(0, 5))
     {
-        AI_VALUE(set<ObjectGuid>&, "ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
+        AI_VALUE(std::set<ObjectGuid>&, "ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
 
         RESET_AI_VALUE(GuidPosition, "rpg target");
 
@@ -103,7 +103,7 @@ bool MoveToRpgTargetAction::Execute(Event& event)
 
     if (!urand(0, 50))
     {
-        AI_VALUE(set<ObjectGuid>&, "ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
+        AI_VALUE(std::set<ObjectGuid>&, "ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
 
         RESET_AI_VALUE(GuidPosition, "rpg target");
 
@@ -121,7 +121,7 @@ bool MoveToRpgTargetAction::Execute(Event& event)
 
     if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
     {
-        string name = chat->formatWorldobject(wo);
+        std::string name = chat->formatWorldobject(wo);
 
         ai->Poi(x, y, name);
     }
@@ -144,7 +144,7 @@ bool MoveToRpgTargetAction::Execute(Event& event)
 
         if (guidP.sqDistance2d(bot) < INTERACTION_DISTANCE * INTERACTION_DISTANCE)
             distance = sqrt(guidP.sqDistance2d(bot)); //Stay at this distance.
-        else if(unit)
+        else if(unit || !urand(0, 5)) //Stay futher away from npc's and sometimes gameobjects (for large hitbox objects).
             distance = frand(0.5, 1);
         else
             distance = frand(0, 0.5);
@@ -166,7 +166,7 @@ bool MoveToRpgTargetAction::Execute(Event& event)
 
     if (!couldMove && WorldPosition(mapId,x,y,z).distance(bot) > INTERACTION_DISTANCE)
     {
-        AI_VALUE(set<ObjectGuid>&,"ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
+        AI_VALUE(std::set<ObjectGuid>&,"ignore rpg target").insert(AI_VALUE(GuidPosition, "rpg target"));
 
         RESET_AI_VALUE(GuidPosition, "rpg target");
 
@@ -182,14 +182,14 @@ bool MoveToRpgTargetAction::Execute(Event& event)
     {
         if (couldMove)
         {
-            ostringstream out;
+            std::ostringstream out;
             out << "前往: ";
             out << chat->formatWorldobject(guidP.GetWorldObject());
             ai->TellPlayerNoFacing(GetMaster(), out);
         }
         else
         {
-            ostringstream out;
+            std::ostringstream out;
             out << "靠近: ";
             out << chat->formatWorldobject(guidP.GetWorldObject());
             ai->TellPlayerNoFacing(GetMaster(), out);
@@ -233,9 +233,6 @@ bool MoveToRpgTargetAction::isUseful()
         SET_AI_VALUE(GuidPosition, "rpg target", guidP);
 
     if (guidP.distance(bot) < INTERACTION_DISTANCE)
-        return false;
-
-    if (!AI_VALUE2(bool, "can free move to", guidP.to_string()))
         return false;
 
     if (!AI_VALUE(bool, "can move around"))

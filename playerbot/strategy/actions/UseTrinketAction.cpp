@@ -1,16 +1,16 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "UseTrinketAction.h"
-#include "Item.h"
-#include "ItemPrototype.h"
-#include "Player.h"
+#include "Entities/Item.h"
+#include "Entities/ItemPrototype.h"
+#include "Entities/Player.h"
 
 using namespace ai;
 
 bool UseTrinketAction::Execute(Event& event)
 {
-	Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-	list<Item*> trinkets = AI_VALUE(list<Item*>, "trinkets on use");
+	Player* requester = event.getOwner();
+	std::list<Item*> trinkets = AI_VALUE(std::list<Item*>, "trinkets on use");
 	for (Item* item : trinkets)
 	{
 		const ItemPrototype* proto = item->GetProto();
@@ -18,7 +18,7 @@ bool UseTrinketAction::Execute(Event& event)
 		{
 			if (bot->CanUseItem(item) == EQUIP_ERR_OK && !item->IsInTrade())
 			{
-				return UseItemAuto(requester, item);
+				return UseItem(requester, item->GetEntry());
 			}
 		}
 	}
@@ -28,5 +28,5 @@ bool UseTrinketAction::Execute(Event& event)
 
 bool UseTrinketAction::isPossible()
 {
-	return !AI_VALUE(list<Item*>, "trinkets on use").empty();
+	return !AI_VALUE(std::list<Item*>, "trinkets on use").empty();
 }

@@ -1,5 +1,5 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "ArenaTeamActions.h"
 #ifndef MANGOSBOT_ZERO
 #ifdef CMANGOS
@@ -10,7 +10,6 @@
 #endif
 #endif
 
-using namespace std;
 using namespace ai;
 
 bool ArenaTeamAcceptAction::Execute(Event& event)
@@ -37,7 +36,7 @@ bool ArenaTeamAcceptAction::Execute(Event& event)
     if (bot->GetArenaTeamId(at->GetSlot()))
     {
         // bot is already in an arena team
-        bot->Say("抱歉,我已经加入了一个团队.", LANG_UNIVERSAL);
+        bot->Say("抱歉,我已经加入了一个团队", LANG_UNIVERSAL);
         accept = false;
     }
 

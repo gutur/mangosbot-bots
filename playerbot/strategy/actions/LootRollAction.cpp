@@ -1,8 +1,8 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "LootRollAction.h"
-#include "../values/ItemUsageValue.h"
-#include "../values/LootValues.h"
+#include "playerbot/strategy/values/ItemUsageValue.h"
+#include "playerbot/strategy/values/LootValues.h"
 
 using namespace ai;
 
@@ -57,7 +57,7 @@ bool LootStartRollAction::Execute(Event& event)
 bool RollAction::Execute(Event& event)
 {      
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    string text = event.getParam();
+    std::string text = event.getParam();
 
     if (text.empty())
     {
@@ -67,11 +67,45 @@ bool RollAction::Execute(Event& event)
 
     ItemIds ids = ChatHelper::parseItems(text);
 
-    string type = "auto";
+    std::string type = "auto";
     if (ids.empty())
         type = text;
     else
         type = text.substr(0, text.find(" "));
+
+    if (type == "emote")
+    {
+        std::vector<std::string> args = ChatHelper::splitString(text, " ");
+
+        if (args.size() == 2)
+            args = { args[0], "1", args[1] };
+        if (args.size() == 1)
+            args = { args[0], "1", "100" };
+
+        for (char& d : args[1]) //Check if itemId contains only numbers
+            if (!isdigit(d))
+                return false;
+
+        for (char& d : args[2]) //Check if itemId contains only numbers
+            if (!isdigit(d))
+                return false;
+
+        WorldPacket data(MSG_RANDOM_ROLL);
+        data << stoi(args[1]);
+        data << stoi(args[2]);
+        bot->GetSession()->HandleRandomRollOpcode(data);
+
+        return true;
+    }
+
+    if (!bot->GetGroup())
+        return false;
+
+    if (AI_VALUE(LootRollMap, "active rolls").empty())
+        return false;
+
+    if (AI_VALUE(uint8, "bag space") >= 100)
+        return false;
 
     if (type != "need" && type != "greed" && type != "pass" && type != "auto")
     {
@@ -110,11 +144,6 @@ bool RollAction::Execute(Event& event)
     }
 
     return rolledItems;
-}
-
-bool RollAction::isPossible()
-{
-    return bot->GetGroup() && !AI_VALUE(LootRollMap, "active rolls").empty() && AI_VALUE(uint8, "bag space") < 100;
 }
 
 ItemQualifier RollAction::GetRollItem(ObjectGuid lootGuid, uint32 slot)
@@ -224,4 +253,9 @@ bool AutoLootRollAction::Execute(Event& event)
     RollVote vote = CalculateRollVote(itemQualifier);
 
     return RollOnItemInSlot(vote, currentRoll->first, currentRoll->second);
+}
+
+bool AutoLootRollAction::isPossible()
+{
+    return bot->GetGroup() && !AI_VALUE(LootRollMap, "active rolls").empty() && AI_VALUE(uint8, "bag space") < 100;
 }

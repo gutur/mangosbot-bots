@@ -1,5 +1,5 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "LeaveGroupAction.h"
 
 namespace ai
@@ -11,7 +11,7 @@ namespace ai
 
         Group* group = bot->GetGroup();
 
-        if (ai->HasActivePlayerMaster() && player != ai->GetMaster() && player->GetSession() && player->GetSession()->GetSecurity() < SEC_MODERATOR)
+        if (ai->HasActivePlayerMaster() && player != bot && player != ai->GetMaster() && player->GetSession() && player->GetSession()->GetSecurity() < SEC_MODERATOR)
             return false;
 
         bool aiMaster = (ai->GetMaster() && ai->GetMaster()->GetPlayerbotAI());
@@ -25,19 +25,19 @@ namespace ai
         if (!shouldStay)
         {
             if (group)
-                sPlayerbotAIConfig.logEvent(ai, "LeaveGroupAction", group->GetLeaderName(), to_string(group->GetMembersCount()-1));
+                sPlayerbotAIConfig.logEvent(ai, "LeaveGroupAction", group->GetLeaderName(), std::to_string(group->GetMembersCount()-1));
 
             WorldPacket p;
-            string member = bot->GetName();
+            std::string member = bot->GetName();
             p << uint32(PARTY_OP_LEAVE) << member << uint32(0);
             bot->GetSession()->HandleGroupDisbandOpcode(p);
             if (ai->HasRealPlayerMaster() && ai->GetMaster()->GetObjectGuid() != player->GetObjectGuid())
-                bot->Whisper("我离开了我的队伍.", LANG_UNIVERSAL, player->GetObjectGuid());
+                bot->Whisper("我离开了我的队伍", LANG_UNIVERSAL, player->GetObjectGuid());
         }
 
         if (freeBot)
         {
-            bot->GetPlayerbotAI()->SetMaster(NULL);
+            bot->GetPlayerbotAI()->SetMaster(nullptr);
         }        
 
         if(!aiMaster)
@@ -80,6 +80,9 @@ namespace ai
             return true;
 
         uint32 dCount = AI_VALUE(uint32, "death count");
+
+        if (ai->HasRealPlayerMaster() && !sRandomPlayerbotMgr.IsRandomBot(bot))
+            return false;
 
         if (dCount > 9)
             return true;

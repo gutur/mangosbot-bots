@@ -1,13 +1,13 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "GrindTargetValue.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../RandomPlayerbotMgr.h"
-#include "../../ServerFacade.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/RandomPlayerbotMgr.h"
+#include "playerbot/ServerFacade.h"
 #include "AttackersValue.h"
 #include "PossibleAttackTargetsValue.h"
-#include "../actions/ChooseTargetActions.h"
-#include "Formulas.h"
+#include "playerbot/strategy/actions/ChooseTargetActions.h"
+#include "Tools/Formulas.h"
 
 using namespace ai;
 
@@ -37,8 +37,8 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
     if (master && (master == bot || master->GetMapId() != bot->GetMapId() || master->IsBeingTeleported() || !master->GetPlayerbotAI()))
         master = nullptr;
 
-    list<ObjectGuid> attackers = context->GetValue<list<ObjectGuid>>("possible attack targets")->Get();
-    for (list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); i++)
+    std::list<ObjectGuid> attackers = context->GetValue<std::list<ObjectGuid>>("possible attack targets")->Get();
+    for (std::list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); i++)
     {
         Unit* unit = ai->GetUnit(*i);
         if (!unit || !sServerFacade.IsAlive(unit))
@@ -57,7 +57,7 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
         return unit;
     }
 
-    list<ObjectGuid> targets = *context->GetValue<list<ObjectGuid> >("possible targets");
+    std::list<ObjectGuid> targets = *context->GetValue<std::list<ObjectGuid> >("possible targets");
 
     if (targets.empty())
         return NULL;
@@ -65,9 +65,9 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
     float distance = 0;
     Unit* result = NULL;
 
-    unordered_map<uint32, bool> needForQuestMap;
+    std::unordered_map<uint32, bool> needForQuestMap;
 
-    for (list<ObjectGuid>::iterator tIter = targets.begin(); tIter != targets.end(); tIter++)
+    for (std::list<ObjectGuid>::iterator tIter = targets.begin(); tIter != targets.end(); tIter++)
     {
         Unit* unit = ai->GetUnit(*tIter);
         if (!unit)
@@ -97,7 +97,7 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
         if (!bot->InBattleGround() && (int)unit->GetLevel() - (int)bot->GetLevel() > 4 && !unit->GetObjectGuid().IsPlayer())
         {
             if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " 被忽略(目标等级比机器人等级高 " + to_string((int)unit->GetLevel() - (int)bot->GetLevel()) + " 级).");
+                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " 被忽略(目标等级比机器人等级高" + std::to_string((int)unit->GetLevel() - (int)bot->GetLevel()) + " 级).");
             continue;
         }
 
@@ -140,7 +140,7 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
             if (urand(0, 100) < 99 && AI_VALUE(TravelTarget*, "travel target")->isWorking() && AI_VALUE(TravelTarget*, "travel target")->getDestination()->getName() != "GrindTravelDestination")
             {
                 if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                    ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " 被忽略(不是当前任务所需目标).");
+                    ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + "  被忽略(不是当前任务所需目标).");
 
                 continue;
             }
@@ -148,7 +148,7 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
             {
                 if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
                     if ((context->GetValue<TravelTarget*>("travel target")->Get()->isWorking() && context->GetValue<TravelTarget*>("travel target")->Get()->getDestination()->getName() != "GrindTravelDestination"))
-                        ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " 被忽略(无经验值并且不是当前任务所需目标).");
+                        ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + "  被忽略(无经验值并且不是当前任务所需目标).");
 
                 continue;
             }
@@ -165,7 +165,7 @@ Unit* GrindTargetValue::FindTargetForGrinding(int assistCount)
         if (!bot->InBattleGround() && GetTargetingPlayerCount(unit) > assistCount)
         {
             if (ai->HasStrategy("debug grind", BotState::BOT_STATE_NON_COMBAT))
-                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " 距离增加(已有" + to_string(GetTargetingPlayerCount(unit)) + " 个机器人正在攻击).");
+                ai->TellPlayer(GetMaster(), chat->formatWorldobject(unit) + " 距离增加(已有" + std::to_string(GetTargetingPlayerCount(unit)) + " 个机器人正在攻击).");
 
             newdistance =+ GetTargetingPlayerCount(unit) * 5;
         }

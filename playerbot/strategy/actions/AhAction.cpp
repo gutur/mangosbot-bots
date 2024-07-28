@@ -1,22 +1,20 @@
-#include "botpch.h"
-#include "../../playerbot.h"
-#include "AhAction.h"
-#include "../../../ahbot/AhBot.h"
-#include "../values/ItemCountValue.h"
-#include "../../RandomItemMgr.h"
-#include "../values/BudgetValues.h"
-#include <AuctionHouseBot/AuctionHouseBot.h>
 
-using namespace std;
+#include "playerbot/playerbot.h"
+#include "AhAction.h"
+#include "ahbot/AhBot.h"
+#include "playerbot/strategy/values/ItemCountValue.h"
+#include "playerbot/RandomItemMgr.h"
+#include "playerbot/strategy/values/BudgetValues.h"
+
 using namespace ai;
 
 bool AhAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    string text = event.getParam();
+    std::string text = event.getParam();
 
-    list<ObjectGuid> npcs = AI_VALUE(list<ObjectGuid>, "nearest npcs");
-    for (list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
+    std::list<ObjectGuid> npcs = AI_VALUE(std::list<ObjectGuid>, "nearest npcs");
+    for (std::list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
     {
         Unit* npc = bot->GetNPCIfCanInteractWith(*i, UNIT_NPC_FLAG_AUCTIONEER);
         if (!npc)
@@ -32,12 +30,11 @@ bool AhAction::Execute(Event& event)
         return doneAuction;
     }
 
-
     ai->TellPlayerNoFacing(requester, "附近找不到拍卖师");
     return false;
 }
 
-bool AhAction::ExecuteCommand(Player* requester, string text, Unit* auctioneer)
+bool AhAction::ExecuteCommand(Player* requester, std::string text, Unit* auctioneer)
 {
     uint32 time;
 #ifdef MANGOSBOT_ZERO
@@ -52,7 +49,7 @@ bool AhAction::ExecuteCommand(Player* requester, string text, Unit* auctioneer)
         if (!auctionHouseEntry)
             return false;
 
-        list<Item*> items = AI_VALUE2(list<Item*>, "inventory items", "usage " + to_string((uint8)ItemUsage::ITEM_USAGE_AH));
+        std::list<Item*> items = AI_VALUE2(std::list<Item*>, "inventory items", "usage " + std::to_string((uint8)ItemUsage::ITEM_USAGE_AH));
         
         bool postedItem = false;
 
@@ -84,12 +81,12 @@ bool AhAction::ExecuteCommand(Player* requester, string text, Unit* auctioneer)
     }
 
     int pos = text.find(" ");
-    if (pos == string::npos) return false;
+    if (pos == std::string::npos) return false;
 
-    string priceStr = text.substr(0, pos);
+    std::string priceStr = text.substr(0, pos);
     uint32 price = ChatHelper::parseMoney(priceStr);
 
-    list<Item*> found = ai->InventoryParseItems(text, IterateItemsMask::ITERATE_ITEMS_IN_BAGS);
+    std::list<Item*> found = ai->InventoryParseItems(text, IterateItemsMask::ITERATE_ITEMS_IN_BAGS);
     if (found.empty())
         return false;
 
@@ -125,17 +122,17 @@ bool AhAction::PostItem(Player* requester, Item* item, uint32 price, Unit* aucti
     if (bot->GetItemByGuid(itemGuid))
         return false;
 
-    sPlayerbotAIConfig.logEvent(ai, "AhAction", proto->Name1, to_string(proto->ItemId));
+    sPlayerbotAIConfig.logEvent(ai, "AhAction", proto->Name1, std::to_string(proto->ItemId));
 
-    ostringstream out;
-    out << "把 " << ChatHelper::formatItem(itemQualifier, cnt) << " for " << ChatHelper::formatMoney(price) << "挂到拍卖行";
+    std::ostringstream out;
+    out << "把 " << ChatHelper::formatItem(itemQualifier, cnt) << "以 " << ChatHelper::formatMoney(price) << " 挂到拍卖行";
     ai->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
     return true;
 }
 
 uint32 AhAction::GetSellPrice(ItemPrototype const* proto)
 {
-    uint32 price = sAuctionHouseBot.GetItemData(proto->ItemId).Value;
+    uint32 price = ItemUsageValue::GetItemValue(proto);
 
     if (!price)
         price = auctionbot.GetSellPrice(proto);
@@ -146,7 +143,7 @@ uint32 AhAction::GetSellPrice(ItemPrototype const* proto)
     return price;
 }
 
-bool AhBidAction::ExecuteCommand(Player* requester, string text, Unit* auctioneer)
+bool AhBidAction::ExecuteCommand(Player* requester, std::string text, Unit* auctioneer)
 {
     AuctionHouseEntry const* auctionHouseEntry = bot->GetSession()->GetCheckedAuctionHouseForAuctioneer(auctioneer->GetObjectGuid());
     if (!auctionHouseEntry)
@@ -165,7 +162,7 @@ bool AhBidAction::ExecuteCommand(Player* requester, string text, Unit* auctionee
 
     AuctionEntry* auction = nullptr;
 
-    vector<pair<AuctionEntry*, uint32>> auctionPowers;
+    std::vector<std::pair<AuctionEntry*, uint32>> auctionPowers;
 
     if (text == "vendor")
     {
@@ -176,7 +173,7 @@ bool AhBidAction::ExecuteCommand(Player* requester, string text, Unit* auctionee
         if (totalcount > 10) //Already have 10 bids, stop.
             return false;
 
-        unordered_map <ItemUsage, int32> freeMoney;
+        std::unordered_map <ItemUsage, int32> freeMoney;
 
         freeMoney[ItemUsage::ITEM_USAGE_EQUIP] = freeMoney[ItemUsage::ITEM_USAGE_BAD_EQUIP] = (uint32)NeedMoneyFor::gear;
         freeMoney[ItemUsage::ITEM_USAGE_USE] = (uint32)NeedMoneyFor::consumables;
@@ -237,7 +234,7 @@ bool AhBidAction::ExecuteCommand(Player* requester, string text, Unit* auctionee
             power *= 1000;
             power /= (cost+1);
 
-            auctionPowers.push_back(make_pair(auction, power));
+            auctionPowers.push_back(std::make_pair(auction, power));
         }
 
         std::sort(auctionPowers.begin(), auctionPowers.end(), [](std::pair<AuctionEntry*, uint32> i, std::pair<AuctionEntry*, uint32> j) {return i > j; });
@@ -283,9 +280,9 @@ bool AhBidAction::ExecuteCommand(Player* requester, string text, Unit* auctionee
     }
 
     int pos = text.find(" ");
-    if (pos == string::npos) return false;
+    if (pos == std::string::npos) return false;
 
-    string priceStr = text.substr(0, pos);
+    std::string priceStr = text.substr(0, pos);
     uint32 price = ChatHelper::parseMoney(priceStr);
 
     for (auto curAuction : map)
@@ -315,7 +312,7 @@ bool AhBidAction::ExecuteCommand(Player* requester, string text, Unit* auctionee
         power *= 1000;
         power /= cost;
 
-        auctionPowers.push_back(make_pair(auction, power));
+        auctionPowers.push_back(std::make_pair(auction, power));
     }
 
     if (auctionPowers.empty())
@@ -362,9 +359,9 @@ bool AhBidAction::BidItem(Player* requester, AuctionEntry* auction, uint32 price
 
     if (bot->GetMoney() < oldMoney)
     {
-        sPlayerbotAIConfig.logEvent(ai, "AhBidAction", proto->Name1, to_string(proto->ItemId));
-        ostringstream out;
-        out << "在拍卖行出价 " << ChatHelper::formatMoney(price) << " 买 " << ChatHelper::formatItem(itemQualifier, count) << " .";
+        sPlayerbotAIConfig.logEvent(ai, "AhBidAction", proto->Name1, std::to_string(proto->ItemId));
+        std::ostringstream out;
+        out << "在拍卖行出价 " << ChatHelper::formatMoney(price) << " 买 " << ChatHelper::formatItem(itemQualifier, count) << "";
         ai->TellPlayerNoFacing(requester, out.str(), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
         return true;
     }

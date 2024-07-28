@@ -1,6 +1,5 @@
-#include "../botpch.h"
-#include "playerbot.h"
-#include "AiFactory.h"
+#include "playerbot/playerbot.h"
+#include "playerbot/AiFactory.h"
 #include "strategy/AiObjectContext.h"
 #include "strategy/ReactionEngine.h"
 
@@ -14,10 +13,10 @@
 #include "strategy/hunter/HunterAiObjectContext.h"
 #include "strategy/rogue/RogueAiObjectContext.h"
 #include "strategy/deathknight/DKAiObjectContext.h"
-#include "Player.h"
-#include "PlayerbotAIConfig.h"
-#include "RandomPlayerbotMgr.h"
-#include "BattleGroundMgr.h"
+#include "Entities/Player.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/RandomPlayerbotMgr.h"
+#include "BattleGround/BattleGroundMgr.h"
 
 AiObjectContext* AiFactory::createAiObjectContext(Player* player, PlayerbotAI* ai)
 {
@@ -88,9 +87,9 @@ AiObjectContext* AiFactory::createAiObjectContext(Player* player, PlayerbotAI* a
     return new AiObjectContext(ai);
 }
 
-int AiFactory::GetPlayerSpecTab(Player* bot)
+int AiFactory::GetPlayerSpecTab(const Player* bot)
 {
-    map<uint32, int32> tabs = GetPlayerSpecTabs(bot);
+    std::map<uint32, int32> tabs = GetPlayerSpecTabs(bot);
 
     if (bot->GetLevel() >= 10 && ((tabs[0] + tabs[1] + tabs[2]) > 0))
     {
@@ -128,9 +127,9 @@ int AiFactory::GetPlayerSpecTab(Player* bot)
     }
 }
 
-map<uint32, int32> AiFactory::GetPlayerSpecTabs(Player* bot)
+std::map<uint32, int32> AiFactory::GetPlayerSpecTabs(const Player* bot)
 {
-    map<uint32, int32> tabs;
+    std::map<uint32, int32> tabs;
     for (uint32 i = 0; i < uint32(3); i++)
         tabs[i] = 0;
 
@@ -165,7 +164,7 @@ map<uint32, int32> AiFactory::GetPlayerSpecTabs(Player* bot)
     return tabs;
 }
 
-BotRoles AiFactory::GetPlayerRoles(Player* player)
+BotRoles AiFactory::GetPlayerRoles(const Player* player)
 {
     BotRoles role = BOT_ROLE_NONE;
     int tab = GetPlayerSpecTab(player);
@@ -292,6 +291,7 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
     int tab = GetPlayerSpecTab(player);
 
     combatEngine->addStrategies("mount", NULL);
+    combatEngine->addStrategy("avoid mobs");
 
     if (!player->InBattleGround())
     {
@@ -302,20 +302,20 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
     {
         case CLASS_PRIEST:
         {
-            if (tab == 2)
+            if (tab == 0)
             {
-                combatEngine->addStrategies("dps", "shadow debuff", "shadow aoe", NULL);
+                combatEngine->addStrategy("discipline");
             }
-            else if (tab == 0)
+            else if (tab == 1)
             {
-                combatEngine->addStrategies("holy", "shadow debuff", "shadow aoe", NULL);
+                combatEngine->addStrategy("holy");
             }
             else
             {
-                combatEngine->addStrategies("heal", NULL);
+                combatEngine->addStrategy("shadow");
             }
 
-            combatEngine->addStrategies("dps assist", "flee", "cure", "ranged", "cc", NULL);
+            combatEngine->addStrategies("dps assist", "flee", "cure", "ranged", "cc", "buff", "aoe", "boost", NULL);
             break;
         }
 
@@ -334,7 +334,7 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
                 combatEngine->addStrategy("frost");
             }
 
-            combatEngine->addStrategies("dps", "dps assist", "flee", "cure", "ranged", "cc", "buff", "aoe", "boost", NULL);
+            combatEngine->addStrategies("dps assist", "flee", "cure", "ranged", "cc", "buff", "aoe", "boost", NULL);
             break;
         }
 
@@ -514,10 +514,9 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
                 combatEngine->removeStrategy("ranged");
             }
 
-            if (player->getClass() == CLASS_PRIEST && tab == 1)
+            if (player->getClass() == CLASS_PRIEST && tab < 2)
             {
-                combatEngine->removeStrategy("heal");
-                combatEngine->addStrategies("holy", "shadow debuff", "shadow aoe", "threat", NULL);
+                combatEngine->addStrategy("offdps");
             }
 
             if (player->getClass() == CLASS_SHAMAN && tab == 2)
@@ -607,7 +606,6 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
         combatEngine->removeStrategy("follow");
         combatEngine->removeStrategy("conserve mana");
         combatEngine->removeStrategy("cast time");
-        combatEngine->addStrategy("boost");
 
         if (player->getClass() == CLASS_SHAMAN && tab == 2)
         {
@@ -645,7 +643,20 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
     {
         case CLASS_PRIEST:
         {
-            nonCombatEngine->addStrategies("dps assist", "cure", "rshadow", NULL);
+            if (tab == 0)
+            {
+                nonCombatEngine->addStrategy("discipline");
+            }
+            else if (tab == 1)
+            {
+                nonCombatEngine->addStrategy("holy");
+            }
+            else
+            {
+                nonCombatEngine->addStrategy("shadow");
+            }
+
+            nonCombatEngine->addStrategies("dps assist", "cure", "buff", "boost", NULL);
             break;
         }
 
@@ -825,6 +836,7 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
     }
 
     nonCombatEngine->addStrategies("wbuff", NULL);
+    nonCombatEngine->addStrategy("avoid mobs");
 
     if (!player->InBattleGround())
     {
@@ -1180,6 +1192,24 @@ void AiFactory::AddDefaultDeadStrategies(Player* player, PlayerbotAI* const faca
 
             break;
         }
+
+        case CLASS_PRIEST:
+        {
+            if (tab == 0)
+            {
+                deadEngine->addStrategy("discipline");
+            }
+            else if (tab == 1)
+            {
+                deadEngine->addStrategy("holy");
+            }
+            else
+            {
+                deadEngine->addStrategy("shadow");
+            }
+
+            break;
+        }
     }
 
     if (facade->IsRealPlayer() || sRandomPlayerbotMgr.IsFreeBot(player))
@@ -1345,6 +1375,24 @@ void AiFactory::AddDefaultReactionStrategies(Player* player, PlayerbotAI* const 
             else
             {
                 reactionEngine->addStrategy("marksmanship");
+            }
+
+            break;
+        }
+
+        case CLASS_PRIEST:
+        {
+            if (tab == 0)
+            {
+                reactionEngine->addStrategy("discipline");
+            }
+            else if (tab == 1)
+            {
+                reactionEngine->addStrategy("holy");
+            }
+            else
+            {
+                reactionEngine->addStrategy("shadow");
             }
 
             break;

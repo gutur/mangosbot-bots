@@ -1,14 +1,14 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "UseMeetingStoneAction.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
 
-#include "GridNotifiers.h"
-#include "GridNotifiersImpl.h"
-#include "CellImpl.h"
+#include "Grids/GridNotifiers.h"
+#include "Grids/GridNotifiersImpl.h"
+#include "Grids/CellImpl.h"
 
-#include "../values/PositionValue.h"
+#include "playerbot/strategy/values/PositionValue.h"
 #include "Entities/Transports.h"
 
 using namespace MaNGOS;
@@ -104,12 +104,12 @@ bool SummonAction::Execute(Event& event)
 
 bool SummonAction::SummonUsingGos(Player* requester, Player *summoner, Player *player)
 {
-    list<GameObject*> targets;
+    std::list<GameObject*> targets;
     AnyGameObjectInObjectRangeCheck u_check(summoner, sPlayerbotAIConfig.sightDistance);
     GameObjectListSearcher<AnyGameObjectInObjectRangeCheck> searcher(targets, u_check);
     Cell::VisitAllObjects((const WorldObject*)summoner, searcher, sPlayerbotAIConfig.sightDistance);
 
-    for(list<GameObject*>::iterator tIter = targets.begin(); tIter != targets.end(); ++tIter)
+    for(std::list<GameObject*>::iterator tIter = targets.begin(); tIter != targets.end(); ++tIter)
     {
         GameObject* go = *tIter;
         if (go && sServerFacade.isSpawned(go) && go->GetGoType() == GAMEOBJECT_TYPE_MEETINGSTONE)
@@ -125,11 +125,11 @@ bool SummonAction::SummonUsingNpcs(Player* requester, Player *summoner, Player *
     if (!sPlayerbotAIConfig.summonAtInnkeepersEnabled)
         return false;
 
-    list<Unit*> targets;
+    std::list<Unit*> targets;
     AnyUnitInObjectRangeCheck u_check(summoner, sPlayerbotAIConfig.sightDistance);
     UnitListSearcher<AnyUnitInObjectRangeCheck> searcher(targets, u_check);
     Cell::VisitAllObjects(summoner, searcher, sPlayerbotAIConfig.sightDistance);
-    for(list<Unit*>::iterator tIter = targets.begin(); tIter != targets.end(); ++tIter)
+    for(std::list<Unit*>::iterator tIter = targets.begin(); tIter != targets.end(); ++tIter)
     {
         Unit* unit = *tIter;
         if (unit && unit->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_INNKEEPER))
@@ -180,29 +180,36 @@ bool SummonAction::Teleport(Player* requester, Player *summoner, Player *player)
             float y = summoner->GetPositionY() + sin(angle) * ai->GetRange("follow");
             float z = summoner->GetPositionZ();
             summoner->UpdateGroundPositionZ(x, y, z);
+
             if (!summoner->IsWithinLOS(x, y, z + player->GetCollisionHeight(), true))
             {
                 x = summoner->GetPositionX();
                 y = summoner->GetPositionY();
                 z = summoner->GetPositionZ();
             }
+
             if (summoner->IsWithinLOS(x, y, z + player->GetCollisionHeight(), true))
             {
                 if (sServerFacade.UnitIsDead(player) && sServerFacade.IsAlive(summoner))
                 {
+                    if (!ai->IsSafe(player) || !ai->IsSafe(summoner))
+                        return false;
+
                     player->ResurrectPlayer(1.0f, false);
                     player->SpawnCorpseBones();
                     ai->TellPlayerNoFacing(requester, "我又复活了!!!");
-                }                
+                }
 
                 if (player->IsTaxiFlying())
                 {
                     player->TaxiFlightInterrupt();
                     player->GetMotionMaster()->MovementExpired();
                 }
+
                 player->GetMotionMaster()->Clear();
                 player->TeleportTo(mapId, x, y, z, 0);
                 player->SendHeartBeat();
+
                 if (summoner->GetTransport())
                     summoner->GetTransport()->AddPassenger(player, false);
                     

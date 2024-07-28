@@ -1,13 +1,13 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "ChatShortcutActions.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../values/PositionValue.h"
-#include "../values/Formations.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/strategy/values/PositionValue.h"
+#include "playerbot/strategy/values/Formations.h"
 
 using namespace ai;
 
-void ReturnPositionResetAction::ResetPosition(string posName)
+void ReturnPositionResetAction::ResetPosition(std::string posName)
 {
     ai::PositionMap& posMap = context->GetValue<ai::PositionMap&>("position")->Get();
     ai::PositionEntry pos = posMap[posName];
@@ -15,7 +15,7 @@ void ReturnPositionResetAction::ResetPosition(string posName)
     posMap[posName] = pos;
 }
 
-void ReturnPositionResetAction::SetPosition(WorldPosition wPos, string posName)
+void ReturnPositionResetAction::SetPosition(WorldPosition wPos, std::string posName)
 {
     ai::PositionMap& posMap = context->GetValue<ai::PositionMap&>("position")->Get();
     ai::PositionEntry pos = posMap[posName];
@@ -228,6 +228,6 @@ bool MaxDpsChatShortcutAction::Execute(Event& event)
 
     ai->Reset();
     ai->ChangeStrategy("-threat,-conserve mana,-cast time,+dps debuff,+boost", BotState::BOT_STATE_COMBAT);
-    ai->TellPlayerNoFacing(requester, "最大DPS!");
+    ai->TellPlayerNoFacing(requester, "最大 DPS!");
     return true;
 }

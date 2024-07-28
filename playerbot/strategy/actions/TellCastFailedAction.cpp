@@ -1,7 +1,7 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "TellCastFailedAction.h"
-#include "../../ServerFacade.h"
+#include "playerbot/ServerFacade.h"
 
 using namespace ai;
 
@@ -19,30 +19,30 @@ bool TellCastFailedAction::Execute(Event& event)
         return false;
 
     const SpellEntry *const pSpellInfo =  sServerFacade.LookupSpellInfo(spellId);
-    ostringstream out; out << chat->formatSpell(pSpellInfo) << ": ";
+    std::ostringstream out; out << chat->formatSpell(pSpellInfo) << ": ";
     switch (result)
     {
     case SPELL_FAILED_NOT_READY:
-        out << "未准备好.";
+        out << "未准备好";
         break;
     case SPELL_FAILED_REQUIRES_SPELL_FOCUS:
-        out << "需要法术焦点.";
+        out << "需要法术焦点";
         break;
     case SPELL_FAILED_REQUIRES_AREA:
-        out << "无法在此处施放.";
+        out << "无法在此处施放";
         break;
     case SPELL_FAILED_EQUIPPED_ITEM_CLASS:
-        out << "需要物品.";
+        out << "需要物品";
         break;
     case SPELL_FAILED_EQUIPPED_ITEM_CLASS_MAINHAND:
     case SPELL_FAILED_EQUIPPED_ITEM_CLASS_OFFHAND:
-        out << "需要武器.";
+        out << "需要武器";
         break;
     case SPELL_FAILED_PREVENTED_BY_MECHANIC:
-        out << "已被打断.";
+        out << "已被打断";
         break;
     default:
-        out << "无法施放.";
+        out << "无法施放";
     }
     int32 castTime = GetSpellCastTime(pSpellInfo
 #ifdef CMANGOS
@@ -57,7 +57,7 @@ bool TellCastFailedAction::Execute(Event& event)
 bool TellSpellAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    string spell = event.getParam();
+    std::string spell = event.getParam();
     uint32 spellId = AI_VALUE2(uint32, "spell id", spell);
     if (!spellId)
         return false;
@@ -66,7 +66,7 @@ bool TellSpellAction::Execute(Event& event)
     if (!spellInfo)
         return false;
 
-    ostringstream out; out << chat->formatSpell(spellInfo);
+    std::ostringstream out; out << chat->formatSpell(spellInfo);
     ai->TellError(requester, out.str());
     return true;
 }

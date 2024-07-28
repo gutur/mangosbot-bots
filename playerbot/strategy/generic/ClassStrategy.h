@@ -1,5 +1,5 @@
 #pragma once
-#include "../Strategy.h"
+#include "playerbot/strategy/Strategy.h"
 
 namespace ai
 {
@@ -267,12 +267,44 @@ namespace ai
         static void InitNonCombatTriggers(std::list<TriggerNode*>& triggers);
     };
 
+    // Generic strategy to be used for offdps spell rotations
+    class OffdpsStrategy : public Strategy
+    {
+    public:
+        OffdpsStrategy(PlayerbotAI* ai) : Strategy(ai) {}
+
+    protected:
+        virtual void InitCombatTriggers(std::list<TriggerNode*>& triggers) override;
+        virtual void InitNonCombatTriggers(std::list<TriggerNode*>& triggers) override;
+    };
+
+    class OffdpsPvpStrategy
+    {
+    public:
+        static void InitCombatTriggers(std::list<TriggerNode*>& triggers);
+        static void InitNonCombatTriggers(std::list<TriggerNode*>& triggers);
+    };
+
+    class OffdpsPveStrategy
+    {
+    public:
+        static void InitCombatTriggers(std::list<TriggerNode*>& triggers);
+        static void InitNonCombatTriggers(std::list<TriggerNode*>& triggers);
+    };
+
+    class OffdpsRaidStrategy
+    {
+    public:
+        static void InitCombatTriggers(std::list<TriggerNode*>& triggers);
+        static void InitNonCombatTriggers(std::list<TriggerNode*>& triggers);
+    };
+
     // Generic strategy to be used for white-listing what can be done during stealth (druid and rogue)
     class StealthedStrategy : public Strategy
     {
     public:
         StealthedStrategy(PlayerbotAI* ai) : Strategy(ai) {}
-        string getName() override { return "stealthed"; }
+        std::string getName() override { return "stealthed"; }
     };
 
     // This is a strategy to be used only as a placeholder
@@ -299,7 +331,7 @@ namespace ai
     {
     public:
         AoePlaceholderStrategy(PlayerbotAI* ai) : PlaceholderStrategy(ai) {}
-        string getName() override { return "aoe"; }
+        std::string getName() override { return "aoe"; }
     };
 
     // This strategy is used to hold the cure strategy
@@ -307,7 +339,7 @@ namespace ai
     {
     public:
         CurePlaceholderStrategy(PlayerbotAI* ai) : PlaceholderStrategy(ai) {}
-        string getName() override { return "cure"; }
+        std::string getName() override { return "cure"; }
     };
 
     // This strategy is used to hold the cc strategy
@@ -315,7 +347,7 @@ namespace ai
     {
     public:
         CcPlaceholderStrategy(PlayerbotAI* ai) : PlaceholderStrategy(ai) {}
-        string getName() override { return "cc"; }
+        std::string getName() override { return "cc"; }
     };
 
     // This strategy is used to hold the buff strategy
@@ -323,7 +355,7 @@ namespace ai
     {
     public:
         BuffPlaceholderStrategy(PlayerbotAI* ai) : PlaceholderStrategy(ai) {}
-        string getName() override { return "buff"; }
+        std::string getName() override { return "buff"; }
     };
 
     // This strategy is used to hold the buff strategy
@@ -331,7 +363,7 @@ namespace ai
     {
     public:
         BoostPlaceholderStrategy(PlayerbotAI* ai) : PlaceholderStrategy(ai) {}
-        string getName() override { return "boost"; }
+        std::string getName() override { return "boost"; }
     };
 
     // This strategy is used to hold the stealth strategy
@@ -339,7 +371,7 @@ namespace ai
     {
     public:
         StealthPlaceholderStrategy(PlayerbotAI* ai) : PlaceholderStrategy(ai) {}
-        string getName() override { return "stealth"; }
+        std::string getName() override { return "stealth"; }
     };
 
     // This strategy is used to hold the offheal strategy
@@ -347,6 +379,14 @@ namespace ai
     {
     public:
         OffhealPlaceholderStrategy(PlayerbotAI* ai) : PlaceholderStrategy(ai) {}
-        string getName() override { return "offheal"; }
+        std::string getName() override { return "offheal"; }
+    };
+
+    // This strategy is used to hold the offdps strategy
+    class OffdpsPlaceholderStrategy : public PlaceholderStrategy
+    {
+    public:
+        OffdpsPlaceholderStrategy(PlayerbotAI* ai) : PlaceholderStrategy(ai) {}
+        std::string getName() override { return "offdps"; }
     };
 }

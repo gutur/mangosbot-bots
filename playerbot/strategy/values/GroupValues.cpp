@@ -1,14 +1,14 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "GroupValues.h"
-#include "../../ServerFacade.h"
-#include "../../TravelMgr.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/TravelMgr.h"
 
 using namespace ai;
 
-list<ObjectGuid> GroupMembersValue::Calculate()
+std::list<ObjectGuid> GroupMembersValue::Calculate()
 {
-    list<ObjectGuid> members;
+    std::list<ObjectGuid> members;
 
     Group* group = bot->GetGroup();
     if (group)
@@ -53,7 +53,7 @@ uint32 GroupBoolCountValue::Calculate()
 {
     uint32 count = 0;
 
-    for (ObjectGuid guid : AI_VALUE(list<ObjectGuid>, "group members"))
+    for (ObjectGuid guid : AI_VALUE(std::list<ObjectGuid>, "group members"))
     {
         Player* player = sObjectMgr.GetPlayer(guid);
 
@@ -75,7 +75,7 @@ uint32 GroupBoolCountValue::Calculate()
 
 bool GroupBoolANDValue::Calculate()
 {
-    for (ObjectGuid guid : AI_VALUE(list<ObjectGuid>, "group members"))
+    for (ObjectGuid guid : AI_VALUE(std::list<ObjectGuid>, "group members"))
     {
         Player* player = sObjectMgr.GetPlayer(guid);
 
@@ -97,7 +97,7 @@ bool GroupBoolANDValue::Calculate()
 
 bool GroupBoolORValue::Calculate()
 {
-    for (ObjectGuid guid : AI_VALUE(list<ObjectGuid>, "group members"))
+    for (ObjectGuid guid : AI_VALUE(std::list<ObjectGuid>, "group members"))
     {
         Player* player = sObjectMgr.GetPlayer(guid);
 
@@ -121,7 +121,7 @@ bool GroupReadyValue::Calculate()
 {
     bool inDungeon = !WorldPosition(bot).isOverworld();
 
-    for (ObjectGuid guid : AI_VALUE(list<ObjectGuid>, "group members"))
+    for (ObjectGuid guid : AI_VALUE(std::list<ObjectGuid>, "group members"))
     {
         Player* member = sObjectMgr.GetPlayer(guid);
 
@@ -142,7 +142,8 @@ bool GroupReadyValue::Calculate()
         if (ai->GetGroupMaster() && sServerFacade.GetDistance2d(member, ai->GetGroupMaster()) > sPlayerbotAIConfig.sightDistance)
             continue;        
 
-        if (member->GetHealthPercent() < sPlayerbotAIConfig.almostFullHealth)
+        //Wait for members to recover health/mana.
+        if (member->GetHealthPercent() < sPlayerbotAIConfig.almostFullHealth && !member->IsInCombat())
             return false;
 
         if (!member->GetPower(POWER_MANA))
@@ -150,7 +151,7 @@ bool GroupReadyValue::Calculate()
 
         float mana = (static_cast<float> (member->GetPower(POWER_MANA)) / member->GetMaxPower(POWER_MANA)) * 100;
 
-        if (mana < sPlayerbotAIConfig.mediumMana)
+        if (mana < sPlayerbotAIConfig.mediumMana && !member->IsInCombat())
             return false;
     }
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "../Trigger.h"
+#include "playerbot/strategy/Trigger.h"
 
 namespace ai
 {
@@ -93,19 +93,19 @@ namespace ai
         virtual bool IsActive();
     };
 
-    class BgEndedTrigger : public Trigger
+    class BgInviteActiveTrigger : public Trigger
     {
     public:
-        BgEndedTrigger(PlayerbotAI* ai) : Trigger(ai, "bg ended", 10) {}
+        BgInviteActiveTrigger(PlayerbotAI* ai) : Trigger(ai, "bg invite active", 10) {}
 
     public:
         virtual bool IsActive();
     };
 
-    class BgInviteActiveTrigger : public Trigger
+    class BgEndedTrigger : public Trigger
     {
     public:
-        BgInviteActiveTrigger(PlayerbotAI* ai) : Trigger(ai, "bg invite active", 10) {}
+        BgEndedTrigger(PlayerbotAI* ai) : Trigger(ai, "bg ended", 10) {}
 
     public:
         virtual bool IsActive();

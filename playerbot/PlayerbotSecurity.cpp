@@ -1,10 +1,10 @@
-#include "../botpch.h"
+
 #include "PlayerbotMgr.h"
-#include "playerbot.h"
-#include "PlayerbotAIConfig.h"
+#include "playerbot/playerbot.h"
+#include "playerbot/PlayerbotAIConfig.h"
 #include "PlayerbotAI.h"
 #include "ChatHelper.h"
-#include "ServerFacade.h"
+#include "playerbot/ServerFacade.h"
 
 PlayerbotSecurity::PlayerbotSecurity(Player* const bot) : bot(bot), account(0)
 {
@@ -160,7 +160,7 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
 {
     DenyReason reason = DenyReason::PLAYERBOT_DENY_NONE;
     PlayerbotSecurityLevel realLevel = LevelFor(from, &reason, ignoreGroup);
-    if (realLevel >= level)
+    if (realLevel >= level || from == bot)
         return true;
 
     if (silent || (from->GetPlayerbotAI() && !from->GetPlayerbotAI()->IsRealPlayer()))
@@ -170,17 +170,17 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
     if (master && bot->GetPlayerbotAI() && bot->GetPlayerbotAI()->IsOpposing(master) && master->GetSession()->GetSecurity() < SEC_GAMEMASTER)
         return false;
 
-    ostringstream out;
+    std::ostringstream out;
     switch (realLevel)
     {
     case PlayerbotSecurityLevel::PLAYERBOT_SECURITY_DENY_ALL:
-        out << "我现在有点忙.";
+        out << "我现在有点忙";
         break;
     case PlayerbotSecurityLevel::PLAYERBOT_SECURITY_TALK:
         switch (reason)
         {
         case DenyReason::PLAYERBOT_DENY_NONE:
-            out << "我稍后会做.";
+            out << "我稍后会做";
             break;
         case DenyReason::PLAYERBOT_DENY_LOW_LEVEL:
             out << "你的等级太低了: |cffff0000" << (uint32)from->GetLevel() << "|cffffffff/|cff00ff00" << (uint32)bot->GetLevel();
@@ -191,23 +191,23 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
                 int fromGS = (int)bot->GetPlayerbotAI()->GetEquipGearScore(from, false, false);
                 int diff = (100 * (botGS - fromGS) / botGS);
                 int req = 12 * sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) / from->GetLevel();
-                out << "你的装备分数太低了: |cffff0000" << fromGS << "|cffffffff/|cff00ff00" << botGS << " |cffff0000" << diff << "%|cffffffff/|cff00ff00" << req << "%";
+                out << "你的装备分数(GS)太低了: |cffff0000" << fromGS << "|cffffffff/|cff00ff00" << botGS << " |cffff0000" << diff << "%|cffffffff/|cff00ff00" << req << "%";
             }
             break;
         case DenyReason::PLAYERBOT_DENY_NOT_YOURS:
-            out << "我已经有主人了.";
+            out << "我已经有主人了";
             break;
         case DenyReason::PLAYERBOT_DENY_IS_BOT:
-            out << "你是一个机器人.";
+            out << "你是一个机器人";
             break;
         case DenyReason::PLAYERBOT_DENY_OPPOSING:
-            out << "你是敌人.";
+            out << "你是敌人";
             break;
         case DenyReason::PLAYERBOT_DENY_DEAD:
-            out << "我死了.稍后会做.";
+            out << "我死了.稍后会做";
             break;
         case DenyReason::PLAYERBOT_DENY_INVITE:
-            out << "先邀请我加入你的队伍.";
+            out << "先邀请我加入你的队伍";
             break;
         case DenyReason::PLAYERBOT_DENY_FAR:
             {
@@ -225,37 +225,37 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
             }
             break;
         case DenyReason::PLAYERBOT_DENY_FULL_GROUP:
-            out << "你必须离我更近才能邀请我加入你的队伍.我在 ";
+            out << "我的队伍满了，我等会再试一次";
             break;
         case DenyReason::PLAYERBOT_DENY_IS_LEADER:
             out << "我当前正在带领一个队伍.如果你愿意的话,我可以邀请你.";
             break;
         case DenyReason::PLAYERBOT_DENY_NOT_LEADER:
             if (bot->GetPlayerbotAI()->GetGroupMaster() && bot->GetPlayerbotAI()->IsSafe(bot->GetPlayerbotAI()->GetGroupMaster()))
-                out << "我正在与 " << bot->GetPlayerbotAI()->GetGroupMaster()->GetName() << " 组队.你可以向他请求邀请.";
+                out << "我正在与 " << bot->GetPlayerbotAI()->GetGroupMaster()->GetName() << "组队,你可以向他请求邀请.";
             else
-                out << "我正在与其他人组队.";
+                out << "我正在与其他人组队";
             break;
         case DenyReason::PLAYERBOT_DENY_BG:
-            out << "我正在排队参加战场.稍后会做.";
+            out << "我正在排队参加战场.稍后会做";
             break;
         case DenyReason::PLAYERBOT_DENY_LFG:
-            out << "我正在排队加入副本.稍后会做.";
+            out << "我正在排队加入副本.稍后会做";
             break;
         default:
-            out << "我无法做到.";
+            out << "我无法做到";
             break;
         }
         break;
     case PlayerbotSecurityLevel::PLAYERBOT_SECURITY_INVITE:
-        out << "先邀请我加入你的队伍.";
+        out << "先邀请我加入你的队伍";
         break;
         default:
-            out << "我无法做到.";
+            out << "我无法做到";
             break;
     }
 
-    string text = out.str();
+    std::string text = out.str();
     uint64 guid = from->GetObjectGuid().GetRawValue();
     time_t lastSaid = whispers[guid][text];
     if (!lastSaid || (time(0) - lastSaid) >= sPlayerbotAIConfig.repeatDelay / 1000)

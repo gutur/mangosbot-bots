@@ -1,5 +1,5 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "RogueMultipliers.h"
 #include "RogueStrategy.h"
 
@@ -1428,8 +1428,12 @@ public:
             (actionName == "bg status") ||
             (actionName == "bg leave") ||
             (actionName == "check mount state") ||
-            (actionName == "loot roll") || 
-            (actionName == "auto loot roll"))
+            (actionName == "loot roll") ||
+            (actionName == "auto loot roll") ||
+            (actionName == "attack anything") ||
+            (actionName == "choose rpg target") ||
+            (actionName == "move to rpg target") ||
+            (actionName == "travel"))
         {
             return 1.0f;
         }

@@ -1,16 +1,16 @@
 #pragma once
 
-#include "../Action.h"
+#include "playerbot/strategy/Action.h"
 #include "MovementActions.h"
-#include "../values/LastMovementValue.h"
+#include "playerbot/strategy/values/LastMovementValue.h"
 #include "UseItemAction.h"
 
 namespace ai
 {
-    class CheckMountStateAction : public UseItemAction 
+    class CheckMountStateAction : public UseAction 
     {
     public:
-        CheckMountStateAction(PlayerbotAI* ai) : UseItemAction(ai, "check mount state", true) {}
+        CheckMountStateAction(PlayerbotAI* ai) : UseAction(ai, "check mount state") {}
 
         virtual bool Execute(Event& event) override;
         virtual bool isPossible() { return true; }

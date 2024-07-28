@@ -1,19 +1,20 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "ItemUsageValue.h"
 #include "CraftValues.h"
 #include "MountValues.h"
 
-#include "../../../ahbot/AhBot.h"
-#include "../../RandomItemMgr.h"
-#include "../../ServerFacade.h"
-
-#include "AuctionHouseBot/AuctionHouseBot.h"
-
+#include "ahbot/AhBot.h"
+#include "playerbot/RandomItemMgr.h"
+#include "playerbot/ServerFacade.h"
 
 using namespace ai;
 
-ItemQualifier::ItemQualifier(string qualifier, bool linkQualifier)
+#ifdef BUILD_AHBOT
+#include "AuctionHouseBot/AuctionHouseBot.h"
+#endif
+
+ItemQualifier::ItemQualifier(std::string qualifier, bool linkQualifier)
 {
     itemId = 0;
     enchantId = 0;
@@ -24,7 +25,7 @@ ItemQualifier::ItemQualifier(string qualifier, bool linkQualifier)
     gem4 = 0;
     proto = nullptr;
 
-    vector<string> numbers = Qualified::getMultiQualifiers(qualifier, ":");
+    std::vector<std::string> numbers = Qualified::getMultiQualifiers(qualifier, ":");
 
     if (numbers.empty())
         return;
@@ -134,12 +135,12 @@ ItemUsage ItemUsageValue::Calculate()
 
             if (proto->Class == ITEM_CLASS_TRADE_GOODS || proto->Class == ITEM_CLASS_MISC || proto->Class == ITEM_CLASS_REAGENT)
                 needItem = IsItemNeededForUsefullCraft(proto, lowBagSpace);
-            else if(proto->Class == ITEM_CLASS_RECIPE)
+            else if (proto->Class == ITEM_CLASS_RECIPE)
             {
-                if (bot->HasSpell(proto->Spells[2].SpellId))
+                if (bot->HasSpell(GetRecipeSpell(proto)))
                     needItem = false;
                 else
-                    needItem = bot->CanUseItem(proto) == EQUIP_ERR_OK; 
+                    needItem = bot->CanUseItem(proto) == EQUIP_ERR_OK;
             }
         }    
 
@@ -159,7 +160,7 @@ ItemUsage ItemUsageValue::Calculate()
     
     if (proto->Class == ITEM_CLASS_CONSUMABLE && !ai->HasCheat(BotCheatMask::item))
     {       
-        string foodType = GetConsumableType(proto, bot->HasMana());
+        std::string foodType = GetConsumableType(proto, bot->HasMana());
 
         if (!foodType.empty() && bot->CanUseItem(proto) == EQUIP_ERR_OK)
         {
@@ -190,7 +191,7 @@ ItemUsage ItemUsageValue::Calculate()
     //EQUIP
     if (MountValue::GetMountSpell(itemId) && bot->CanUseItem(proto) == EQUIP_ERR_OK && MountValue::GetSpeed(MountValue::GetMountSpell(itemId)))
     {
-        vector<MountValue> mounts = AI_VALUE(vector<MountValue>, "mount list");
+        std::vector<MountValue> mounts = AI_VALUE(std::vector<MountValue>, "mount list");
 
         if (mounts.empty())
             return ItemUsage::ITEM_USAGE_EQUIP;
@@ -306,8 +307,9 @@ ItemUsage ItemUsageValue::Calculate()
     //VENDOR/AH
     if (proto->SellPrice > 0)
     {
-        AuctionHouseBotItemData itemInfo = sAuctionHouseBot.GetItemData(proto->ItemId);
-        if (itemInfo.Value > ((int32)proto->SellPrice) * 1.5f)
+        uint32 value = GetItemValue(proto);
+
+        if (value > ((int32)proto->SellPrice) * 1.5f)
         {
             if(proto->Bonding == NO_BIND)
                 return ItemUsage::ITEM_USAGE_AH;
@@ -339,7 +341,7 @@ ItemUsage ItemUsageValue::QueryItemUsageForEquip(ItemQualifier& itemQualifier)
 
     uint16 dest;
 
-    list<Item*> items = AI_VALUE2(list<Item*>, "inventory items", chat->formatItem(itemQualifier));
+    std::list<Item*> items = AI_VALUE2(std::list<Item*>, "inventory items", chat->formatItem(itemQualifier));
     InventoryResult result;
     if (!items.empty())
     {
@@ -382,9 +384,9 @@ ItemUsage ItemUsageValue::QueryItemUsageForEquip(ItemQualifier& itemQualifier)
     if (statWeight)
         shouldEquip = true;
 
-    if (itemProto->Class == ITEM_CLASS_WEAPON && !sRandomItemMgr.CanEquipWeapon(bot->getClass(), itemProto))
+    if (itemProto->Class == ITEM_CLASS_WEAPON && !sRandomItemMgr.ShouldEquipWeaponForSpec(bot->getClass(), specId, itemProto))
         shouldEquip = false;
-    if (itemProto->Class == ITEM_CLASS_ARMOR && !sRandomItemMgr.CanEquipArmor(bot->getClass(), specId, bot->GetLevel(), itemProto))
+    if (itemProto->Class == ITEM_CLASS_ARMOR && !sRandomItemMgr.ShouldEquipArmorForSpec(bot->getClass(), specId, itemProto))
         shouldEquip = false;
 
     Item* oldItem = bot->GetItemByPos(dest);
@@ -609,7 +611,7 @@ bool ItemUsageValue::IsItemUsefulForSkill(ItemPrototype const* proto)
     }
     case ITEM_CLASS_RECIPE:
     {
-        if (bot->HasSpell(proto->Spells[2].SpellId))
+        if (bot->HasSpell(GetRecipeSpell(proto)))
             break;
 
         switch (proto->SubClass)
@@ -640,7 +642,7 @@ bool ItemUsageValue::IsItemUsefulForSkill(ItemPrototype const* proto)
 
 bool ItemUsageValue::IsItemNeededForUsefullCraft(ItemPrototype const* proto, bool checkAllReagents)
 {    
-    vector<uint32> spellIds = AI_VALUE(vector<uint32>, "craft spells");
+    std::vector<uint32> spellIds = AI_VALUE(std::vector<uint32>, "craft spells");
 
     for (uint32 spellId : spellIds)
     {
@@ -687,7 +689,7 @@ bool ItemUsageValue::IsItemNeededForUsefullCraft(ItemPrototype const* proto, boo
 Item* ItemUsageValue::CurrentItem(ItemPrototype const* proto)
 {
     Item* bestItem = nullptr;
-    list<Item*> found = AI_VALUE2(list < Item*>, "inventory items", chat->formatItem(proto));
+    std::list<Item*> found = AI_VALUE2(std::list < Item*>, "inventory items", chat->formatItem(proto));
 
     for (auto item : found)
     {
@@ -711,7 +713,7 @@ float ItemUsageValue::CurrentStacks(PlayerbotAI* ai, ItemPrototype const* proto)
     AiObjectContext* context = ai->GetAiObjectContext();
     ChatHelper* chat = ai->GetChatHelper();
 
-    list<Item*> found = AI_VALUE2(list<Item*>, "inventory items", chat->formatItem(proto));
+    std::list<Item*> found = AI_VALUE2(std::list<Item*>, "inventory items", chat->formatItem(proto));
 
     float itemCount = 0;
 
@@ -723,9 +725,9 @@ float ItemUsageValue::CurrentStacks(PlayerbotAI* ai, ItemPrototype const* proto)
     return itemCount / maxStack;
 }
 
-float ItemUsageValue::BetterStacks(ItemPrototype const* proto, string itemType)
+float ItemUsageValue::BetterStacks(ItemPrototype const* proto, std::string itemType)
 {
-    list<Item*> items = AI_VALUE2(list<Item*>, "inventory items", itemType);
+    std::list<Item*> items = AI_VALUE2(std::list<Item*>, "inventory items", itemType);
 
     float stacks = 0;
 
@@ -749,9 +751,9 @@ float ItemUsageValue::BetterStacks(ItemPrototype const* proto, string itemType)
 }
 
 
-vector<uint32> ItemUsageValue::SpellsUsingItem(uint32 itemId, Player* bot)
+std::vector<uint32> ItemUsageValue::SpellsUsingItem(uint32 itemId, Player* bot)
 {
-    vector<uint32> retSpells;
+    std::vector<uint32> retSpells;
 
     PlayerSpellMap const& spellMap = bot->GetSpellMap();
 
@@ -774,9 +776,9 @@ vector<uint32> ItemUsageValue::SpellsUsingItem(uint32 itemId, Player* bot)
     return retSpells;
 }
 
-string ItemUsageValue::GetConsumableType(ItemPrototype const* proto, bool hasMana)
+std::string ItemUsageValue::GetConsumableType(ItemPrototype const* proto, bool hasMana)
 {
-    string foodType = "";
+    std::string foodType = "";
 
     if ((proto->SubClass == ITEM_SUBCLASS_CONSUMABLE || proto->SubClass == ITEM_SUBCLASS_FOOD))
     {
@@ -808,4 +810,46 @@ string ItemUsageValue::GetConsumableType(ItemPrototype const* proto, bool hasMan
     }
 
     return "";
+}
+
+uint32 ItemUsageValue::GetRecipeSpell(ItemPrototype const* proto)
+{
+    if (proto->Spells[2].SpellId)
+        return proto->Spells[2].SpellId;
+
+    if (proto->Spells[0].SpellId)
+    {
+        const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(proto->Spells[0].SpellId);
+
+        if (!pSpellInfo)
+            return 0;
+
+        for (int j = 0; j < 3; ++j)
+        {
+            if (pSpellInfo->Effect[j] == SPELL_EFFECT_LEARN_SPELL)
+            {
+                if (pSpellInfo->EffectTriggerSpell[j])
+                    return pSpellInfo->EffectTriggerSpell[j];
+            }
+        }
+    }
+    return 0;
+}
+
+uint32 ItemUsageValue::GetItemValue(ItemPrototype const* proto)
+{
+    uint32 value;
+#ifdef BUILD_AHBOT
+    /* Waiting for prs
+    if (sAuctionHouseBot.IsInitialized())
+    {*/
+        AuctionHouseBotItemData itemInfo = sAuctionHouseBot.GetItemData(proto->ItemId);
+        value = itemInfo.Value;
+    /*}
+    else*/
+#else
+        value = (proto->BuyPrice * proto->Quality * 80) / 100;
+#endif
+
+    return value;
 }

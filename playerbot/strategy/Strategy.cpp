@@ -1,12 +1,10 @@
-#include "../../botpch.h"
-#include "../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "Strategy.h"
 #include "NamedObjectContext.h"
 #include "Action.h"
 
 using namespace ai;
-using namespace std;
-
 
 class ActionNodeFactoryInternal : public NamedObjectFactory<ActionNode>
 {
@@ -111,7 +109,7 @@ Strategy::Strategy(PlayerbotAI* ai) : PlayerbotAIAware(ai)
     actionNodeFactories.Add(new ActionNodeFactoryInternal());
 }
 
-ActionNode* Strategy::GetAction(string name)
+ActionNode* Strategy::GetAction(std::string name)
 {
     return actionNodeFactories.GetObject(name, ai);
 }

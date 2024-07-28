@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../Action.h"
+#include "playerbot/strategy/Action.h"
 #include "MovementActions.h"
 
 namespace ai
 {
 	class FollowAction : public MovementAction {
 	public:
-		FollowAction(PlayerbotAI* ai, string name = "follow") : MovementAction(ai, name) {}
+		FollowAction(PlayerbotAI* ai, std::string name = "follow") : MovementAction(ai, name) {}
 		virtual bool Execute(Event& event);
         virtual bool isUseful();
         virtual bool CanDeadFollow(Unit* target);
@@ -15,7 +15,7 @@ namespace ai
 
 	class StopFollowAction : public MovementAction {
 	public:
-		StopFollowAction(PlayerbotAI* ai, string name = "stop follow") : MovementAction(ai, name) {}
+		StopFollowAction(PlayerbotAI* ai, std::string name = "stop follow") : MovementAction(ai, name) {}
 		virtual bool Execute(Event& event) { ai->StopMoving(); return true; };
 	};
 

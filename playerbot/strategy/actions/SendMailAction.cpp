@@ -1,11 +1,11 @@
-#include "botpch.h"
-#include "Mail.h"
-#include "../../playerbot.h"
+
+#include "Mails/Mail.h"
+#include "playerbot/playerbot.h"
 #include "SendMailAction.h"
 
-#include "../../../ahbot/AhBot.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../ItemVisitors.h"
+#include "ahbot/AhBot.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/strategy/ItemVisitors.h"
 
 using namespace ai;
 
@@ -15,10 +15,10 @@ bool SendMailAction::Execute(Event& event)
     uint32 account = sObjectMgr.GetPlayerAccountIdByGUID(bot->GetObjectGuid());
     bool randomBot = sPlayerbotAIConfig.IsInRandomAccountList(account);
 
-    string text = event.getParam();
+    std::string text = event.getParam();
     Player* receiver = requester;
     Player* tellTo = requester;
-    vector<string> ss = split(text, ' ');
+    std::vector<std::string> ss = split(text, ' ');
     if (ss.size() > 1)
     {
         Player* p = sObjectMgr.GetPlayer(ss[ss.size() - 1].c_str());
@@ -37,7 +37,7 @@ bool SendMailAction::Execute(Event& event)
     ItemIds ids = chat->parseItems(text);
     if (ids.size() > 1)
     {
-        bot->Whisper("你不能请求超过一个物品.", LANG_UNIVERSAL, tellTo->GetObjectGuid());
+        bot->Whisper("你不能请求超过一个物品", LANG_UNIVERSAL, tellTo->GetObjectGuid());
         return false;
     }
 
@@ -49,7 +49,7 @@ bool SendMailAction::Execute(Event& event)
 
         if (randomBot)
         {
-            bot->Whisper("我不能送钱.", LANG_UNIVERSAL, tellTo->GetObjectGuid());
+            bot->Whisper("我不能送钱", LANG_UNIVERSAL, tellTo->GetObjectGuid());
             return false;
         }
 
@@ -59,7 +59,7 @@ bool SendMailAction::Execute(Event& event)
             return false;
         }
 
-        ostringstream body;
+        std::ostringstream body;
         body << "你好, " << receiver->GetName() << ",\n";
         body << "\n";
         body << "这是你需要的金币";
@@ -73,32 +73,32 @@ bool SendMailAction::Execute(Event& event)
         bot->SetMoney(bot->GetMoney() - money);
         draft.SendMailTo(MailReceiver(receiver), MailSender(bot));
 
-        ostringstream out; out << "寄邮件给 " << receiver->GetName();
+        std::ostringstream out; out << "寄邮件给 " << receiver->GetName();
         ai->TellPlayer(requester, out.str());
         return true;
     }
 
-    ostringstream body;
+    std::ostringstream body;
     body << "你好, " << receiver->GetName() << ",\n";
     body << "\n";
-    body << "这是你想要的东西.";
+    body << "这是你想要的东西";
     body << "\n";
     body << "多谢,\n";
     body << bot->GetName() << "\n";
 
-    MailDraft draft("你要的东西.", body.str());
+    MailDraft draft("你要的东西", body.str());
     for (ItemIds::iterator i =ids.begin(); i != ids.end(); i++)
     {
         FindItemByIdVisitor visitor(*i);
         IterateItemsMask mask = IterateItemsMask((uint8)IterateItemsMask::ITERATE_ITEMS_IN_BAGS | (uint8)IterateItemsMask::ITERATE_ITEMS_IN_EQUIP | (uint8)IterateItemsMask::ITERATE_ITEMS_IN_BANK);
         ai->InventoryIterateItems(&visitor, mask);
-        list<Item*> items = visitor.GetResult();
-        for (list<Item*>::iterator i = items.begin(); i != items.end(); ++i)
+        std::list<Item*> items = visitor.GetResult();
+        for (std::list<Item*>::iterator i = items.begin(); i != items.end(); ++i)
         {
             Item* item = *i;
             if (item->IsSoulBound() || item->IsConjuredConsumable())
             {
-                ostringstream out;
+                std::ostringstream out;
                 out << "不能邮给 " << ChatHelper::formatItem(item);
                 bot->Whisper(out.str(), LANG_UNIVERSAL, tellTo->GetObjectGuid());
                 continue;
@@ -115,8 +115,8 @@ bool SendMailAction::Execute(Event& event)
                 uint32 price = item->GetCount() * auctionbot.GetSellPrice(proto);
                 if (!price)
                 {
-                    ostringstream out;
-                    out << ChatHelper::formatItem(item) << ": 这东西不卖.";
+                    std::ostringstream out;
+                    out << ChatHelper::formatItem(item) << ": 这东西不卖";
                     bot->Whisper(out.str(), LANG_UNIVERSAL, tellTo->GetObjectGuid());
                     return false;
                 }
@@ -124,7 +124,7 @@ bool SendMailAction::Execute(Event& event)
             }
             draft.SendMailTo(MailReceiver(receiver), MailSender(bot));
 
-            ostringstream out; out << "邮寄给:" << receiver->GetName();
+            std::ostringstream out; out << "邮寄给 " << receiver->GetName();
             bot->Whisper(out.str(), LANG_UNIVERSAL, tellTo->GetObjectGuid());
             return true;
         }

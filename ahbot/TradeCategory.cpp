@@ -2,17 +2,17 @@
 #include "Category.h"
 #include "AhBotConfig.h"
 #include "PricingStrategy.h"
-#include "ServerFacade.h"
-#include "SQLStorages.h"
-#include "DBCStructure.h"
-#include "ItemPrototype.h"
+#include "playerbot/ServerFacade.h"
+#include "Server/SQLStorages.h"
+#include "Server/DBCStructure.h"
+#include "Entities/ItemPrototype.h"
 #ifdef CMANGOS
 #include "Globals/ObjectMgr.h"
-#include "SpellEffectDefines.h"
+#include "Spells/SpellEffectDefines.h"
 #endif
 #ifdef MANGOS
 #include "Object/ObjectMgr.h"
-#include "SharedDefines.h"
+#include "Globals/SharedDefines.h"
 #endif
 
 
@@ -170,9 +170,9 @@ bool TradeSkill::IsCraftedBy(ItemPrototype const* proto, uint32 spellId)
     return false;
 }
 
-string TradeSkill::GetName()
+std::string TradeSkill::GetName()
 {
-    string name;
+    std::string name;
     switch (skill)
     {
     case SKILL_TAILORING:
@@ -208,9 +208,9 @@ string TradeSkill::GetName()
     return reagent ? name : name + ".craft";
 }
 
-string TradeSkill::GetMainName()
+std::string TradeSkill::GetMainName()
 {
-    string name;
+    std::string name;
     switch (skill)
     {
     case SKILL_TAILORING:
@@ -246,7 +246,7 @@ string TradeSkill::GetMainName()
     return name;
 }
 
-string TradeSkill::GetLabel()
+std::string TradeSkill::GetLabel()
 {
     if (reagent)
     {

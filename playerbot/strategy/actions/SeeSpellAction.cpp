@@ -1,17 +1,17 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "SeeSpellAction.h"
-#include "../values/Formations.h"
-#include "../values/PositionValue.h"
-#include "../../ServerFacade.h"
-#include "MovementGenerator.h"
+#include "playerbot/strategy/values/Formations.h"
+#include "playerbot/strategy/values/PositionValue.h"
+#include "playerbot/ServerFacade.h"
+#include "MotionGenerators/MovementGenerator.h"
 #ifdef MANGOS
 #include "luaEngine.h"
 #endif
 
 #include <MotionGenerators/PathFinder.h>
 #include "RtscAction.h"
-#include "../../TravelMgr.h"
+#include "playerbot/TravelMgr.h"
 
 
 using namespace ai;
@@ -87,12 +87,12 @@ bool SeeSpellAction::Execute(Event& event)
         float y = spellPosition.getY();
         float z = spellPosition.getZ();
 
-        ostringstream out;
+        std::ostringstream out;
 
         if (spellPosition.isOutside())
             out << "[室外]";
 
-        out << " 室外 = ";
+        out << " 区域 = ";
 
         out << path.getArea(bot->GetMapId(), x, y, z);
 
@@ -101,22 +101,22 @@ bool SeeSpellAction::Execute(Event& event)
         out << " 标志 = " << flags;
 
         if (flags & NAV_GROUND)
-            out << ", 地面.";
+            out << ", 地面";
         if (flags & NAV_EMPTY)
-            out << ", 空地.";
+            out << ", 空地";
         if (flags & NAV_GROUND_STEEP)
-            out << ", 坡度.";
+            out << ", 斜坡";
         if (flags & NAV_WATER)
-            out << ", 水域.";
+            out << ", 水域";
         if (flags & NAV_MAGMA_SLIME)
-            out << ", 岩浆或黏液.";
+            out << ", 岩浆或黏液";
 
         ai->TellPlayer(requester, out);
     }
 
     bool selected = AI_VALUE(bool, "RTSC selected");
     bool inRange = spellPosition.distance(bot) <= 10;
-    string nextAction = AI_VALUE(string, "RTSC next spell action");
+    std::string nextAction = AI_VALUE(std::string, "RTSC next spell action");
 
     if (nextAction.empty())
     {
@@ -138,7 +138,7 @@ bool SeeSpellAction::Execute(Event& event)
     }
     else if (nextAction == "jump")
     {
-        RESET_AI_VALUE(string, "RTSC next spell action");
+        RESET_AI_VALUE(std::string, "RTSC next spell action");
         SET_AI_VALUE2(WorldPosition, "RTSC saved location", "jump", spellPosition);
         bool success = ai->DoSpecificAction("jump::rtsc", Event(), true);
         if (!success)
@@ -146,7 +146,7 @@ bool SeeSpellAction::Execute(Event& event)
             RESET_AI_VALUE2(WorldPosition, "RTSC saved location", "jump");
             RESET_AI_VALUE2(WorldPosition, "RTSC saved location", "jump point");
             ai->ChangeStrategy("-rtsc jump", BotState::BOT_STATE_NON_COMBAT);
-            ostringstream out;
+            std::ostringstream out;
             out << "Can't find a way to jump!";
             ai->TellError(requester, out.str());
             return false;
@@ -166,7 +166,7 @@ bool SeeSpellAction::Execute(Event& event)
                 RESET_AI_VALUE2(WorldPosition, "RTSC saved location", "jump");
                 RESET_AI_VALUE2(WorldPosition, "RTSC saved location", "jump point");
                 ai->ChangeStrategy("-rtsc jump", BotState::BOT_STATE_NON_COMBAT);
-                ostringstream out;
+                std::ostringstream out;
                 out << "Can't move to jump position!";
                 ai->TellError(requester, out.str());
                 return false;
@@ -177,7 +177,7 @@ bool SeeSpellAction::Execute(Event& event)
     }
     else if (nextAction.find("save ") != std::string::npos)
     {
-        string locationName;
+        std::string locationName;
         if (nextAction.find("save selected ") != std::string::npos)
         {
             if (!selected)
@@ -193,7 +193,7 @@ bool SeeSpellAction::Execute(Event& event)
         
         Creature* wpCreature = bot->SummonCreature(15631, spellPosition.getX(), spellPosition.getY(), spellPosition.getZ(), spellPosition.getO(), TEMPSPAWN_TIMED_DESPAWN, 2000.0f);
         wpCreature->SetObjectScale(0.5f);
-        RESET_AI_VALUE(string, "RTSC next spell action");
+        RESET_AI_VALUE(std::string, "RTSC next spell action");
 
         return true;
     }
@@ -223,6 +223,7 @@ bool SeeSpellAction::MoveToSpell(Player* requester, WorldPosition& spellPosition
 
         stayPosition.Set(spellPosition.getX(), spellPosition.getY(), spellPosition.getZ(), spellPosition.getMapId());
         posMap["stay"] = stayPosition;
+        posMap["return"] = stayPosition;
     }
     else if (ai->HasStrategy("guard", ai->GetState()))
     {
@@ -231,6 +232,7 @@ bool SeeSpellAction::MoveToSpell(Player* requester, WorldPosition& spellPosition
 
         guardPosition.Set(spellPosition.getX(), spellPosition.getY(), spellPosition.getZ(), spellPosition.getMapId());
         posMap["guard"] = guardPosition;
+        posMap["return"] = guardPosition;
     }
     else if (ai->HasStrategy("follow", BotState::BOT_STATE_NON_COMBAT) && requester)
     {
@@ -246,6 +248,7 @@ bool SeeSpellAction::MoveToSpell(Player* requester, WorldPosition& spellPosition
 
             followPosition.Set(spellPosition.getX(), spellPosition.getY(), spellPosition.getZ(), spellPosition.getMapId());
             posMap["follow"] = followPosition;
+            posMap["return"] = followPosition;
         }
     }
 

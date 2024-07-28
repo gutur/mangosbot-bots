@@ -1,10 +1,11 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "GenericActions.h"
+#include "UseItemAction.h"
 
 using namespace ai;
 
-CastSpellAction::CastSpellAction(PlayerbotAI* ai, string spell)
+CastSpellAction::CastSpellAction(PlayerbotAI* ai, std::string spell)
 : Action(ai, spell)
 , range(ai->GetRange("spell"))
 {
@@ -32,10 +33,10 @@ bool CastSpellAction::Execute(Event& event)
             if (!pSpellInfo)
                 continue;
 
-            string namepart = pSpellInfo->SpellName[0];
+            std::string namepart = pSpellInfo->SpellName[0];
             strToLower(namepart);
 
-            if (namepart.find(spellName) == string::npos)
+            if (namepart.find(spellName) == std::string::npos)
                 continue;
 
             if (pSpellInfo->Effect[0] != SPELL_EFFECT_CREATE_ITEM)
@@ -200,25 +201,25 @@ bool CastSpellAction::isUseful()
 NextAction** CastSpellAction::getPrerequisites()
 {
     // Set the reach action as the cast spell prerequisite when needed
-    const string reachAction = GetReachActionName();
+    const std::string reachAction = GetReachActionName();
     if (!reachAction.empty())
     {
-        const string targetName = GetTargetName();
+        const std::string targetName = GetTargetName();
 
         // No need for a reach action when target is self
         if (targetName != "self target")
         {
-            const string spellName = GetSpellName();
-            const string targetQualifier = GetTargetQualifier();
+            const std::string spellName = GetSpellName();
+            const std::string targetQualifier = GetTargetQualifier();
 
             // Generate the reach action with qualifiers
-            vector<string> qualifiers = { spellName, targetName };
+            std::vector<std::string> qualifiers = { spellName, targetName };
             if (!targetQualifier.empty())
             {
                 qualifiers.push_back(targetQualifier);
             }
 
-            const string qualifiersStr = Qualified::MultiQualify(qualifiers, "::");
+            const std::string qualifiersStr = Qualified::MultiQualify(qualifiers, "::");
             return NextAction::merge(NextAction::array(0, new NextAction(reachAction + "::" + qualifiersStr), NULL), Action::getPrerequisites());
         }
     }
@@ -226,7 +227,7 @@ NextAction** CastSpellAction::getPrerequisites()
     return Action::getPrerequisites();
 }
 
-void CastSpellAction::SetSpellName(const string& name, string spellIDContextName /*= "spell id"*/)
+void CastSpellAction::SetSpellName(const std::string& name, std::string spellIDContextName /*= "spell id"*/)
 {
     if (spellName != name)
     {
@@ -243,8 +244,8 @@ void CastSpellAction::SetSpellName(const string& name, string spellIDContextName
 
 Unit* CastSpellAction::GetTarget()
 {
-    string targetName = GetTargetName();
-    string targetNameQualifier = GetTargetQualifier();
+    std::string targetName = GetTargetName();
+    std::string targetNameQualifier = GetTargetQualifier();
     return targetNameQualifier.empty() ? AI_VALUE(Unit*, targetName) : AI_VALUE2(Unit*, targetName, targetNameQualifier);
 }
 
@@ -386,7 +387,7 @@ void CastShootAction::UpdateWeaponInfo()
     {
         if (equippedWeapon != rangedWeapon)
         {
-            string spellName = "shoot";
+            std::string spellName = "shoot";
             bool isRangedWeapon = false;
 
 #ifdef MANGOSBOT_ZERO
@@ -494,4 +495,265 @@ bool InterruptCurrentSpellAction::Execute(Event& event)
         }
     }
     return interrupted;
+}
+
+Unit* CastSpellTargetAction::GetTarget()
+{
+    // Check for assigned targets
+    const std::list<ObjectGuid>& possibleTargets = AI_VALUE(std::list<ObjectGuid>, targetsValue);
+    if (!possibleTargets.empty())
+    {
+        for (const ObjectGuid& possibleTargetGuid : possibleTargets)
+        {
+            Unit* possibleTarget = ai->GetUnit(possibleTargetGuid);
+            if (IsTargetValid(possibleTarget))
+            {
+                return possibleTarget;
+            }
+        }
+    }
+    else
+    {
+        // Check for the default target
+        Unit* possibleTarget = CastSpellAction::GetTarget();
+        if (IsTargetValid(possibleTarget))
+        {
+            return possibleTarget;
+        }
+    }
+
+    return nullptr;
+}
+
+bool CastSpellTargetAction::IsTargetValid(Unit* target)
+{
+    return target &&
+           ai->IsSafe(target) &&
+           (bot == target || sServerFacade.GetDistance2d(bot, target) < sPlayerbotAIConfig.sightDistance) &&
+           bot->IsInGroup(target) &&
+           (!aliveCheck || !target->IsDead()) &&
+           (!auraCheck || !ai->HasAura(GetSpellID(), target));
+}
+
+bool CastItemTargetAction::IsTargetValid(Unit* target)
+{
+    if (CastSpellTargetAction::IsTargetValid(target))
+    {
+        if (itemAuraCheck)
+        {
+            const uint32 itemId = GetItemId();
+            const ItemPrototype* proto = sObjectMgr.GetItemPrototype(itemId);
+            if (proto)
+            {
+                for (uint8 i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+                {
+#ifdef MANGOSBOT_ZERO
+                    if (proto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_USE || proto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_NO_DELAY_USE)
+#else
+                    if (proto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
+#endif
+                    {
+                        if (proto->Spells[i].SpellId > 0 && ai->HasAura(proto->Spells[i].SpellId, target))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool CastItemTargetAction::isUseful()
+{
+    const ItemPrototype* proto = sObjectMgr.GetItemPrototype(GetItemId());
+    if (proto)
+    {
+        std::set<uint32>& skipSpells = AI_VALUE(std::set<uint32>&, "skip spells list");
+        if (!skipSpells.empty())
+        {
+            for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+            {
+                const _Spell& spellData = proto->Spells[i];
+                if (spellData.SpellId)
+                {
+                    if (skipSpells.find(spellData.SpellId) != skipSpells.end())
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+bool CastItemTargetAction::isPossible()
+{
+    uint32 itemId = GetItemId();
+    if (!itemId)
+        return false;
+
+    ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
+
+    if (!proto)
+        return false;
+
+    if (HasSpellCooldown(itemId))
+        return false;
+
+    if (!ai->HasCheat(BotCheatMask::item) && !bot->HasItemCount(itemId, 1))
+        return false;
+
+    uint32 spellCount = 0;
+
+    for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+    {
+        _Spell const& spellData = proto->Spells[i];
+
+        // no spell
+        if (!spellData.SpellId)
+            continue;
+
+        // wrong triggering type
+#ifdef MANGOSBOT_ZERO
+        if (spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_USE && spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_NO_DELAY_USE)
+#else
+        if (spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_USE)
+#endif
+            continue;
+
+        SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellData.SpellId);
+        if (!spellInfo)
+        {
+            continue;
+        }
+
+        spellCount++;
+    }
+
+    return spellCount;
+}
+
+bool CastItemTargetAction::Execute(Event& event)
+{
+    uint32 itemId = GetItemId();
+    Unit* target = GetTarget();
+    ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
+
+    if (!proto)
+        return false;
+
+    Item* item = nullptr;
+
+    if (!ai->HasCheat(BotCheatMask::item)) //If bot has no item cheat it needs an item to cast.
+    {
+        std::list<Item*> items = AI_VALUE2(std::list<Item*>, "inventory items", chat->formatQItem(itemId));
+
+        if (items.empty())
+            return false;
+
+        item = items.front();
+    }
+
+    SpellCastTargets targets;
+    if (target)
+    {
+        targets.setUnitTarget(target);
+        targets.setDestination(target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+    }
+    else
+        targets.m_targetMask = TARGET_FLAG_SELF;
+
+    // use triggered flag only for items with many spell casts and for not first cast
+    int count = 0;
+
+    for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+    {
+        _Spell const& spellData = proto->Spells[i];
+
+        // no spell
+        if (!spellData.SpellId)
+            continue;
+
+        // wrong triggering type
+#ifdef MANGOSBOT_ZERO
+        if (spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_USE && spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_NO_DELAY_USE)
+#else
+        if (spellData.SpellTrigger != ITEM_SPELLTRIGGER_ON_USE)
+#endif
+            continue;
+
+        SpellEntry const* spellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellData.SpellId);
+        if (!spellInfo)
+        {
+            continue;
+        }
+
+        if (spellInfo->Targets & TARGET_FLAG_DEST_LOCATION)
+            targets.m_targetMask = TARGET_FLAG_DEST_LOCATION;
+
+        BotUseItemSpell* spell = new BotUseItemSpell(bot, spellInfo, (count > 0) ? TRIGGERED_OLD_TRIGGERED : TRIGGERED_NONE);
+
+        Item* tItem = nullptr;
+
+        if (item)
+        {
+            spell->SetCastItem(item);
+            item->SetUsedInSpell(true);
+        }
+
+        spell->m_clientCast = true;
+
+        bool result = (spell->ForceSpellStart(&targets) == SPELL_CAST_OK);
+
+        if (!result)
+            return false;
+
+        bot->RemoveSpellCooldown(*spellInfo, false);
+        bot->AddCooldown(*spellInfo, proto, false);
+
+        ++count;
+    }
+
+    return count;
+}
+
+bool CastItemTargetAction::HasSpellCooldown(uint32 itemId)
+{
+    ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
+
+    if (!proto)
+        return false;
+
+    uint32 spellId = 0;
+    for (uint8 i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
+    {
+        if (proto->Spells[i].SpellTrigger != ITEM_SPELLTRIGGER_ON_USE)
+        {
+            continue;
+        }
+
+        if (proto->Spells[i].SpellId > 0)
+        {
+            if (!sServerFacade.IsSpellReady(bot, proto->Spells[i].SpellId))
+                return true;
+
+            if (!sServerFacade.IsSpellReady(bot, proto->Spells[i].SpellId, itemId))
+                return true;
+        }
+    }
+
+    return false;
 }

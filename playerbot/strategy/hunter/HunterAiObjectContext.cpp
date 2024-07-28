@@ -1,12 +1,12 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "HunterActions.h"
 #include "HunterTriggers.h"
 #include "HunterAiObjectContext.h"
 #include "BeastMasteryHunterStrategy.h"
 #include "MarksmanshipHunterStrategy.h"
 #include "SurvivalHunterStrategy.h"
-#include "../NamedObjectContext.h"
+#include "playerbot/strategy/NamedObjectContext.h"
 
 namespace ai
 {

@@ -1,11 +1,11 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "ReviveFromCorpseAction.h"
-#include "../../PlayerbotFactory.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../FleeManager.h"
-#include "../../TravelMgr.h"
-#include "ServerFacade.h"
+#include "playerbot/PlayerbotFactory.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/FleeManager.h"
+#include "playerbot/TravelMgr.h"
+#include "playerbot/ServerFacade.h"
 
 using namespace ai;
 
@@ -36,21 +36,11 @@ bool ReviveFromCorpseAction::Execute(Event& event)
     if (corpse->GetGhostTime() + bot->GetCorpseReclaimDelay(corpse->GetType() == CORPSE_RESURRECTABLE_PVP) > time(nullptr))
         return false;
 
-    if (master)
+    if (master) 
     {
-        if (!master->GetPlayerbotAI() && sServerFacade.UnitIsDead(master) && master->GetCorpse()
-            && sServerFacade.IsDistanceLessThan(AI_VALUE2(float, "distance", "master target"), sPlayerbotAIConfig.farDistance))
+        //Revive with master.
+        if (bot != master && sServerFacade.UnitIsDead(master) && master->GetCorpse() && sServerFacade.IsDistanceLessThan(AI_VALUE2(float, "distance", "master target"), sPlayerbotAIConfig.farDistance))
             return false;
-    }
-
-    if (!ai->HasActivePlayerMaster())  //Only use spirit healers with direct command with active master.
-    {
-        uint32 dCount = AI_VALUE(uint32, "death count");
-
-        if (dCount >= 5)
-        {
-            return ai->DoSpecificAction("spirit healer", Event(), true);
-        }
     }
 
     sLog.outDetail("Bot #%d %s:%d <%s> revives at body", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName());
@@ -115,7 +105,7 @@ bool FindCorpseAction::Execute(Event& event)
             return false;
         else 
         {
-            list<ObjectGuid> units = AI_VALUE(list<ObjectGuid>, "possible targets no los");
+            std::list<ObjectGuid> units = AI_VALUE(std::list<ObjectGuid>, "possible targets no los");
             
             if (botPos.getUnitsAggro(units, bot) == 0) //There are no mobs near.
                 return false;
@@ -126,7 +116,15 @@ bool FindCorpseAction::Execute(Event& event)
     if (corpseDist < sPlayerbotAIConfig.reactDistance)
     {
         if (moveToMaster)
+        {
+            if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
+            {
+                std::ostringstream out;
+                out << "Moving to revive near master.";
+                ai->TellPlayerNoFacing(GetMaster(), out);
+            }
             moveToPos = masterPos;
+        }
         else
         {
             FleeManager manager(bot, reclaimDist, 0.0, urand(0, 1), moveToPos);
@@ -135,10 +133,35 @@ bool FindCorpseAction::Execute(Event& event)
             {
                 float rx, ry, rz;
                 if (manager.CalculateDestination(&rx, &ry, &rz))
+                {
+                    if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
+                    {
+                        std::ostringstream out;
+                        out << "Moving to revive some where safe.";
+                        ai->TellPlayerNoFacing(GetMaster(), out);
+                    }
                     moveToPos = WorldPosition(moveToPos.getMapId(), rx, ry, rz, 0.0);
+                }
                 else if (!moveToPos.GetReachableRandomPointOnGround(bot, reclaimDist, urand(0, 1)))
+                {
+                    if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
+                    {
+                        std::ostringstream out;
+                        out << "Moving to revive at corpse.";
+                        ai->TellPlayerNoFacing(GetMaster(), out);
+                    }
                     moveToPos = corpsePos;
+                }
             }
+        }
+    }
+    else
+    {
+        if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
+        {
+            std::ostringstream out;
+            out << "Moving towards corpse.";
+            ai->TellPlayerNoFacing(GetMaster(), out);
         }
     }
 
@@ -148,7 +171,7 @@ bool FindCorpseAction::Execute(Event& event)
     if (!ai->AllowActivity(DETAILED_MOVE_ACTIVITY) && !ai->HasPlayerNearby(moveToPos))
     {
         uint32 delay = sServerFacade.GetDistance2d(bot, corpse) / bot->GetSpeed(MOVE_RUN); //Time a bot would take to travel to it's corpse.
-        delay = min(delay, uint32(10 * MINUTE)); //Cap time to get to corpse at 10 minutes.
+        delay = std::min(delay, uint32(10 * MINUTE)); //Cap time to get to corpse at 10 minutes.
 
         if (deadTime > delay)
         {
@@ -169,9 +192,10 @@ bool FindCorpseAction::Execute(Event& event)
 #endif
         else
         {
+
             moved = MoveTo(moveToPos.getMapId(), moveToPos.getX(), moveToPos.getY(), moveToPos.getZ(), false, false);
 
-            if (!moved) //We could not move to coprse. Try spirithealer instead.
+            if (!moved && !ai->HasActivePlayerMaster()) //We could not move to coprse. Try spirithealer instead.
             {
                 moved = ai->DoSpecificAction("spirit healer", Event(), true);
             }
@@ -195,7 +219,7 @@ bool SpiritHealerAction::Execute(Event& event)
     Corpse* corpse = bot->GetCorpse();
     if (!corpse)
     {
-        ai->TellPlayerNoFacing(requester, "我不是一个灵魂.");
+        ai->TellPlayerNoFacing(requester, "我不是一个灵魂");
         return false;
     }
 
@@ -205,8 +229,8 @@ bool SpiritHealerAction::Execute(Event& event)
     if (grave && grave.fDist(bot) < sPlayerbotAIConfig.sightDistance)
     {
         bool foundSpiritHealer = false;
-        list<ObjectGuid> npcs = AI_VALUE(list<ObjectGuid>, "nearest npcs");
-        for (list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
+        std::list<ObjectGuid> npcs = AI_VALUE(std::list<ObjectGuid>, "nearest npcs");
+        for (std::list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
         {
             Unit* unit = ai->GetUnit(*i);
             if (unit && unit->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_SPIRITHEALER))
@@ -219,17 +243,14 @@ bool SpiritHealerAction::Execute(Event& event)
         if (!foundSpiritHealer)
         {
             sLog.outBasic("Bot #%d %s:%d <%s> can't find a spirit healer", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName());
-            ai->TellPlayerNoFacing(requester, "附近找不到任何灵魂医者.");
+            ai->TellPlayerNoFacing(requester, "附近找不到任何灵魂医者");
         }
 
 
         sLog.outBasic("Bot #%d %s:%d <%s> revives at spirit healer", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName());
         PlayerbotChatHandler ch(bot);
         bot->ResurrectPlayer(0.5f, !ai->HasCheat(BotCheatMask::repair));
-        if (!ai->HasCheat(BotCheatMask::repair))
-        {
-            bot->DurabilityLossAll(0.25f, true);
-        }
+        bot->DurabilityLossAll(0.25f, true);
 
         bot->SpawnCorpseBones();
         bot->SaveToDB();
@@ -257,9 +278,16 @@ bool SpiritHealerAction::Execute(Event& event)
         //Time a bot would take to travel to it's corpse.
         uint32 delay = sServerFacade.GetDistance2d(bot, corpse) / bot->GetSpeed(MOVE_RUN);
         //Cap time to get to corpse at 10 minutes.
-        delay = min(delay, uint32(10 * MINUTE));
+        delay = std::min(delay, uint32(10 * MINUTE));
 
         shouldTeleportToGY = deadTime > delay;
+    }
+
+    if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
+    {
+        std::ostringstream out;
+        out << "Moving towards graveyard.";
+        ai->TellPlayerNoFacing(GetMaster(), out);
     }
 
     if (shouldTeleportToGY)

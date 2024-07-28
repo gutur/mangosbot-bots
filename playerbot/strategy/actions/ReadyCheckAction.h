@@ -1,12 +1,12 @@
 #pragma once
-#include "../Action.h"
+#include "playerbot/strategy/Action.h"
 
 namespace ai
 {
     class ReadyCheckAction : public Action
     {
     public:
-        ReadyCheckAction(PlayerbotAI* ai, string name = "ready check") : Action(ai, name) {}
+        ReadyCheckAction(PlayerbotAI* ai, std::string name = "ready check") : Action(ai, name) {}
         virtual bool Execute(Event& event) override;
 
     protected:

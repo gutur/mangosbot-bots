@@ -1,9 +1,9 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "GreetAction.h"
-#include "../../PlayerbotAI.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
+#include "playerbot/PlayerbotAI.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
 using namespace ai;
 
 GreetAction::GreetAction(PlayerbotAI* ai) : Action(ai, "greet")
@@ -27,11 +27,11 @@ bool GreetAction::Execute(Event& event)
     ai->PlayEmote(TEXTEMOTE_HELLO);
     bot->SetSelectionGuid(oldSel);
 
-    set<ObjectGuid>& alreadySeenPlayers = ai->GetAiObjectContext()->GetValue<set<ObjectGuid>& >("already seen players")->Get();
+    std::set<ObjectGuid>& alreadySeenPlayers = ai->GetAiObjectContext()->GetValue<std::set<ObjectGuid>& >("already seen players")->Get();
     alreadySeenPlayers.insert(guid);
 
-    list<ObjectGuid> nearestPlayers = ai->GetAiObjectContext()->GetValue<list<ObjectGuid> >("nearest friendly players")->Get();
-    for (list<ObjectGuid>::iterator i = nearestPlayers.begin(); i != nearestPlayers.end(); ++i) {
+    std::list<ObjectGuid> nearestPlayers = ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid> >("nearest friendly players")->Get();
+    for (std::list<ObjectGuid>::iterator i = nearestPlayers.begin(); i != nearestPlayers.end(); ++i) {
         alreadySeenPlayers.insert(*i);
     }
     return true;

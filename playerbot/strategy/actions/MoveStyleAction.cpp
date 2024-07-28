@@ -1,23 +1,23 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "MoveStyleAction.h"
-#include "../values/SubStrategyValue.h"
-#include "../values/MoveStyleValue.h"
-#include "PlayerbotAIAware.h"
+#include "playerbot/strategy/values/SubStrategyValue.h"
+#include "playerbot/strategy/values/MoveStyleValue.h"
+#include "playerbot/PlayerbotAIAware.h"
 
 using namespace ai;
 
 bool MoveStyleAction::Execute(Event& event)
 {
-    string strategy = event.getParam();
+    std::string strategy = event.getParam();
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
 
-    MoveStyleValue* value = (MoveStyleValue*)context->GetValue<string>("move style");
+    MoveStyleValue* value = (MoveStyleValue*)context->GetValue<std::string>("move style");
 
     if (strategy == "?")
     {
         {
-            ostringstream out;
+            std::ostringstream out;
             out << "Move style: " << value->Get();
             ai->TellPlayer(requester, out);
         }
@@ -27,7 +27,7 @@ bool MoveStyleAction::Execute(Event& event)
         value->Set(strategy);
         
         {
-            ostringstream out;
+            std::ostringstream out;
             out << "Move style set to: " << value->Get();
             ai->TellPlayer(requester, out);
         }

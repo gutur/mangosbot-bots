@@ -1,11 +1,11 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "WarlockActions.h"
 #include "WarlockAiObjectContext.h"
-#include "../generic/PullStrategy.h"
+#include "playerbot/strategy/generic/PullStrategy.h"
 #include "WarlockTriggers.h"
-#include "../NamedObjectContext.h"
-#include "../actions/UseItemAction.h"
+#include "playerbot/strategy/NamedObjectContext.h"
+#include "playerbot/strategy/actions/UseItemAction.h"
 #include "AfflictionWarlockStrategy.h"
 #include "DestructionWarlockStrategy.h"
 #include "DemonologyWarlockStrategy.h"
@@ -350,6 +350,8 @@ namespace ai
                 creators["no felguard"] = &TriggerFactoryInternal::no_felguard;
                 creators["spell lock"] = &TriggerFactoryInternal::spell_lock;
                 creators["spell lock enemy healer"] = &TriggerFactoryInternal::spell_lock_enemy_healer;
+                creators["seed of corruption on attacker"] = &TriggerFactoryInternal::seed_of_corruption_on_attacker;
+                creators["soulstone"] = &TriggerFactoryInternal::soulstone;
             }
 
         private:
@@ -405,6 +407,8 @@ namespace ai
             static Trigger* no_felguard(PlayerbotAI* ai) { return new NoFelguardTrigger(ai); }
             static Trigger* spell_lock(PlayerbotAI* ai) { return new SpellLockTrigger(ai); }
             static Trigger* spell_lock_enemy_healer(PlayerbotAI* ai) { return new SpellLockEnemyHealerTrigger(ai); }
+            static Trigger* seed_of_corruption_on_attacker(PlayerbotAI* ai) { return new SeedOfCorruptionOnAttackerTrigger(ai); }
+            static Trigger* soulstone(PlayerbotAI* ai) { return new SoulstoneTrigger(ai); }
         };
 
         class AiObjectContextInternal : public NamedObjectContext<Action>
@@ -510,7 +514,7 @@ namespace ai
             static Action* create_healthstone(PlayerbotAI* ai) { return new CastCreateHealthstoneAction(ai); }
             static Action* create_firestone(PlayerbotAI* ai) { return new CastCreateFirestoneAction(ai); }
             static Action* create_spellstone(PlayerbotAI* ai) { return new CastCreateSpellstoneAction(ai); }
-            static Action* spellstone(PlayerbotAI* ai) { return new UseSpellItemAction(ai, "spellstone", true); }
+            static Action* spellstone(PlayerbotAI* ai) { return new UseSpellItemAction(ai, "spellstone"); }
             static Action* summon_voidwalker(PlayerbotAI* ai) { return new CastSummonVoidwalkerAction(ai); }
             static Action* summon_felguard(PlayerbotAI* ai) { return new CastSummonFelguardAction(ai); }
             static Action* inferno(PlayerbotAI* ai) { return new CastSummonInfernoAction(ai); }

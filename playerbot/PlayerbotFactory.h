@@ -4,8 +4,6 @@ class Player;
 class PlayerbotMgr;
 class ChatHandler;
 
-using namespace std;
-
 struct EnchantTemplate
 {
    uint8   ClassId;
@@ -53,11 +51,13 @@ public:
     static void Init();
     void Refresh();
     void Randomize(bool incremental, bool syncWithMaster);
-    static list<uint32> classQuestIds;
-    static list<uint32> specialQuestIds;
+    static std::list<uint32> classQuestIds;
+    static std::list<uint32> specialQuestIds;
     void InitSkills();
     void EnchantEquipment();
     void EquipGear() { return InitEquipment(false, false); }
+    void EquipGearBest() { return InitEquipment(false, false, false); }
+    void EquipGearPartialUpgrade() { return InitEquipment(false, false, true, true); }
     void UpgradeGear(bool syncWithMaster) { return InitEquipment(!syncWithMaster, syncWithMaster); }
     void AddReagents() { return InitReagents(); }
     void AddPotions() { return InitPotions(); }
@@ -70,7 +70,7 @@ public:
 private:
     void Prepare();
     void InitSecondEquipmentSet();
-    void InitEquipment(bool incremental, bool syncWithMaster);
+    void InitEquipment(bool incremental, bool syncWithMaster, bool progressive = sPlayerbotAIConfig.randomGearProgression, bool partialUpgrade = false);
     void InitEquipmentNew(bool incremental);
     bool CanEquipItem(ItemPrototype const* proto, uint32 desiredQuality);
     bool CanEquipUnseenItem(uint8 slot, uint16 &dest, uint32 item);
@@ -86,7 +86,7 @@ private:
     void InitSpecialSpells();
     void InitTalentsTree(bool incremental);
     void InitTalents(uint32 specNo);
-    void InitQuests(list<uint32>& questMap);
+    void InitQuests(std::list<uint32>& questMap);
     void InitTaxiNodes();
     void ClearInventory();
     void ClearAllItems();
@@ -114,7 +114,7 @@ private:
     void InitArenaTeam();
     void InitImmersive();
     void AddConsumables();
-    static void AddPrevQuests(uint32 questId, list<uint32>& questIds);
+    static void AddPrevQuests(uint32 questId, std::list<uint32>& questIds);
     void LoadEnchantContainer();
     void ApplyEnchantTemplate();
     void ApplyEnchantTemplate(uint8 spec, Item* item = nullptr);

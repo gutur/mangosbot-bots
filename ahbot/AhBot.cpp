@@ -1,22 +1,21 @@
-#include "../botpch.h"
+
 #include "Category.h"
 #include "ItemBag.h"
-#include "AhBot.h"
-#include "World.h"
-#include "Config.h"
-#include "Chat.h"
+#include "ahbot/AhBot.h"
+#include "World/World.h"
+#include "Config/Config.h"
+#include "Chat/Chat.h"
 #include "AhBotConfig.h"
-#include "AuctionHouseMgr.h"
-#include "WorldSession.h"
-#include "Player.h"
-#include "ObjectAccessor.h"
-#include "ObjectGuid.h"
-#include "ObjectMgr.h"
+#include "AuctionHouse/AuctionHouseMgr.h"
+#include "Server/WorldSession.h"
+#include "Entities/Player.h"
+#include "Globals/ObjectAccessor.h"
+#include "Entities/ObjectGuid.h"
+#include "Globals/ObjectMgr.h"
 #include "playerbot/PlayerbotAIConfig.h"
-#include "AccountMgr.h"
+#include "Accounts/AccountMgr.h"
 #include "playerbot/playerbot.h"
-#include "Player.h"
-#include "Mail.h"
+#include "Mails/Mail.h"
 #include "Util/Util.h"
 
 #ifdef CMANGOS
@@ -24,48 +23,6 @@
 #endif
 
 using namespace ahbot;
-
-#ifndef ENABLE_MANGOSBOTS
-// To be removed once cmangos merge is completed
-bool Player::MinimalLoadFromDB( std::unique_ptr<QueryResult> result, uint32 guid )
-{
-    bool delete_result = true;
-    if (!result)
-    {
-        //                                        0     1           2           3           4    5          6          7
-        auto results = CharacterDatabase.PQuery ("SELECT name, position_x, position_y, position_z, map, totaltime, leveltime, at_login FROM characters WHERE guid = '%u'",guid);
-        if (!result)
-            return false;
-    }
-    else
-        delete_result = false;
-
-    Field *fields = result->Fetch();
-
-    // overwrite possible wrong/corrupted guid
-    Object::_Create(0, guid, 0, HIGHGUID_PLAYER);
-
-    m_name = fields[0].GetString();
-
-    Relocate(fields[1].GetFloat(),fields[2].GetFloat(),fields[3].GetFloat());
-    SetLocationMapId(fields[4].GetUInt32());
-
-    m_Played_time[PLAYED_TIME_TOTAL] = fields[5].GetUInt32();
-    m_Played_time[PLAYED_TIME_LEVEL] = fields[6].GetUInt32();
-
-    m_atLoginFlags = fields[7].GetUInt32();
-
-    if (delete_result)
-
-    for (int i = 0; i < PLAYER_SLOTS_COUNT; ++i)
-        m_items[i] = NULL;
-
-    if (HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST))
-        m_deathState = DEAD;
-
-    return true;
-}
-#endif
 
 bool AhBot::HandleAhBotCommand(ChatHandler* handler, char const* args)
 {
@@ -75,7 +32,7 @@ bool AhBot::HandleAhBotCommand(ChatHandler* handler, char const* args)
 
 uint32 AhBot::auctionIds[MAX_AUCTIONS] = {1,6,7};
 uint32 AhBot::auctioneers[MAX_AUCTIONS] = {79707,4656,23442};
-map<uint32, uint32> AhBot::factions;
+std::map<uint32, uint32> AhBot::factions;
 
 void AhBot::Init()
 {
@@ -161,7 +118,7 @@ void AhBot::ForceUpdate()
 	if (updating)
 		return;
 
-	string msg = "AhBot is now checking auctions in the background";
+    std::string msg = "AhBot is now checking auctions in the background";
 	sLog.outString("%s", msg.c_str());
 	//ostringstream out1; out1 << "|c070cc700 " << msg << " |r";
 	//sWorld.SendWorldText(3, out1.str().c_str());
@@ -222,10 +179,10 @@ struct SortByPricePredicate
     }
 };
 
-vector<AuctionEntry*> AhBot::LoadAuctions(const AuctionHouseObject::AuctionEntryMap& auctionEntryMap,
+std::vector<AuctionEntry*> AhBot::LoadAuctions(const AuctionHouseObject::AuctionEntryMap& auctionEntryMap,
         Category*& category, int& auction)
 {
-    vector<AuctionEntry*> entries;
+    std::vector<AuctionEntry*> entries;
     for (AuctionHouseObject::AuctionEntryMap::const_iterator itr = auctionEntryMap.begin();
             itr != auctionEntryMap.end(); ++itr)
     {
@@ -250,7 +207,7 @@ vector<AuctionEntry*> AhBot::LoadAuctions(const AuctionHouseObject::AuctionEntry
 
         entries.push_back(entry);
     }
-    sort(entries.begin(), entries.end(), SortByPricePredicate());
+    std::sort(entries.begin(), entries.end(), SortByPricePredicate());
     return entries;
 }
 
@@ -296,8 +253,8 @@ int AhBot::Answer(int auction, Category* category, ItemBag* inAuctionItems)
     const AuctionHouseObject::AuctionEntryMap& auctionEntryMap = auctionHouse->GetAuctions();
     int64 availableMoney = GetAvailableMoney(auctionIds[auction]);
 
-    vector<AuctionEntry*> entries = LoadAuctions(auctionEntryMap, category, auction);
-    for (vector<AuctionEntry*>::iterator itr = entries.begin(); itr != entries.end(); ++itr)
+    std::vector<AuctionEntry*> entries = LoadAuctions(auctionEntryMap, category, auction);
+    for (std::vector<AuctionEntry*>::iterator itr = entries.begin(); itr != entries.end(); ++itr)
     {
         AuctionEntry *entry = *itr;
         uint32 owner = entry->owner;
@@ -313,8 +270,8 @@ int AhBot::Answer(int auction, Category* category, ItemBag* inAuctionItems)
             continue;
 
         const ItemPrototype* proto = item->GetProto();
-        vector<uint32> items = availableItems.Get(category);
-        if (find(items.begin(), items.end(), proto->ItemId) == items.end())
+        std::vector<uint32> items = availableItems.Get(category);
+        if (std::find(items.begin(), items.end(), proto->ItemId) == items.end())
         {
             sLog.outDetail( "%s (x%d) in auction %d: unavailable item",
                     item->GetProto()->Name1, item->GetCount(), auctionIds[auction]);
@@ -435,7 +392,7 @@ int AhBot::Answer(int auction, Category* category, ItemBag* inAuctionItems)
     return answered;
 }
 
-uint32 AhBot::GetTime(string category, uint32 id, uint32 auctionHouse, uint32 type)
+uint32 AhBot::GetTime(std::string category, uint32 id, uint32 auctionHouse, uint32 type)
 {
     auto results = CharacterDatabase.PQuery("SELECT MAX(buytime) FROM ahbot_history WHERE item = '%u' AND won = '%u' AND auction_house = '%u' AND category = '%s'",
         id, type, factions[auctionHouse], category.c_str());
@@ -449,7 +406,7 @@ uint32 AhBot::GetTime(string category, uint32 id, uint32 auctionHouse, uint32 ty
     return result;
 }
 
-void AhBot::SetTime(string category, uint32 id, uint32 auctionHouse, uint32 type, uint32 value)
+void AhBot::SetTime(std::string category, uint32 id, uint32 auctionHouse, uint32 type, uint32 value)
 {
     CharacterDatabase.PExecute("DELETE FROM ahbot_history WHERE item = '%u' AND won = '%u' AND auction_house = '%u' AND category = '%s'",
         id, type, factions[auctionHouse], category.c_str());
@@ -468,7 +425,7 @@ uint32 AhBot::GetBuyTime(uint32 entry, uint32 itemId, uint32 auctionHouse, Categ
 
     uint32 result = entryTime;
 
-    string categoryName = category->GetName();
+    std::string categoryName = category->GetName();
     uint32 categoryTime = GetTime(categoryName, 0, auctionHouse, AHBOT_WON_DELAY);
     uint32 itemTime = GetTime("item", itemId, auctionHouse, AHBOT_WON_DELAY);
 
@@ -478,7 +435,7 @@ uint32 AhBot::GetBuyTime(uint32 entry, uint32 itemId, uint32 auctionHouse, Categ
     double rarity = category->GetPricingStrategy()->GetRarityPriceMultiplier(itemId);
     categoryTime += urand(sAhBotConfig.itemBuyMinInterval, sAhBotConfig.itemBuyMaxInterval) * priceLevel;
     itemTime += urand(sAhBotConfig.itemBuyMinInterval, sAhBotConfig.itemBuyMaxInterval) * priceLevel / rarity;
-    entryTime = max(categoryTime, itemTime);
+    entryTime = std::max(categoryTime, itemTime);
 
     SetTime(categoryName, 0, auctionHouse, AHBOT_WON_DELAY, categoryTime);
     SetTime("item", itemId, auctionHouse, AHBOT_WON_DELAY, itemTime);
@@ -491,17 +448,17 @@ uint32 AhBot::GetSellTime(uint32 itemId, uint32 auctionHouse, Category*& categor
 {
     uint32 itemSellTime = GetTime("item", itemId, auctionHouse, AHBOT_SELL_DELAY);
     uint32 itemBuyTime = GetTime("item", itemId, auctionHouse, AHBOT_WON_DELAY);
-    uint32 itemTime = max(itemSellTime, itemBuyTime);
+    uint32 itemTime = std::max(itemSellTime, itemBuyTime);
 
     if (itemTime > time(0))
         return itemTime;
 
     uint32 result = itemTime;
 
-    string categoryName = category->GetDisplayName();
+    std::string categoryName = category->GetDisplayName();
     uint32 categorySellTime = GetTime(categoryName, 0, auctionHouse, AHBOT_SELL_DELAY);
     uint32 categoryBuyTime = GetTime(categoryName, 0, auctionHouse, AHBOT_WON_DELAY);
-    uint32 categoryTime = max(categorySellTime, categoryBuyTime);
+    uint32 categoryTime = std::max(categorySellTime, categoryBuyTime);
 
     if (categoryTime < time(0)) categoryTime = time(0);
     if (itemTime < time(0)) itemTime = time(0);
@@ -509,7 +466,7 @@ uint32 AhBot::GetSellTime(uint32 itemId, uint32 auctionHouse, Category*& categor
     double rarity = category->GetPricingStrategy()->GetRarityPriceMultiplier(itemId);
     categoryTime += urand(sAhBotConfig.itemSellMinInterval, sAhBotConfig.itemSellMaxInterval);
     itemTime += urand(sAhBotConfig.itemSellMinInterval, sAhBotConfig.itemSellMaxInterval) * rarity;
-    itemTime = max(itemTime, categoryTime);
+    itemTime = std::max(itemTime, categoryTime);
 
     SetTime(categoryName, 0, auctionHouse, AHBOT_SELL_DELAY, categoryTime);
     SetTime("item", itemId, auctionHouse, AHBOT_SELL_DELAY, itemTime);
@@ -519,7 +476,7 @@ uint32 AhBot::GetSellTime(uint32 itemId, uint32 auctionHouse, Category*& categor
 
 int AhBot::AddAuctions(int auction, Category* category, ItemBag* inAuctionItems)
 {
-    vector<uint32>& inAuction = inAuctionItems->Get(category);
+    std::vector<uint32>& inAuction = inAuctionItems->Get(category);
 
     int32 maxAllowedAuctionCount = categoryMaxAuctionCount[category->GetDisplayName()];
     if (inAuctionItems->GetCount(category) >= maxAllowedAuctionCount)
@@ -527,7 +484,7 @@ int AhBot::AddAuctions(int auction, Category* category, ItemBag* inAuctionItems)
 
     int added = 0;
     int ladded = 0;
-    vector<uint32> available = availableItems.Get(category);
+    std::vector<uint32> available = availableItems.Get(category);
     for (int32 i = 0; i <= maxAllowedAuctionCount && available.size() > 0 && inAuctionItems->GetCount(category) < maxAllowedAuctionCount; ++i)
     {
         uint32 index = urand(0, available.size() - 1);
@@ -543,11 +500,11 @@ int AhBot::AddAuctions(int auction, Category* category, ItemBag* inAuctionItems)
             sLog.outDetail("%s in auction %d: has reached max %d/%d",
                 proto->Name1, auctionIds[auction], inAuctionItems->GetCount(category, proto->ItemId), maxAllowedItems);
             continue;
-        }        
+        }
 
         uint32 sellTime = GetSellTime(proto->ItemId, auctionIds[auction], category);
         if (time(0) - sellTime < 0)
-        {          
+        {
             ladded += 1;
             sLog.outDetail( "%s in auction %d: will add in %ld seconds",
                     proto->Name1, auctionIds[auction], sellTime - time(0));
@@ -558,14 +515,14 @@ int AhBot::AddAuctions(int auction, Category* category, ItemBag* inAuctionItems)
             sLog.outDetail( "%s in auction %d: too old (%ld secs)",
                     proto->Name1, auctionIds[auction], time(0) - sellTime);
             continue;
-        }        
+        }
         inAuctionItems->Add(proto);
         added += AddAuction(auction, category, proto);
     }
 
     sLog.outDetail("%s has %d upcomming and %d new auctions.",
         category->GetDisplayName().c_str(), ladded , added);
-    
+
 
     return added;
 }
@@ -579,7 +536,7 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
         return 0;
     }
 
-	string name;
+    std::string name;
     if (!sObjectMgr.GetPlayerNameByGUID(ObjectGuid(HIGHGUID_PLAYER, owner), name))
         return 0;
 
@@ -651,7 +608,7 @@ int AhBot::AddAuction(int auction, Category* category, ItemPrototype const* prot
     return 1;
 }
 
-void AhBot::HandleCommand(string command)
+void AhBot::HandleCommand(std::string command)
 {
     if (!sAhBotConfig.enabled)
         return;
@@ -705,11 +662,11 @@ void AhBot::HandleCommand(string command)
         Category* category = CategoryList::instance[i];
         if (category->Contains(proto))
         {
-            vector<uint32> items = availableItems.Get(category);
-            if (find(items.begin(), items.end(), proto->ItemId) == items.end())
+            std::vector<uint32> items = availableItems.Get(category);
+            if (std::find(items.begin(), items.end(), proto->ItemId) == items.end())
                 continue;
 
-            ostringstream out;
+            std::ostringstream out;
             out << proto->Name1 << " (" << category->GetDisplayName() << "), "
                     << category->GetMaxAllowedAuctionCount() << "x" << category->GetMaxAllowedItemAuctionCount(proto)
                     << "x" << category->GetStackCount(proto) << " max"
@@ -721,11 +678,11 @@ void AhBot::HandleCommand(string command)
                     << GetAvailableMoney(auctionIds[auction])
                     << ") ---\n";
 
-                ostringstream exp1;
+                std::ostringstream exp1;
                 out << "sell: " << ChatHelper::formatMoney(category->GetPricingStrategy()->GetSellPrice(proto, auctionIds[auction], true, &exp1));
                 out << " ("  << exp1.str().c_str() << ")\n";
 
-                ostringstream exp2;
+                std::ostringstream exp2;
                 out << "buy: " << ChatHelper::formatMoney(category->GetPricingStrategy()->GetBuyPrice(proto, auctionIds[auction], &exp2));
                 out << " ("  << exp2.str().c_str() << ")\n";
 
@@ -793,7 +750,7 @@ void AhBot::AddToHistory(AuctionEntry* entry, uint32 won)
     if (!proto)
         return;
 
-    string category = "";
+    std::string category = "";
     for (int i = 0; i < CategoryList::instance.size(); i++)
     {
         if (CategoryList::instance[i]->Contains(proto))
@@ -850,7 +807,7 @@ uint32 AhBot::GetAvailableMoney(uint32 auctionHouse)
 {
     int64 result = sAhBotConfig.alwaysAvailableMoney;
 
-    map<uint32, uint32> data;
+    std::map<uint32, uint32> data;
     data[AHBOT_WON_PLAYER] = 0;
     data[AHBOT_WON_SELF] = 0;
 
@@ -911,10 +868,10 @@ void AhBot::CheckCategoryMultipliers()
 
     CharacterDatabase.PExecute("DELETE FROM ahbot_category");
 
-    set<string> tmp;
+    std::set<std::string> tmp;
     for (int i = 0; i < CategoryList::instance.size(); i++)
     {
-        string name = CategoryList::instance[i]->GetDisplayName();
+        std::string name = CategoryList::instance[i]->GetDisplayName();
 
         if (tmp.find(name) != tmp.end())
             continue;
@@ -929,7 +886,7 @@ void AhBot::CheckCategoryMultipliers()
             else if (k < 80) m = 1 + r; // 2..3
             else if (k < 90) m = 2 + r; // 3..4
             else m = 3 + r; // 4..5
-            categoryMultipliers[name] = m;            
+            categoryMultipliers[name] = m;
             categoryMultiplierExpireTimes[name] = time(0) + urand(4, 7) * 3600 * 24;
         }
 
@@ -968,15 +925,15 @@ bool AhBot::IsBotAuction(uint32 bidder)
 
 uint32 AhBot::GetRandomBidder(uint32 auctionHouse)
 {
-    vector<uint32> guids = bidders[factions[auctionHouse]];
+    std::vector<uint32> guids = bidders[factions[auctionHouse]];
     if (guids.empty())
         return 0;
 
-    vector<uint32> online;
-    for (vector<uint32>::iterator i = guids.begin(); i != guids.end(); ++i)
+    std::vector<uint32> online;
+    for (std::vector<uint32>::iterator i = guids.begin(); i != guids.end(); ++i)
     {
         uint32 guid = *i;
-		string name;
+        std::string name;
         if (!sObjectMgr.GetPlayerNameByGUID(ObjectGuid(HIGHGUID_PLAYER, guid), name))
             continue;
 
@@ -992,7 +949,7 @@ uint32 AhBot::GetRandomBidder(uint32 auctionHouse)
 
 void AhBot::LoadRandomBots()
 {
-    for (list<uint32>::iterator i = sPlayerbotAIConfig.randomBotAccounts.begin(); i != sPlayerbotAIConfig.randomBotAccounts.end(); i++)
+    for (std::list<uint32>::iterator i = sPlayerbotAIConfig.randomBotAccounts.begin(); i != sPlayerbotAIConfig.randomBotAccounts.end(); i++)
     {
         uint32 accountId = *i;
         if (!sAccountMgr.GetCharactersCount(accountId))
@@ -1040,8 +997,8 @@ int32 AhBot::GetSellPrice(ItemPrototype const* proto)
         if (!category->Contains(proto))
             continue;
 
-        vector<uint32> items = availableItems.Get(category);
-        if (find(items.begin(), items.end(), proto->ItemId) == items.end())
+        std::vector<uint32> items = availableItems.Get(category);
+        if (std::find(items.begin(), items.end(), proto->ItemId) == items.end())
             continue;
 
         for (int auction = 0; auction < MAX_AUCTIONS; auction++)
@@ -1070,8 +1027,8 @@ int32 AhBot::GetBuyPrice(ItemPrototype const* proto)
         if (!category->Contains(proto))
             continue;
 
-        vector<uint32> items = availableItems.Get(category);
-        if (find(items.begin(), items.end(), proto->ItemId) == items.end())
+        std::vector<uint32> items = availableItems.Get(category);
+        if (std::find(items.begin(), items.end(), proto->ItemId) == items.end())
             continue;
 
         for (int auction = 0; auction < MAX_AUCTIONS; auction++)
@@ -1147,7 +1104,7 @@ void AhBot::CheckSendMail(uint32 bidder, uint32 price, AuctionEntry *entry)
         }
     }
 
-    ostringstream body;
+    std::ostringstream body;
     body << "Hello,\n";
     body << "\n";
     Item *item = sAuctionMgr.GetAItem(entry->itemGuidLow);
@@ -1159,13 +1116,13 @@ void AhBot::CheckSendMail(uint32 bidder, uint32 price, AuctionEntry *entry)
     body << "\n";
     body << "Regards,\n";
 
-    string name;
+    std::string name;
     if (!sObjectMgr.GetPlayerNameByGUID(ObjectGuid(HIGHGUID_PLAYER, bidder), name))
         return;
 
     body << name << "\n";
 
-    ostringstream title; title << "AH Proposition: " << item->GetProto()->Name1;
+    std::ostringstream title; title << "AH Proposition: " << item->GetProto()->Name1;
     MailDraft draft(title.str(), body.str());
     ObjectGuid receiverGuid(HIGHGUID_PLAYER, entry->owner);
     draft.SendMailTo(MailReceiver(receiverGuid), MailSender(MAIL_NORMAL, bidder));
@@ -1187,11 +1144,11 @@ void AhBot::Dump()
             Category* category = CategoryList::instance[i];
             if (category->Contains(proto))
             {
-                vector<uint32> items = availableItems.Get(category);
+                std::vector<uint32> items = availableItems.Get(category);
                 if (find(items.begin(), items.end(), proto->ItemId) == items.end())
                     continue;
 
-                ostringstream out;
+                std::ostringstream out;
                 if (first)
                 {
                     out << proto->ItemId << " (" << proto->Name1 << ") x" << category->GetStackCount(proto) << " - ";
@@ -1236,12 +1193,12 @@ void AhBot::CleanupPropositions()
     }
 }
 
-void AhBot::DeleteMail(list<uint32> buffer)
+void AhBot::DeleteMail(std::list<uint32> buffer)
 {
-    ostringstream sql;
+    std::ostringstream sql;
     sql << "delete from mail where id in ( ";
     bool first = true;
-    for (list<uint32>::iterator j = buffer.begin(); j != buffer.end(); ++j)
+    for (std::list<uint32>::iterator j = buffer.begin(); j != buffer.end(); ++j)
     {
         if (first) first = false; else sql << ",";
         sql << "'" << *j << "'";

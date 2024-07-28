@@ -1,7 +1,7 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "NonCombatStrategy.h"
-#include "../Value.h"
+#include "playerbot/strategy/Value.h"
 
 using namespace ai;
 
@@ -61,4 +61,20 @@ void WorldBuffStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
     triggers.push_back(new TriggerNode(
         "need world buff",
         NextAction::array(0, new NextAction("world buff", 1.0f), NULL)));
+}
+
+void WorldBuffStrategy::OnStrategyRemoved(BotState state)
+{
+    // Remove world buffs
+    Player* bot = ai->GetBot();
+    if (bot)
+    {
+        for (auto& wb : sPlayerbotAIConfig.worldBuffs)
+        {
+            if (bot->HasAura(wb.spellId))
+            {
+                bot->RemoveAurasDueToSpell(wb.spellId);
+            }
+        }
+    }
 }

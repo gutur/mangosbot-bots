@@ -1,11 +1,11 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "MoveToTravelTargetAction.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
-#include "../../LootObjectStack.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/LootObjectStack.h"
 #include "MotionGenerators/PathFinder.h"
-#include "../../TravelMgr.h"
+#include "playerbot/TravelMgr.h"
 
 using namespace ai;
 
@@ -51,7 +51,7 @@ bool MoveToTravelTargetAction::Execute(Event& event)
 
             if (!urand(0, 5))
             {
-                ostringstream out;
+                std::ostringstream out;
                 if (ai->GetMaster() && !bot->GetGroup()->IsMember(ai->GetMaster()->GetObjectGuid()))
                     out << "等一等 ";
                 else
@@ -80,16 +80,6 @@ bool MoveToTravelTargetAction::Execute(Event& event)
     float z = location.coord_z;
     float mapId = location.mapid;
 
-    if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
-    {
-        WorldPosition* pos = target->getPosition();
-        GuidPosition* guidP = dynamic_cast<GuidPosition*>(pos);
-
-        string name = (guidP && guidP->GetWorldObject()) ? chat->formatWorldobject(guidP->GetWorldObject()) : "travel target";
-        
-        ai->Poi(x, y, name);
-    }
-
     //Move between 0.5 and 1.0 times the maxDistance.
     float mod = urand(50, 100)/100.0;   
 
@@ -97,6 +87,30 @@ bool MoveToTravelTargetAction::Execute(Event& event)
     y += sin(angle) * maxDistance * mod;
 
     bool canMove = false;
+
+    if (ai->HasStrategy("debug travel", BotState::BOT_STATE_NON_COMBAT) || ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
+    {
+        std::ostringstream out;
+
+        out << "Moving to ";
+
+        out << target->getDestination()->getTitle();
+
+        if (!(*target->getPosition() == WorldPosition()))
+        {
+            out << " at " << uint32(target->getPosition()->distance(bot)) << "y";
+        }
+
+        if (target->getStatus() != TravelStatus::TRAVEL_STATUS_EXPIRED)
+            out << " for " << (target->getTimeLeft() / 1000) << "s";
+
+        if (target->getRetryCount(true))
+            out << " (move retry: " << target->getRetryCount(true) << ")";
+        else if (target->getRetryCount(false))
+            out << " (retry: " << target->getRetryCount(false) << ")";
+
+        ai->TellPlayerNoFacing(GetMaster(), out);
+    }
 
     canMove = MoveTo(mapId, x, y, z, false, false);
 
@@ -109,6 +123,31 @@ bool MoveToTravelTargetAction::Execute(Event& event)
     }
     else
         target->decRetry(true);
+
+    if (ai->HasStrategy("debug move", BotState::BOT_STATE_NON_COMBAT))
+    {
+        WorldPosition* pos = target->getPosition();
+        GuidPosition* guidP = dynamic_cast<GuidPosition*>(pos);
+
+        std::string name = (guidP && guidP->GetWorldObject()) ? chat->formatWorldobject(guidP->GetWorldObject()) : "travel target";
+
+        if (mapId == bot->GetMapId())
+        {
+            ai->Poi(x, y, name);
+        }
+        else
+        {
+            LastMovement& lastMove = *context->GetValue<LastMovement&>("last movement");
+            if (!lastMove.lastPath.empty() && lastMove.lastPath.getBack().distance(location) < 20.0f)
+            {
+                for (auto& p : lastMove.lastPath.getPointPath())
+                {
+                    if (p.getMapId() == bot->GetMapId())
+                        ai->Poi(p.getX(), p.getY(), name);
+                }
+            }
+        }
+    }
      
     return canMove;
 }

@@ -1,7 +1,7 @@
 #pragma once
-#include "botpch.h"
-#include "../../playerbot.h"
-#include "../Value.h"
+
+#include "playerbot/playerbot.h"
+#include "playerbot/strategy/Value.h"
 
 
 namespace ai
@@ -9,99 +9,120 @@ namespace ai
     class GameObjectsValue : public GuidPositionListCalculatedValue
     {
     public:
-        GameObjectsValue(PlayerbotAI* ai, string name = "gos") : GuidPositionListCalculatedValue(ai, name, 1) {}
+        GameObjectsValue(PlayerbotAI* ai, std::string name = "gos") : GuidPositionListCalculatedValue(ai, name, 1) {}
 
-        virtual list<GuidPosition> Calculate();
+        virtual std::list<GuidPosition> Calculate();
     };
 
 
     class EntryFilterValue : public GuidPositionListCalculatedValue, public Qualified
     {
     public:
-        EntryFilterValue(PlayerbotAI* ai, string name = "entry filter") : GuidPositionListCalculatedValue(ai, name, 1), Qualified() {}
+        EntryFilterValue(PlayerbotAI* ai, std::string name = "entry filter") : GuidPositionListCalculatedValue(ai, name, 1), Qualified() {}
 
-        virtual list<GuidPosition> Calculate();
+        virtual std::list<GuidPosition> Calculate();
 
 #ifdef GenerateBotHelp
-        virtual string GetHelpName() { return "entry filter"; } //Must equal iternal name
-        virtual string GetHelpTypeName() { return "entry"; }
-        virtual string GetHelpDescription()
+        virtual std::string GetHelpName() { return "entry filter"; } //Must equal iternal name
+        virtual std::string GetHelpTypeName() { return "entry"; }
+        virtual std::string GetHelpDescription()
         {
             return "This value will returns only the ObjectGuids of specific entries.";
         }
-        virtual vector<string> GetUsedValues() { return { }; }
+        virtual std::vector<std::string> GetUsedValues() { return { }; }
 #endif 
+    };
+
+    class GuidFilterValue : public GuidPositionListCalculatedValue, public Qualified
+    {
+    public:
+       GuidFilterValue(PlayerbotAI* ai, std::string name = "guid filter") : GuidPositionListCalculatedValue(ai, name, 1), Qualified() {}
+
+       virtual std::list<GuidPosition> Calculate();
+
+#ifdef GenerateBotHelp
+       virtual std::string GetHelpName() { return "guid filter"; } //Must equal iternal name
+       virtual std::string GetHelpTypeName() { return "guid"; }
+       virtual std::string GetHelpDescription()
+       {
+          return "This value will returns only the ObjectGuids of specific entries.";
+       }
+       virtual std::vector<std::string> GetUsedValues() { return { }; }
+#endif 
+
+    private:
+       std::vector<std::string> QualifierToEntryList(const std::string& qualifier);
     };
 
     class RangeFilterValue : public GuidPositionListCalculatedValue, public Qualified
     {
     public:
-        RangeFilterValue(PlayerbotAI* ai, string name = "range filter") : GuidPositionListCalculatedValue(ai, name, 1), Qualified() {}
+        RangeFilterValue(PlayerbotAI* ai, std::string name = "range filter") : GuidPositionListCalculatedValue(ai, name, 1), Qualified() {}
 
-        virtual list<GuidPosition> Calculate();
+        virtual std::list<GuidPosition> Calculate();
 
 #ifdef GenerateBotHelp
-        virtual string GetHelpName() { return "range filter"; } //Must equal iternal name
-        virtual string GetHelpTypeName() { return "entry"; }
-        virtual string GetHelpDescription()
+        virtual std::string GetHelpName() { return "range filter"; } //Must equal iternal name
+        virtual std::string GetHelpTypeName() { return "entry"; }
+        virtual std::string GetHelpDescription()
         {
             return "This value will returns only the ObjectGuids within a specific range.";
         }
-        virtual vector<string> GetUsedValues() { return { }; }
+        virtual std::vector<std::string> GetUsedValues() { return { }; }
 #endif 
     };
 
     class GoUsableFilterValue : public GuidPositionListCalculatedValue, public Qualified
     {
     public:
-        GoUsableFilterValue(PlayerbotAI* ai, string name = "go usable filter") : GuidPositionListCalculatedValue(ai, name, 1), Qualified() {}
+        GoUsableFilterValue(PlayerbotAI* ai, std::string name = "go usable filter") : GuidPositionListCalculatedValue(ai, name, 1), Qualified() {}
 
-        virtual list<GuidPosition> Calculate();
+        virtual std::list<GuidPosition> Calculate();
 
 #ifdef GenerateBotHelp
-        virtual string GetHelpName() { return "go usable filter"; } //Must equal iternal name
-        virtual string GetHelpTypeName() { return "entry"; }
-        virtual string GetHelpDescription()
+        virtual std::string GetHelpName() { return "go usable filter"; } //Must equal iternal name
+        virtual std::string GetHelpTypeName() { return "entry"; }
+        virtual std::string GetHelpDescription()
         {
             return "This value will returns only the ObjectGuids within a specific range.";
         }
-        virtual vector<string> GetUsedValues() { return { }; }
+        virtual std::vector<std::string> GetUsedValues() { return { }; }
 #endif 
     };
 
     class GoTrappedFilterValue : public GuidPositionListCalculatedValue, public Qualified
     {
     public:
-        GoTrappedFilterValue(PlayerbotAI* ai, string name = "go trapped filter") : GuidPositionListCalculatedValue(ai, name, 1), Qualified() {}
+        GoTrappedFilterValue(PlayerbotAI* ai, std::string name = "go trapped filter") : GuidPositionListCalculatedValue(ai, name, 1), Qualified() {}
 
-        virtual list<GuidPosition> Calculate();
+        virtual std::list<GuidPosition> Calculate();
 
 #ifdef GenerateBotHelp
-        virtual string GetHelpName() { return "go trapped filter"; } //Must equal iternal name
-        virtual string GetHelpTypeName() { return "entry"; }
-        virtual string GetHelpDescription()
+        virtual std::string GetHelpName() { return "go trapped filter"; } //Must equal iternal name
+        virtual std::string GetHelpTypeName() { return "entry"; }
+        virtual std::string GetHelpDescription()
         {
             return "This value will returns only the ObjectGuids that are not trapped.";
         }
-        virtual vector<string> GetUsedValues() { return { }; }
+        virtual std::vector<std::string> GetUsedValues() { return { }; }
 #endif 
     };
 
 
-    class GosInSightValue : public GuidPositionListCalculatedValue
+    class GosInSightValue : public GuidPositionListCalculatedValue, public Qualified
 	{
 	public:
-        GosInSightValue(PlayerbotAI* ai, string name = "gos in sight") : GuidPositionListCalculatedValue(ai, name, 3) {}
+        GosInSightValue(PlayerbotAI* ai, std::string name = "gos in sight") : GuidPositionListCalculatedValue(ai, name, 3), Qualified() {}
 
-        virtual list<GuidPosition> Calculate() { return AI_VALUE2(list<GuidPosition>, "range filter", "gos," + to_string(sPlayerbotAIConfig.sightDistance)); }
+        virtual std::list<GuidPosition> Calculate();
     };
 
     class GoSCloseValue : public GuidPositionListCalculatedValue, public Qualified
     {
     public:
-        GoSCloseValue(PlayerbotAI* ai, string name = "gos close") : GuidPositionListCalculatedValue(ai, name, 3), Qualified() {}
+        GoSCloseValue(PlayerbotAI* ai, std::string name = "gos close") : GuidPositionListCalculatedValue(ai, name, 3), Qualified() {}
 
-        virtual list<GuidPosition> Calculate() { return AI_VALUE2(list<GuidPosition>, "range filter", "gos," + to_string(INTERACTION_DISTANCE)); }
+        virtual std::list<GuidPosition> Calculate() { return AI_VALUE2(std::list<GuidPosition>, "range filter", "gos," + std::to_string(INTERACTION_DISTANCE)); }
     };
 
 
@@ -109,8 +130,8 @@ namespace ai
     class HasObjectValue : public BoolCalculatedValue, public Qualified
     {
     public:
-        HasObjectValue(PlayerbotAI* ai, string name = "has object") : BoolCalculatedValue(ai, name, 3), Qualified() {}
+        HasObjectValue(PlayerbotAI* ai, std::string name = "has object") : BoolCalculatedValue(ai, name, 3), Qualified() {}
 
-        virtual bool Calculate() { return !AI_VALUE(list<GuidPosition>, getQualifier()).empty(); }
+        virtual bool Calculate() { return !AI_VALUE(std::list<GuidPosition>, getQualifier()).empty(); }
     };
 }

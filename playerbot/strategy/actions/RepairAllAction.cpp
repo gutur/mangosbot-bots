@@ -1,16 +1,16 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "RepairAllAction.h"
 
-#include "../../ServerFacade.h"
+#include "playerbot/ServerFacade.h"
 
 using namespace ai;
 
 bool RepairAllAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    list<ObjectGuid> npcs = AI_VALUE(list<ObjectGuid>, "nearest npcs");
-    for (list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
+    std::list<ObjectGuid> npcs = AI_VALUE(std::list<ObjectGuid>, "nearest npcs");
+    for (std::list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
     {
         Creature *unit = bot->GetNPCIfCanInteractWith(*i, UNIT_NPC_FLAG_REPAIR);
         if (!unit)
@@ -27,7 +27,7 @@ bool RepairAllAction::Execute(Event& event)
         sServerFacade.SetFacingTo(bot, unit);
         float discountMod = bot->GetReputationPriceDiscount(unit);
 
-        float durability = AI_VALUE(uint8, "durability");
+        float durability = AI_VALUE(uint8, "durability inventory");
 
         uint32 botMoney = bot->GetMoney();
         if (ai->HasCheat(BotCheatMask::gold))
@@ -70,20 +70,21 @@ bool RepairAllAction::Execute(Event& event)
 
         if (totalCost > 0)
         {
-            ostringstream out;
+            std::ostringstream out;
             out << "维修: " << chat->formatMoney(totalCost) << " (" << unit->GetName() << ")";
             ai->TellPlayerNoFacing(requester, out.str(),PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             if (sPlayerbotAIConfig.globalSoundEffects)
                 bot->PlayDistanceSound(1116);
 
-            sPlayerbotAIConfig.logEvent(ai, "RepairAllAction", to_string(durability), to_string(totalCost));
+            sPlayerbotAIConfig.logEvent(ai, "RepairAllAction", std::to_string(durability), std::to_string(totalCost));
 
             ai->DoSpecificAction("equip upgrades", event, true);
         }
 
-        context->GetValue<uint32>("death count")->Set(0);
+        SET_AI_VALUE(uint32, "death count", 0);
+        RESET_AI_VALUE(uint8, "durability inventory");
 
-        return durability < 100 && AI_VALUE(uint8, "durability") > durability;
+        return durability < 100 && AI_VALUE(uint8, "durability inventory") > durability;
     }
 
     ai->TellPlayerNoFacing(requester, "没有找到任何可以维修的npc");

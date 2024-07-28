@@ -1,18 +1,21 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "GoAction.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
-#include "../values/Formations.h"
-#include "../values/PositionValue.h"
-#include "TravelMgr.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/strategy/values/Formations.h"
+#include "playerbot/strategy/values/PositionValue.h"
+#include "playerbot/TravelMgr.h"
 #include "MotionGenerators/PathFinder.h"
 #include "ChooseTravelTargetAction.h"
-#include "../../TravelMgr.h"
+#include "playerbot/TravelMgr.h"
+#include "TellLosAction.h"
 
 using namespace ai;
 
-vector<string> split(const string& s, char delim);
+constexpr std::string_view LOS_GOS_PARAM = "los gos";
+
+std::vector<std::string> split(const std::string& s, char delim);
 char* strstri(const char* haystack, const char* needle);
 
 bool GoAction::Execute(Event& event)
@@ -21,25 +24,31 @@ bool GoAction::Execute(Event& event)
     if (!requester)
         return false;
 
-    string param = event.getParam();
+    std::string param = event.getParam();
+
+    if (param.empty())
+    {
+       param = getQualifier();
+    }
+
     if (param == "?")
     {
         float x = bot->GetPositionX();
         float y = bot->GetPositionY();
         Map2ZoneCoordinates(x, y, bot->GetZoneId());
-        ostringstream out;
+        std::ostringstream out;
         out << "我在 " << x << "," << y;
         ai->TellPlayer(requester, out.str());
         return true;
     }
 
-    if (param.find("where") != string::npos)
+    if (param.find("where") != std::string::npos)
     {
         return TellWhereToGo(param, requester);
     }
-    if (param.find("how") != string::npos && param.size() > 4)
+    if (param.find("how") != std::string::npos && param.size() > 4)
     {
-        string destination = param.substr(4);
+        std::string destination = param.substr(4);
         TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, destination);
         if (!dest)
         {
@@ -48,7 +57,7 @@ bool GoAction::Execute(Event& event)
         }
         return TellHowToGo(dest, requester);
     }
-    map<string, int> goTos;
+    std::map<std::string, int> goTos;
     goTos.emplace(std::pair("zone", 5));
     goTos.emplace(std::pair("quest", 6));
     goTos.emplace(std::pair("npc", 4));
@@ -59,7 +68,7 @@ bool GoAction::Execute(Event& event)
     {
         if (param.find(option.first) == 0 && param.size() > option.second)
         {
-            string destination = param.substr(option.second);
+            std::string destination = param.substr(option.second);
             TravelDestination* dest = nullptr;
             if (option.first == "to")
             {
@@ -72,7 +81,7 @@ bool GoAction::Execute(Event& event)
 
             if (!dest)
             {
-                ai->TellPlayerNoFacing(requester, "I don't know how to travel to " + destination);
+                ai->TellPlayerNoFacing(requester, "我不知道怎么去 " + destination);
                 return false;
             }
 
@@ -86,9 +95,9 @@ bool GoAction::Execute(Event& event)
 
         }
     }
-    if (param.find("travel") != string::npos && param.size()> 7)
+    if (param.find("travel") != std::string::npos && param.size()> 7)
     {
-        string destination = param.substr(7);
+        std::string destination = param.substr(7);
 
         TravelDestination* dest = ChooseTravelTargetAction::FindDestination(bot, destination);
 
@@ -110,13 +119,13 @@ bool GoAction::Execute(Event& event)
 
     return MoveToPosition(param, requester);
 
-    ai->TellPlayer(requester, "私聊输入 'go x,y', 'go [game object]', 'go unit' or 'go position' and 我就会去那儿." + ChatHelper::formatValue("help", "action:go", "go help") + " 获取更多信息.");
+    ai->TellPlayer(requester, "私聊输入 'go x,y', 'go [game object]', 'go unit' or 'go position' 之后我就会去那儿." + ChatHelper::formatValue("help", "action:go", "go help") + " 获取更多信息.");
     return false;
 }
 
-bool GoAction::TellWhereToGo(string& param, Player* requester) const
+bool GoAction::TellWhereToGo(std::string& param, Player* requester) const
 {
-    string text;
+    std::string text;
 
     if (param.size() > 6)
         text = param.substr(6);
@@ -135,9 +144,9 @@ bool GoAction::TellWhereToGo(string& param, Player* requester) const
         return false;
     }
 
-    string title = target->getDestination()->getTitle();
+    std::string title = target->getDestination()->getTitle();
 
-    if (title.find('[') != string::npos)
+    if (title.find('[') != std::string::npos)
         title = title.substr(title.find("[") + 1, title.find("]") - title.find("[") - 1);
 
 
@@ -152,7 +161,7 @@ bool GoAction::TellWhereToGo(string& param, Player* requester) const
         return false;
     }
 
-    string link = ChatHelper::formatValue("command", "go to " + title, title, "FF00FFFF");
+    std::string link = ChatHelper::formatValue("command", "go to " + title, title, "FF00FFFF");
 
     ai->TellPlayerNoFacing(requester, "我希望前往 " + link + "(" + target->getDestination()->getTitle() + ")");
 
@@ -188,7 +197,7 @@ bool GoAction::TellHowToGo(TravelDestination* dest, Player* requester) const
     WorldPosition botPos = WorldPosition(bot);
     WorldPosition* point = dest->nearestPoint(botPos);
 
-    vector<WorldPosition> beginPath, endPath;
+    std::vector<WorldPosition> beginPath, endPath;
     TravelNodeRoute route = sTravelNodeMap.getRoute(botPos, *point, beginPath, bot);
 
     if (route.isEmpty())
@@ -215,7 +224,7 @@ bool GoAction::TellHowToGo(TravelDestination* dest, Player* requester) const
 
             TravelNodePath* travelPath = nextNode->getPathTo(node);
 
-            vector<WorldPosition> path = travelPath->getPath();
+            std::vector<WorldPosition> path = travelPath->getPath();
 
             for (auto& p : path)
             {
@@ -244,7 +253,7 @@ bool GoAction::TellHowToGo(TravelDestination* dest, Player* requester) const
     else
         ai->TellPlayerNoFacing(requester, "我们靠近 " + dest->getTitle());
 
-    ai->TellPlayer(requester, "距离目标大约 " + to_string(uint32(round(poi.distance(botPos)))) + " 码: " + ChatHelper::formatAngle(pointAngle));
+    ai->TellPlayer(requester, "还剩 " + std::to_string(uint32(round(poi.distance(botPos)))) + " 码到达 " + ChatHelper::formatAngle(pointAngle));
     sServerFacade.SetFacingTo(bot, pointAngle, true);
     bot->HandleEmoteCommand(EMOTE_ONESHOT_POINT);
     ai->Poi(poi.getX(), poi.getY());
@@ -266,7 +275,7 @@ bool GoAction::TravelTo(TravelDestination* dest, Player* requester) const
         target->setTarget(dest, point);
         target->setForced(true);
 
-        ostringstream out; out << "前往 " << dest->getTitle();
+        std::ostringstream out; out << "前往 " << dest->getTitle();
         ai->TellPlayerNoFacing(requester, out.str());
 
         if (!ai->HasStrategy("travel", BotState::BOT_STATE_NON_COMBAT))
@@ -282,44 +291,68 @@ bool GoAction::TravelTo(TravelDestination* dest, Player* requester) const
     }
 }
 
-bool GoAction::MoveToGo(string& param, Player* requester)
+bool GoAction::MoveToGo(std::string& param, Player* requester)
 {
-    list<ObjectGuid> gos = ChatHelper::parseGameobjects(param);
-    if (gos.empty())
-        return false;
-
-    for (list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); ++i)
-    {
-        GameObject* go = ai->GetGameObject(*i);
-        if (go && sServerFacade.isSpawned(go))
-        {
-            if (sServerFacade.IsDistanceGreaterThan(sServerFacade.GetDistance2d(bot, go), sPlayerbotAIConfig.reactDistance))
+   auto loopthroughobjects = [&](const std::list<GameObject*>& gos) -> bool
+      {
+         for (GameObject* go : gos)
+         {
+            if (go && sServerFacade.isSpawned(go))
             {
-                ai->TellError(requester, "目标太远了");
-                return false;
-            }
+               if (sServerFacade.IsDistanceGreaterThan(sServerFacade.GetDistance2d(bot, go), sPlayerbotAIConfig.reactDistance))
+               {
+                  ai->TellError(requester, "目标太远了");
+                  return false;
+               }
 
-            ostringstream out; out << "移动到 " << ChatHelper::formatGameobject(go);
-            ai->TellPlayerNoFacing(requester, out.str());
-            return MoveNear(bot->GetMapId(), go->GetPositionX(), go->GetPositionY(), go->GetPositionZ() + 0.5f, ai->GetRange("follow"));
-        }
-    }
+               std::ostringstream out; out << "前往 " << ChatHelper::formatGameobject(go);
+               ai->TellPlayerNoFacing(requester, out.str());
+
+               WorldPosition pos;
+               go->GetPosition(pos);
+               const float angle = GetFollowAngle();
+               const float distance = INTERACTION_DISTANCE;
+               pos += WorldPosition(0, cos(angle)* distance, sin(angle)* distance, 0.5f);
+
+               UpdateStrategyPosition(pos);
+
+               return MoveTo(pos);
+            }
+         }
+
+         return false;
+      };
+
+   std::list<ObjectGuid> goguids = ChatHelper::parseGameobjects(param);
+
+   if (goguids.size())
+   {
+      return loopthroughobjects(TellLosAction::GoGuidListToObjList(ai, goguids));
+   }
+
+   if (param.find(LOS_GOS_PARAM) == 0)
+   {
+      std::vector<LosModifierStruct> mods = TellLosAction::ParseLosModifiers(param.substr(LOS_GOS_PARAM.size()));
+
+      return loopthroughobjects(TellLosAction::FilterGameObjects(requester, TellLosAction::GoGuidListToObjList(ai, AI_VALUE(std::list<ObjectGuid>, "nearest game objects no los")), mods));
+   }
+
     return false;
 }
 
-bool GoAction::MoveToUnit(string& param, Player* requester)
+bool GoAction::MoveToUnit(std::string& param, Player* requester)
 {
-    list<ObjectGuid> units;
-    list<ObjectGuid> npcs = AI_VALUE(list<ObjectGuid>, "nearest npcs");
+    std::list<ObjectGuid> units;
+    std::list<ObjectGuid> npcs = AI_VALUE(std::list<ObjectGuid>, "nearest npcs");
     units.insert(units.end(), npcs.begin(), npcs.end());
-    list<ObjectGuid> players = AI_VALUE(list<ObjectGuid>, "nearest friendly players");
+    std::list<ObjectGuid> players = AI_VALUE(std::list<ObjectGuid>, "nearest friendly players");
     units.insert(units.end(), players.begin(), players.end());
-    for (list<ObjectGuid>::iterator i = units.begin(); i != units.end(); i++)
+    for (std::list<ObjectGuid>::iterator i = units.begin(); i != units.end(); i++)
     {
         Unit* unit = ai->GetUnit(*i);
         if (unit && strstri(unit->GetName(), param.c_str()))
         {
-            ostringstream out; out << "移动到 " << unit->GetName();
+            std::ostringstream out; out << "前往 " << unit->GetName();
             ai->TellPlayerNoFacing(requester, out.str());
             return MoveNear(bot->GetMapId(), unit->GetPositionX(), unit->GetPositionY(), unit->GetPositionZ() + 0.5f, ai->GetRange("follow"));
         }
@@ -328,11 +361,11 @@ bool GoAction::MoveToUnit(string& param, Player* requester)
     return false;
 }
 
-bool GoAction::MoveToGps(string& param, Player* requester)
+bool GoAction::MoveToGps(std::string& param, Player* requester)
 {
-    if (param.find(";") != string::npos)
+    if (param.find(";") != std::string::npos)
     {
-        vector<string> coords = split(param, ';');
+        std::vector<std::string> coords = split(param, ';');
         float x = atof(coords[0].c_str());
         float y = atof(coords[1].c_str());
         float z;
@@ -353,7 +386,7 @@ bool GoAction::MoveToGps(string& param, Player* requester)
             PointsArray& points = path.getPath();
             PathType type = path.getPathType();
 
-            ostringstream out;
+            std::ostringstream out;
 
             out << x << ";" << y << ";" << z << " =";
 
@@ -386,11 +419,11 @@ bool GoAction::MoveToGps(string& param, Player* requester)
     return false;
 }
 
-bool GoAction::MoveToMapGps(string& param, Player* requester)
+bool GoAction::MoveToMapGps(std::string& param, Player* requester)
 {
-    if (param.find(",") != string::npos)
+    if (param.find(",") != std::string::npos)
     {
-        vector<string> coords = split(param, ',');
+        std::vector<std::string> coords = split(param, ',');
         float x = atof(coords[0].c_str());
         float y = atof(coords[1].c_str());
 
@@ -430,14 +463,14 @@ bool GoAction::MoveToMapGps(string& param, Player* requester)
 
         float x1 = x, y1 = y;
         Map2ZoneCoordinates(x1, y1, bot->GetZoneId());
-        ostringstream out; out << "移动到 " << x1 << "," << y1;
+        std::ostringstream out; out << "移动到 " << x1 << "," << y1;
         ai->TellPlayerNoFacing(requester, out.str());
         return MoveNear(bot->GetMapId(), x, y, z + 0.5f, ai->GetRange("follow"));
     }
     return false;
 }
 
-bool GoAction::MoveToPosition(string& param, Player* requester)
+bool GoAction::MoveToPosition(std::string& param, Player* requester)
 {
     PositionEntry pos = context->GetValue<PositionMap&>("position")->Get()[param];
     if (pos.isSet())
@@ -448,9 +481,31 @@ bool GoAction::MoveToPosition(string& param, Player* requester)
             return false;
         }
 
-        ostringstream out; out << "移动到地点 " << param;
+        std::ostringstream out; out << "移动到地点 " << param;
         ai->TellPlayerNoFacing(requester, out.str());
         return MoveNear(bot->GetMapId(), pos.x, pos.y, pos.z + 0.5f, ai->GetRange("follow"));
     }
     return false;
+}
+
+void GoAction::UpdateStrategyPosition(const WorldPosition& position)
+{
+   if (ai->HasStrategy("stay", ai->GetState()))
+   {
+      PositionMap& posMap = AI_VALUE(PositionMap&, "position");
+      PositionEntry& stayPosition = posMap["stay"];
+
+      stayPosition.Set(position.getX(), position.getY(), position.getZ(), position.getMapId());
+      posMap["stay"] = stayPosition;
+      posMap["return"] = stayPosition;
+   }
+   else if (ai->HasStrategy("guard", ai->GetState()))
+   {
+      PositionMap& posMap = AI_VALUE(PositionMap&, "position");
+      PositionEntry& guardPosition = posMap["guard"];
+
+      guardPosition.Set(position.getX(), position.getY(), position.getZ(), position.getMapId());
+      posMap["guard"] = guardPosition;
+      posMap["return"] = guardPosition;
+   }
 }

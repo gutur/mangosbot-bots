@@ -1,13 +1,13 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "SetCraftAction.h"
 
-#include "../../../ahbot/AhBotConfig.h"
-#include "../../ServerFacade.h"
-#include "../values/CraftValues.h"
+#include "ahbot/AhBotConfig.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/strategy/values/CraftValues.h"
 using namespace ai;
 
-map<uint32, SkillLineAbilityEntry const*> SetCraftAction::skillSpells;
+std::map<uint32, SkillLineAbilityEntry const*> SetCraftAction::skillSpells;
 
 bool SetCraftAction::Execute(Event& event)
 {
@@ -15,7 +15,7 @@ bool SetCraftAction::Execute(Event& event)
     if (!requester)
         return false;
 
-    string link = event.getParam();
+    std::string link = event.getParam();
 
     CraftData& data = AI_VALUE(CraftData&, "craft");
     if (link == "reset")
@@ -34,7 +34,7 @@ bool SetCraftAction::Execute(Event& event)
     ItemIds itemIds = chat->parseItems(link);
     if (itemIds.empty())
     {
-        ai->TellPlayer(requester, "用法: 'craft [物品ID]' or 'craft reset'");
+        ai->TellPlayer(requester, "用法: 'craft [物品ID]' 或者 'craft reset'");
         return false;
     }
 
@@ -119,10 +119,10 @@ void SetCraftAction::TellCraft(Player* requester)
     if (!proto)
         return;
 
-    ostringstream out;
+    std::ostringstream out;
     out << "我将制作 " << chat->formatItem(proto) << " 所需材料: ";
     bool first = true;
-    for (map<uint32, int>::iterator i = data.required.begin(); i != data.required.end(); ++i)
+    for (std::map<uint32, int>::iterator i = data.required.begin(); i != data.required.end(); ++i)
     {
         uint32 item = i->first;
         int required = i->second;
@@ -152,6 +152,6 @@ uint32 SetCraftAction::GetCraftFee(CraftData& data)
     if (!proto)
         return 0;
 
-    uint32 level = max(proto->ItemLevel, proto->RequiredLevel);
+    uint32 level = std::max(proto->ItemLevel, proto->RequiredLevel);
     return sAhBotConfig.defaultMinPrice * level * level / 40;
 }

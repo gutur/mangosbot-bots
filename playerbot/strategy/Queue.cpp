@@ -1,9 +1,9 @@
-#include "../../botpch.h"
-#include "../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "Action.h"
 #include "Queue.h"
 
-#include "../PlayerbotAIConfig.h"
+#include "playerbot/PlayerbotAIConfig.h"
 using namespace ai;
 
 
@@ -80,7 +80,7 @@ int Queue::Size()
 
 void Queue::RemoveExpired()
 {
-    list<ActionBasket*> expired;
+    std::list<ActionBasket*> expired;
     for (std::list<ActionBasket*>::iterator iter = actions.begin(); iter != actions.end(); iter++)
     {
         ActionBasket* basket = *iter;

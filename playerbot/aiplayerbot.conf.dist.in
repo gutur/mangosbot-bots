@@ -14,6 +14,9 @@ AiPlayerbot.RandomBotAutologin = 1
 # Log on all random bots on start
 AiPlayerbot.RandomBotLoginAtStartup = 1
 
+# Disable automatic DBStore save
+AiPlayerbot.ExplicitDbStoreSave = 0
+
 # Log out random bots after BotInWorldTime interval
 # AiPlayerbot.RandomBotTimedLogout = 1
 
@@ -189,10 +192,92 @@ AiPlayerbot.RandomBotQuestIds = 7848,3802,5505,6502,7761,9378
 # Bots will put their talentspec in guild notes when they change/tell their talents if they have the rights.
 # AiPlayerbot.TalentsInPublicNote = 0
 
-# Bots will chat in guild about certain events
-# AIPlayerbot.GuildFeedbackRate = 100.0        # Actual events like levelup, hard kills or nice loot.
-# AiPlayerbot.GuildSuggestRate = 100.0         # Random suggestions.
-# AiPlayerbot.GuildRepliesRate = 100.0         # Reply someone saying something.
+#max limit of members in a guild (bots will leave guild if there are more members than this number)
+# AiPlayerbot.guildMaxBotLimit = 1000
+
+##################################################################################
+#
+# Broadcast rates
+#
+# 1 - to enable broadcasts globally, 0 - to disable (default 1)
+# AiPlayerbot.EnableBroadcasts = 1
+#
+# all broadcast chances should be in range 0-30000
+#
+# value of 0 will disable this particular broadcast
+# setting value to 30000 does not guarantee the broadcast, as there are some internal randoms as well
+#
+# setting channel broadcast chance to 0, will re-route most broadcasts to other available channels
+# setting all channel broadcasts to 0 will disable most broadcasts
+# AiPlayerbot.BroadcastToGuildGlobalChance = 30000
+# AiPlayerbot.BroadcastToWorldGlobalChance = 30000
+# AiPlayerbot.BroadcastToGeneralGlobalChance = 30000
+# AiPlayerbot.BroadcastToTradeGlobalChance = 30000
+# AiPlayerbot.BroadcastToLFGGlobalChance = 30000
+# AiPlayerbot.BroadcastToLocalDefenseGlobalChance = 30000
+# AiPlayerbot.BroadcastToWorldDefenseGlobalChance = 30000
+# AiPlayerbot.BroadcastToGuildRecruitmentGlobalChance = 30000
+#
+# individual settings
+# setting one of these to 0 will disable the particular broadcast
+# AiPlayerbot.BroadcastChanceLootingItemPoor = 30
+# AiPlayerbot.BroadcastChanceLootingItemNormal = 150
+# AiPlayerbot.BroadcastChanceLootingItemUncommon = 10000
+# AiPlayerbot.BroadcastChanceLootingItemRare = 20000
+# AiPlayerbot.BroadcastChanceLootingItemEpic = 30000
+# AiPlayerbot.BroadcastChanceLootingItemLegendary = 30000
+# AiPlayerbot.BroadcastChanceLootingItemArtifact = 30000
+#
+# AiPlayerbot.BroadcastChanceQuestAccepted = 6000
+# AiPlayerbot.BroadcastChanceQuestUpdateObjectiveCompleted = 300
+# AiPlayerbot.BroadcastChanceQuestUpdateObjectiveProgress = 300
+# AiPlayerbot.BroadcastChanceQuestUpdateFailedTimer = 300
+# AiPlayerbot.BroadcastChanceQuestUpdateComplete = 1000
+# AiPlayerbot.BroadcastChanceQuestTurnedIn = 10000
+#
+# AiPlayerbot.BroadcastChanceKillNormal = 30
+# AiPlayerbot.BroadcastChanceKillElite = 300
+# AiPlayerbot.BroadcastChanceKillRareelite = 3000
+# AiPlayerbot.BroadcastChanceKillWorldboss = 20000
+# AiPlayerbot.BroadcastChanceKillRare = 10000
+# AiPlayerbot.BroadcastChanceKillUnknown = 100
+# AiPlayerbot.BroadcastChanceKillPet = 10
+# AiPlayerbot.BroadcastChanceKillPlayer = 30
+#
+# AiPlayerbot.BroadcastChanceLevelupGeneric = 20000
+# AiPlayerbot.BroadcastChanceLevelupTenX = 30000
+# AiPlayerbot.BroadcastChanceLevelupMaxLevel = 30000
+#
+# AiPlayerbot.BroadcastChanceSuggestInstance = 5000
+# AiPlayerbot.BroadcastChanceSuggestQuest = 10000
+# AiPlayerbot.BroadcastChanceSuggestGrindMaterials = 5000
+# AiPlayerbot.BroadcastChanceSuggestGrindReputation = 5000
+# AiPlayerbot.BroadcastChanceSuggestSell = 300
+# AiPlayerbot.BroadcastChanceSuggestSomething = 30000
+#
+# Very rude speeches
+# AiPlayerbot.BroadcastChanceSuggestSomethingToxic = 0
+#
+# Specifically for "<word> [item link]"
+# AiPlayerbot.BroadcastChanceSuggestToxicLinks = 0
+#
+# prefix is used as a word in "<word> [item link]"
+# AiPlayerbot.ToxicLinksPrefix = gnomes
+#
+# chance to suggest thunderfury
+# AiPlayerbot.BroadcastChanceSuggestThunderfury = 1
+#
+# does not depend on global chance
+# AiPlayerbot.BroadcastChanceGuildManagement = 30000
+#
+##################################################################################
+
+# Chance to reply to toxic links with toxic links (0-100)
+# AiPlayerbot.ToxicLinksRepliesChance = 100
+# Chance to reply to thunderfury with thunderfury (0-100)
+# AiPlayerbot.ThunderfuryRepliesChance = 100
+# Bots will chat in guild about certain events (int) (0-100)
+# AiPlayerbot.GuildRepliesRate = 100         # Reply someone saying something.
 
 # Bots without a master will say things they normally tell their master.
 # AiPlayerbot.RandomBotSayWithoutMaster = 0
@@ -761,6 +846,7 @@ AiPlayerbot.PerfMonEnabled = 0
 # AiPlayerbot.SelfBotLevel = 1
 
 # Account/character names that are either, always online as bot (SelfBotLevel < 4) or prevented from being always online as bot (SelfBotLevel = 4) 
+# When AiPlayerbot.BotAutologin is set to 2 these characters only log in on player (on the same account) logs in.
 # AiPlayerbot.ToggleAlwaysOnlineAccounts =
 # AiPlayerbot.ToggleAlwaysOnlineChars =
 
@@ -770,7 +856,7 @@ AiPlayerbot.PerfMonEnabled = 0
 # AiPlayerbot.AllowedLogFiles = 
 
 # Filters certain actions from showing up in 'nc +debug' and 'nc +debug action'
-# AiPlayerbot.DebugFilter = add gathering loot,check values,emote,check mount state
+# AiPlayerbot.DebugFilter = add gathering loot,check values,emote,check mount state,jump
 
 # Random password: Randombot accounts get created with a randompassword instead of equal to their account name.
 # AiPlayerbot.RandomBotRandomPassword = 1
@@ -1529,69 +1615,69 @@ AiPlayerbot.GearProgressionSystem.1.2.2.17 = 22401	# Ranged
 AiPlayerbot.GearProgressionSystem.1.2.2.18 = 5976	# Tabard
 
 # Level 1 (1) Hunter (3) Beast Master (0)
-# https://www.wowhead.com/classic/gear-planner/hunter/dwarf/BDwAAAEAR_UCADwzAwA0LgUALc4GAEfZBwA61ggAVi0JAEfHCgBV_wsASEQMADMqDQA2jQ4AThcPADQcEAAy_BIASqM
+# https://www.wowhead.com/classic/gear-planner/hunter/orc/BDwOUwACAFBfBSUQMFEwUf8AAAAKZ4EAR_UAPCoCAFdEgwAyfwBYR4UALc4ATjkGAFbYhwA61gA8KogAVi0ATjeJAEfHAB5jigA61wBOLAsASEQMAEhEDQA2jQ4ASCmPADQcADY6kABXKgA2cZIAMWsAMKw
 AiPlayerbot.GearProgressionSystem.1.3.0.0 = 18421	# Head
-AiPlayerbot.GearProgressionSystem.1.3.0.1 = 15411	# Neck
-AiPlayerbot.GearProgressionSystem.1.3.0.2 = 13358	# Shoulder
+AiPlayerbot.GearProgressionSystem.1.3.0.1 = 22340	# Neck
+AiPlayerbot.GearProgressionSystem.1.3.0.2 = 12927	# Shoulder
 AiPlayerbot.GearProgressionSystem.1.3.0.3 = 0		# Shirt
 AiPlayerbot.GearProgressionSystem.1.3.0.4 = 11726	# Chest
-AiPlayerbot.GearProgressionSystem.1.3.0.5 = 18393	# Waist
+AiPlayerbot.GearProgressionSystem.1.3.0.5 = 22232	# Waist
 AiPlayerbot.GearProgressionSystem.1.3.0.6 = 15062	# Legs
 AiPlayerbot.GearProgressionSystem.1.3.0.7 = 22061	# Feet
 AiPlayerbot.GearProgressionSystem.1.3.0.8 = 18375	# Wrists
-AiPlayerbot.GearProgressionSystem.1.3.0.9 = 22015	# Hands
+AiPlayerbot.GearProgressionSystem.1.3.0.9 = 15063	# Hands
 AiPlayerbot.GearProgressionSystem.1.3.0.10 = 18500	# Finger 1
-AiPlayerbot.GearProgressionSystem.1.3.0.11 = 13098	# Finger 2
+AiPlayerbot.GearProgressionSystem.1.3.0.11 = 18500	# Finger 2
 AiPlayerbot.GearProgressionSystem.1.3.0.12 = 13965	# Trinket 1
-AiPlayerbot.GearProgressionSystem.1.3.0.13 = 19991	# Trinket 2
+AiPlayerbot.GearProgressionSystem.1.3.0.13 = 18473	# Trinket 2
 AiPlayerbot.GearProgressionSystem.1.3.0.14 = 13340	# Back
-AiPlayerbot.GearProgressionSystem.1.3.0.15 = 13052	# Main Hand
+AiPlayerbot.GearProgressionSystem.1.3.0.15 = 22314	# Main Hand
 AiPlayerbot.GearProgressionSystem.1.3.0.16 = 0		# Off Hand
-AiPlayerbot.GearProgressionSystem.1.3.0.17 = 19107	# Ranged
+AiPlayerbot.GearProgressionSystem.1.3.0.17 = 12651	# Ranged
 AiPlayerbot.GearProgressionSystem.1.3.0.18 = 5976	# Tabard
 
 # Level 1 (1) Hunter (3) Marksmanship (1)
-# https://www.wowhead.com/classic/gear-planner/hunter/dwarf/BDwAAAEAR_UCADwzAwA0LgUALc4GAEfZBwA61ggAVi0JAEfHCgBV_wsASEQMADMqDQA2jQ4AThcPADQcEAAy_BIASqM
+# https://www.wowhead.com/classic/gear-planner/hunter/orc/BDwOUwACAFBfBSUQMFEwUf8AAAAKZ4EAR_UAPCoCAFdEgwAyfwBYR4UALc4ATjkGAFbYhwA61gA8KogAVi0ATjeJAEfHAB5jigA61wBOLAsASEQMAEhEDQA2jQ4ASCmPADQcADY6kABXKgA2cZIAMWsAMKw
 AiPlayerbot.GearProgressionSystem.1.3.1.0 = 18421	# Head
-AiPlayerbot.GearProgressionSystem.1.3.1.1 = 15411	# Neck
-AiPlayerbot.GearProgressionSystem.1.3.1.2 = 13358	# Shoulder
+AiPlayerbot.GearProgressionSystem.1.3.1.1 = 22340	# Neck
+AiPlayerbot.GearProgressionSystem.1.3.1.2 = 12927	# Shoulder
 AiPlayerbot.GearProgressionSystem.1.3.1.3 = 0		# Shirt
 AiPlayerbot.GearProgressionSystem.1.3.1.4 = 11726	# Chest
-AiPlayerbot.GearProgressionSystem.1.3.1.5 = 18393	# Waist
+AiPlayerbot.GearProgressionSystem.1.3.1.5 = 22232	# Waist
 AiPlayerbot.GearProgressionSystem.1.3.1.6 = 15062	# Legs
 AiPlayerbot.GearProgressionSystem.1.3.1.7 = 22061	# Feet
 AiPlayerbot.GearProgressionSystem.1.3.1.8 = 18375	# Wrists
-AiPlayerbot.GearProgressionSystem.1.3.1.9 = 22015	# Hands
+AiPlayerbot.GearProgressionSystem.1.3.1.9 = 15063	# Hands
 AiPlayerbot.GearProgressionSystem.1.3.1.10 = 18500	# Finger 1
-AiPlayerbot.GearProgressionSystem.1.3.1.11 = 13098	# Finger 2
+AiPlayerbot.GearProgressionSystem.1.3.1.11 = 18500	# Finger 2
 AiPlayerbot.GearProgressionSystem.1.3.1.12 = 13965	# Trinket 1
-AiPlayerbot.GearProgressionSystem.1.3.1.13 = 19991	# Trinket 2
+AiPlayerbot.GearProgressionSystem.1.3.1.13 = 18473	# Trinket 2
 AiPlayerbot.GearProgressionSystem.1.3.1.14 = 13340	# Back
-AiPlayerbot.GearProgressionSystem.1.3.1.15 = 13052	# Main Hand
+AiPlayerbot.GearProgressionSystem.1.3.1.15 = 22314	# Main Hand
 AiPlayerbot.GearProgressionSystem.1.3.1.16 = 0		# Off Hand
-AiPlayerbot.GearProgressionSystem.1.3.1.17 = 19107	# Ranged
+AiPlayerbot.GearProgressionSystem.1.3.1.17 = 12651	# Ranged
 AiPlayerbot.GearProgressionSystem.1.3.1.18 = 5976	# Tabard
 
 # Level 1 (1) Hunter (3) Survival (2)
-# https://www.wowhead.com/classic/gear-planner/hunter/dwarf/BDwAAAEAR_UCADwzAwA0LgUALc4GAEfZBwA61ggAVi0JAEfHCgBV_wsASEQMADMqDQA2jQ4AThcPADQcEAAy_BIASqM
+# https://www.wowhead.com/classic/gear-planner/hunter/orc/BDwOUwACAFBfBSUQMFEwUf8AAAAKZ4EAR_UAPCoCAFdEgwAyfwBYR4UALc4ATjkGAFbYhwA61gA8KogAVi0ATjeJAEfHAB5jigA61wBOLAsASEQMAEhEDQA2jQ4ASCmPADQcADY6kABXKgA2cZIAMWsAMKw
 AiPlayerbot.GearProgressionSystem.1.3.2.0 = 18421	# Head
-AiPlayerbot.GearProgressionSystem.1.3.2.1 = 15411	# Neck
-AiPlayerbot.GearProgressionSystem.1.3.2.2 = 13358	# Shoulder
+AiPlayerbot.GearProgressionSystem.1.3.2.1 = 22340	# Neck
+AiPlayerbot.GearProgressionSystem.1.3.2.2 = 12927	# Shoulder
 AiPlayerbot.GearProgressionSystem.1.3.2.3 = 0		# Shirt
 AiPlayerbot.GearProgressionSystem.1.3.2.4 = 11726	# Chest
-AiPlayerbot.GearProgressionSystem.1.3.2.5 = 18393	# Waist
+AiPlayerbot.GearProgressionSystem.1.3.2.5 = 22232	# Waist
 AiPlayerbot.GearProgressionSystem.1.3.2.6 = 15062	# Legs
 AiPlayerbot.GearProgressionSystem.1.3.2.7 = 22061	# Feet
 AiPlayerbot.GearProgressionSystem.1.3.2.8 = 18375	# Wrists
-AiPlayerbot.GearProgressionSystem.1.3.2.9 = 22015	# Hands
+AiPlayerbot.GearProgressionSystem.1.3.2.9 = 15063	# Hands
 AiPlayerbot.GearProgressionSystem.1.3.2.10 = 18500	# Finger 1
-AiPlayerbot.GearProgressionSystem.1.3.2.11 = 13098	# Finger 2
+AiPlayerbot.GearProgressionSystem.1.3.2.11 = 18500	# Finger 2
 AiPlayerbot.GearProgressionSystem.1.3.2.12 = 13965	# Trinket 1
-AiPlayerbot.GearProgressionSystem.1.3.2.13 = 19991	# Trinket 2
+AiPlayerbot.GearProgressionSystem.1.3.2.13 = 18473	# Trinket 2
 AiPlayerbot.GearProgressionSystem.1.3.2.14 = 13340	# Back
-AiPlayerbot.GearProgressionSystem.1.3.2.15 = 13052	# Main Hand
+AiPlayerbot.GearProgressionSystem.1.3.2.15 = 22314	# Main Hand
 AiPlayerbot.GearProgressionSystem.1.3.2.16 = 0		# Off Hand
-AiPlayerbot.GearProgressionSystem.1.3.2.17 = 19107	# Ranged
+AiPlayerbot.GearProgressionSystem.1.3.2.17 = 12651	# Ranged
 AiPlayerbot.GearProgressionSystem.1.3.2.18 = 5976	# Tabard
 
 # Level 1 (1) Rogue (4) Assassination (0)

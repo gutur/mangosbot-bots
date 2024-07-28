@@ -1,5 +1,5 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "TankTargetValue.h"
 #include "PossibleAttackTargetsValue.h"
 
@@ -21,7 +21,7 @@ public:
 
         if (!PossibleAttackTargetsValue::IsValid(creature, player))
         {
-            list<ObjectGuid> attackers = PAI_VALUE(list<ObjectGuid>, "possible attack targets");
+            std::list<ObjectGuid> attackers = PAI_VALUE(std::list<ObjectGuid>, "possible attack targets");
             if (std::find(attackers.begin(), attackers.end(), creature->GetObjectGuid()) == attackers.end())
                 return;
         }

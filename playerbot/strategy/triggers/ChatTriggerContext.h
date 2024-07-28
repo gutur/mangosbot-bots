@@ -60,6 +60,9 @@ namespace ai
             creators["chat"] = &ChatTriggerContext::chat;
             creators["accept"] = &ChatTriggerContext::accept;
             creators["home"] = &ChatTriggerContext::home;
+            creators["load ai"] = [](PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "load ai"); };
+            creators["list ai"] = [](PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "list ai"); };
+            creators["save ai"] = [](PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "save ai"); };
             creators["reset ai"] = &ChatTriggerContext::reset_ai;
             creators["reset strats"] = &ChatTriggerContext::reset_strats;
             creators["reset values"] = &ChatTriggerContext::reset_values;
@@ -78,6 +81,9 @@ namespace ai
             creators["pet"] = &ChatTriggerContext::pet;
             creators["focus heal"] = &ChatTriggerContext::focus_heal_target;
             creators["follow target"] = &ChatTriggerContext::follow_target;
+            creators["boost target"] = &ChatTriggerContext::boost_target;
+            creators["buff target"] = &ChatTriggerContext::buff_target;
+            creators["revive target"] = &ChatTriggerContext::revive_target;
             creators["self res"] = &ChatTriggerContext::self_resurrect;
             creators["flee"] = &ChatTriggerContext::flee;
             creators["grind"] = &ChatTriggerContext::grind;
@@ -176,6 +182,9 @@ namespace ai
         static Trigger* pet(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "pet"); }
         static Trigger* focus_heal_target(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "focus heal"); }
         static Trigger* follow_target(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "follow target"); }
+        static Trigger* boost_target(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "boost target"); }
+        static Trigger* buff_target(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "buff target"); }
+        static Trigger* revive_target(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "revive target"); }
         static Trigger* self_resurrect(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "self res"); }
         static Trigger* follow(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "follow"); }
         static Trigger* gb(PlayerbotAI* ai) { return new ChatCommandTrigger(ai, "gb"); }

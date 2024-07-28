@@ -1,23 +1,29 @@
 #pragma once
 
-#include "../Action.h"
-#include "../NamedObjectContext.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../TravelNode.h"
-#include "WaypointMovementGenerator.h"
-#include "../values/HazardsValue.h"
+#include "playerbot/strategy/Action.h"
+#include "playerbot/strategy/NamedObjectContext.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/TravelNode.h"
+#include "MotionGenerators/WaypointMovementGenerator.h"
+#include "playerbot/strategy/values/HazardsValue.h"
 
 namespace ai
 {
     class MovementAction : public Action
     {
     public:
-        MovementAction(PlayerbotAI* ai, string name) : Action(ai, name) {}
+        MovementAction(PlayerbotAI* ai, std::string name) : Action(ai, name) {}
 
     protected:
         bool ChaseTo(WorldObject *obj, float distance = 0.0f, float angle = 0.0f);
         bool MoveNear(uint32 mapId, float x, float y, float z, float distance = sPlayerbotAIConfig.contactDistance);
         bool FlyDirect(WorldPosition &startPosition,  WorldPosition &endPosition , WorldPosition& movePosition, TravelPath movePath, bool idle);
+
+        inline bool MoveTo(const WorldLocation& location, bool idle = false, bool react = false, bool noPath = false, bool ignoreEnemyTargets = false)
+        {
+           return MoveTo(location.mapid, location.coord_x, location.coord_y, location.coord_z, idle, react, noPath, ignoreEnemyTargets);
+        }
+
         bool MoveTo(uint32 mapId, float x, float y, float z, bool idle = false, bool react = false, bool noPath = false, bool ignoreEnemyTargets = false);
         bool MoveTo(Unit* target, float distance = 0.0f);
         bool MoveNear(WorldObject* target, float distance = sPlayerbotAIConfig.contactDistance);
@@ -129,7 +135,7 @@ namespace ai
     class MoveToAction : public MovementAction, public Qualified
     {
     public:
-        MoveToAction(PlayerbotAI* ai, string name = "move to") : MovementAction(ai, "name"), Qualified() {}
+        MoveToAction(PlayerbotAI* ai, std::string name = "move to") : MovementAction(ai, "name"), Qualified() {}
         virtual bool Execute(Event& event);
     };
 
@@ -140,17 +146,19 @@ namespace ai
         bool Execute(Event& event) override;
         bool isUseful() override;
 
-        static WorldPosition CalculateJumpParameters(const WorldPosition& src, Unit* jumper, float angle, float vSpeed, float hSpeed, float &timeToLand, float &distanceToLand, float &maxHeight, bool &goodLanding, float maxJumpHeight);
+        static WorldPosition CalculateJumpParameters(const WorldPosition& src, Unit* jumper, float angle, float vSpeed, float hSpeed, float &timeToLand, float &distanceToLand, float &maxHeight, bool &goodLanding, std::vector<WorldPosition> &path, float maxJumpHeight = sPlayerbotAIConfig.jumpHeightLimit);
 
     private:
-        bool DoJump(WorldPosition& dest, float angle, float vSpeed, float hSpeed, float timeToLand, float distanceToLand, float maxHeight, bool goodLanding, bool jumpInPlace, bool jumpBackward, bool showOnly);
-        bool JumpTowards(const WorldPosition& src, const WorldPosition& dest, Unit* jumper, float jumpSpeed);
+        bool DoJump(const WorldPosition& dest, const WorldPosition& highestPoint, float angle, float vSpeed, float hSpeed, float timeToLand, float distanceToLand, float maxHeight, bool goodLanding, bool jumpInPlace, bool jumpBackward, bool showOnly);
+        bool JumpTowards(const WorldPosition& src, const WorldPosition& dest, Unit* jumper, float jumpSpeed, bool preSetLanding = false);
         static float CalculateJumpTime(float srcZ, float destZ, float vSpeed, float hSpeed, float distance);
         static float CalculateJumpTime(float z_diff, float vSpeed, bool ascending);
 
-        WorldPosition GetPossibleJumpStartFor(const WorldPosition& src, const WorldPosition& dest, Unit* jumper, float &requiredSpeed, float distanceTo, float distanceFrom);
-        bool CanJumpTo(const WorldPosition& src, const WorldPosition& dest, Unit* jumper, float jumpSpeed, float maxDistace = 10.0f);
+        WorldPosition GetPossibleJumpStartFor(const WorldPosition& src, const WorldPosition& dest, WorldPosition& possiblelanding, Unit* jumper, float &requiredSpeed, float distanceTo, float distanceFrom);
+        WorldPosition GetPossibleJumpStartForInRange(const WorldPosition& src, const WorldPosition& dest, WorldPosition& possiblelanding, Unit* jumper, float& requiredSpeed, float distanceTo, float distanceFrom);
+        bool CanJumpTo(const WorldPosition& src, const WorldPosition& dest, WorldPosition& possiblelanding, float& jumpAngle, Unit* jumper, float jumpSpeed, float maxDistance = 10.0f);
         bool CanWalkTo(const WorldPosition& src, const WorldPosition& dest, Unit* jumper, float maxDistance = sPlayerbotAIConfig.sightDistance);
+        bool IsJumpFasterThanWalking(const WorldPosition& src, const WorldPosition& dest, const WorldPosition& jumpLanding, Unit* jumper, float maxDistance = sPlayerbotAIConfig.sightDistance);
 
         static bool IsJumpSafe(const WorldPosition& src, const WorldPosition& dest, Unit* jumper);
         static bool CanLand(const WorldPosition& dest, Unit* jumper);

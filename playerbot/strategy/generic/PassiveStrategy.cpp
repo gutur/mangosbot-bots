@@ -1,7 +1,7 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "PassiveStrategy.h"
-#include "../PassiveMultiplier.h"
+#include "playerbot/strategy/PassiveMultiplier.h"
 
 using namespace ai;
 

@@ -1,8 +1,8 @@
 #pragma once
-#include "../Trigger.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
-#include "../values/RtiTargetValue.h"
+#include "playerbot/strategy/Trigger.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/strategy/values/RtiTargetValue.h"
 
 namespace ai
 {
@@ -20,7 +20,7 @@ namespace ai
             else
             {
                 // Check for the default rti if the bot is setup to ignore rti targets
-                string rti = AI_VALUE(string, "rti");
+                std::string rti = AI_VALUE(std::string, "rti");
                 if (rti == "none")
                 {
                     Group* group = bot->GetGroup();

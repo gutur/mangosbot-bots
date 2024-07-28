@@ -1,5 +1,5 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "ShareQuestAction.h"
 
 using namespace ai;
@@ -7,7 +7,7 @@ using namespace ai;
 bool ShareQuestAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    string link = event.getParam();
+    std::string link = event.getParam();
 
     if (!requester)
         return false;

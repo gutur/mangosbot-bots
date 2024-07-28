@@ -1,5 +1,5 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "WarlockMultipliers.h"
 #include "WarlockStrategy.h"
 
@@ -231,7 +231,11 @@ void WarlockBuffStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& trigger
 
     triggers.push_back(new TriggerNode(
         "demon armor",
-        NextAction::array(0, new NextAction("fel armor", ACTION_NORMAL + 1), NULL)));
+        NextAction::array(0, new NextAction("fel armor", ACTION_NORMAL + 2), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "soulstone",
+        NextAction::array(0, new NextAction("soulstone", ACTION_NORMAL + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
         "often",
@@ -625,16 +629,12 @@ void WarlockAoeStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
     AoeStrategy::InitCombatTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-        "corruption on attacker",
+        "seed of corruption on attacker",
         NextAction::array(0, new NextAction("seed of corruption on attacker", ACTION_HIGH + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
         "corruption on attacker",
         NextAction::array(0, new NextAction("corruption on attacker", ACTION_HIGH + 1), NULL)));
-
-    triggers.push_back(new TriggerNode(
-        "ranged medium aoe",
-        NextAction::array(0, new NextAction("rain of fire", ACTION_HIGH), NULL)));
 }
 
 void WarlockAoeStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
@@ -683,7 +683,11 @@ void WarlockBuffStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& trigger
 
     triggers.push_back(new TriggerNode(
         "demon armor",
-        NextAction::array(0, new NextAction("fel armor", ACTION_NORMAL + 1), NULL)));
+        NextAction::array(0, new NextAction("fel armor", ACTION_NORMAL + 2), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "soulstone",
+        NextAction::array(0, new NextAction("soulstone", ACTION_NORMAL + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
         "often",
@@ -1077,7 +1081,7 @@ void WarlockAoeStrategy::InitCombatTriggers(std::list<TriggerNode*>& triggers)
     AoeStrategy::InitCombatTriggers(triggers);
 
     triggers.push_back(new TriggerNode(
-        "corruption on attacker",
+        "seed of corruption on attacker",
         NextAction::array(0, new NextAction("seed of corruption on attacker", ACTION_HIGH + 2), NULL)));
 
     triggers.push_back(new TriggerNode(
@@ -1135,7 +1139,11 @@ void WarlockBuffStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& trigger
 
     triggers.push_back(new TriggerNode(
         "demon armor",
-        NextAction::array(0, new NextAction("fel armor", ACTION_NORMAL + 1), NULL)));
+        NextAction::array(0, new NextAction("fel armor", ACTION_NORMAL + 2), NULL)));
+
+    triggers.push_back(new TriggerNode(
+        "soulstone",
+        NextAction::array(0, new NextAction("soulstone", ACTION_NORMAL + 1), NULL)));
 
     triggers.push_back(new TriggerNode(
         "often",

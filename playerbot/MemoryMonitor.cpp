@@ -3,7 +3,7 @@
 #include <sstream>
 #include <time.h>
 #include "Util/Timer.h"
-#include <Log.h>
+#include "Log/Log.h"
 #define BOOST_STACKTRACE_LINK
 #include <boost/stacktrace.hpp>
 
@@ -98,7 +98,7 @@ void MemoryMonitor::LogCount(std::string filename)
             line += "," + num.first;
         }
 
-        fprintf(file, line.c_str());
+        fprintf(file, "%s", line.c_str());
         fprintf(file, "\n");
         fflush(file);
 
@@ -114,7 +114,7 @@ void MemoryMonitor::LogCount(std::string filename)
         line += "," + std::to_string(num.second);
     }
 
-    fprintf(file, line.c_str());
+    fprintf(file, "%s", line.c_str());
     fprintf(file, "\n");
     fflush(file);
     fflush(stdout);

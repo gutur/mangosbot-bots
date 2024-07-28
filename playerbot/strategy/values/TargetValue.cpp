@@ -1,19 +1,19 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "TargetValue.h"
 
-#include "../../ServerFacade.h"
+#include "playerbot/ServerFacade.h"
 #include "RtiTargetValue.h"
-#include "Unit.h"
+#include "Entities/Unit.h"
 #include "LastMovementValue.h"
-#include "../values/Formations.h"
+#include "playerbot/strategy/values/Formations.h"
 
 using namespace ai;
 
 Unit* TargetValue::FindTarget(FindTargetStrategy* strategy)
 {
-    list<ObjectGuid> attackers = ai->GetAiObjectContext()->GetValue<list<ObjectGuid>>("possible attack targets")->Get();
-    for (list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); ++i)
+    std::list<ObjectGuid> attackers = ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid>>("possible attack targets")->Get();
+    for (std::list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); ++i)
     {
         Unit* unit = ai->GetUnit(*i);
         if (!unit)
@@ -43,7 +43,7 @@ bool FindNonCcTargetStrategy::IsCcTarget(Unit* attacker)
                 if (PAI_VALUE(Unit*,"rti cc target") == attacker)
                     return true;
 
-                string rti = PAI_VALUE(string,"rti cc");
+                std::string rti = PAI_VALUE(std::string,"rti cc");
                 int index = RtiTargetValue::GetRtiIndex(rti);
                 if (index != -1)
                 {
@@ -76,7 +76,7 @@ void FindTargetStrategy::GetPlayerCount(Unit* creature, int* tankCount, int* dps
     *dpsCount = 0;
 
     Unit::AttackerSet attackers(creature->getAttackers());
-    for (set<Unit*>::const_iterator i = attackers.begin(); i != attackers.end(); i++)
+    for (std::set<Unit*>::const_iterator i = attackers.begin(); i != attackers.end(); i++)
     {
         Unit* attacker = *i;
         if (!attacker || !sServerFacade.IsAlive(attacker) || attacker == bot)
@@ -154,7 +154,7 @@ Unit* ClosestAttackerTargetingMeTargetValue::Calculate()
     Unit* result = nullptr;
     float closest = 9999.0f;
 
-    const std::list<ObjectGuid>& attackers = AI_VALUE(list<ObjectGuid>, "attackers targeting me");
+    const std::list<ObjectGuid>& attackers = AI_VALUE(std::list<ObjectGuid>, "attackers targeting me");
     for (const ObjectGuid& attackerGuid : attackers)
     {
         Unit* attacker = ai->GetUnit(attackerGuid);
@@ -170,4 +170,28 @@ Unit* ClosestAttackerTargetingMeTargetValue::Calculate()
     }
 
     return result;
+}
+
+std::list<ObjectGuid> FriendlyManualTargetsValue::Get()
+{
+    value.remove_if([&](const ObjectGuid& playerGuid)
+    {
+        Unit* player = ai->GetUnit(playerGuid);
+        if (ai->IsSafe(player))
+        {
+            if (bot->IsInGroup(player))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    return value;
+}
+
+std::list<ObjectGuid> FriendlyManualTargetsValue::LazyGet()
+{
+    return Get();
 }

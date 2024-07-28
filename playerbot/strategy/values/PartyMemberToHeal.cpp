@@ -1,8 +1,8 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "PartyMemberToHeal.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
 
 using namespace ai;
 
@@ -41,8 +41,8 @@ bool compareByMissingHealth(const Unit* u1, const Unit* u2, bool incomingDamage 
 
 Unit* PartyMemberToHeal::Calculate()
 {
-    vector<Unit*> needHeals;
-    vector<Unit*> tankTargets;
+    std::vector<Unit*> needHeals;
+    std::vector<Unit*> tankTargets;
     if (bot->GetSelectionGuid())
     {
         Unit* target = ai->GetUnit(bot->GetSelectionGuid());
@@ -197,10 +197,10 @@ bool PartyMemberToHeal::Check(Unit* player)
 std::vector<Player*> PartyMemberToHeal::GetPartyMembers()
 {
     std::vector<Player*> partyMembers;
-    if (ai->HasStrategy("focus heal target", BotState::BOT_STATE_COMBAT))
+    if (ai->HasStrategy("focus heal targets", BotState::BOT_STATE_COMBAT))
     {
         Unit* player = nullptr;
-        const std::list<ObjectGuid> focusHealTargets = AI_VALUE(std::list<ObjectGuid>, "focus heal target");
+        const std::list<ObjectGuid> focusHealTargets = AI_VALUE(std::list<ObjectGuid>, "focus heal targets");
         for(const ObjectGuid& focusHealTarget : focusHealTargets)
         {
             Player* player = (Player*)ai->GetUnit(focusHealTarget);
@@ -235,10 +235,10 @@ Unit* PartyMemberToProtect::Calculate()
     if (!group)
         return NULL;
 
-    vector<Unit*> needProtect;
+    std::vector<Unit*> needProtect;
 
-    list<ObjectGuid> attackers = ai->GetAiObjectContext()->GetValue<list<ObjectGuid>>("possible attack targets")->Get();
-    for (list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); ++i)
+    std::list<ObjectGuid> attackers = ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid>>("possible attack targets")->Get();
+    for (std::list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); ++i)
     {
         Unit* unit = ai->GetUnit(*i);
         if (!unit)

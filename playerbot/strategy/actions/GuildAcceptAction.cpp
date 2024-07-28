@@ -1,9 +1,8 @@
-#include "botpch.h"
-#include "../../playerbot.h"
-#include "GuildAcceptAction.h"
-#include "ServerFacade.h"
 
-using namespace std;
+#include "playerbot/playerbot.h"
+#include "GuildAcceptAction.h"
+#include "playerbot/ServerFacade.h"
+
 using namespace ai;
 
 bool GuildAcceptAction::Execute(Event& event)
@@ -25,12 +24,12 @@ bool GuildAcceptAction::Execute(Event& event)
     uint32 guildId = inviter->GetGuildId();
     if (!guildId)
     {
-        ai->TellError(requester, "你不在公会里!");
+        ai->TellError(requester, "你不在一个公会里!");
         accept = false;
     }
     else if (bot->GetGuildId())
     {
-        ai->TellError(requester, "对不起,我已经加入了一个公会.");
+        ai->TellError(requester, "对不起,我已经加入了一个公会");
         accept = false;
     }
     else if (!ai->GetSecurity()->CheckLevelFor(PlayerbotSecurityLevel::PLAYERBOT_SECURITY_INVITE, false, inviter, true))
@@ -47,9 +46,9 @@ bool GuildAcceptAction::Execute(Event& event)
         accept = false;
     }
 
-    if (sPlayerbotAIConfig.inviteChat && sServerFacade.GetDistance2d(bot, inviter) < sPlayerbotAIConfig.spellDistance * 1.5 && inviter->GetPlayerbotAI() && sRandomPlayerbotMgr.IsFreeBot(bot))
+    if (sPlayerbotAIConfig.inviteChat && sServerFacade.GetDistance2d(bot, inviter) < sPlayerbotAIConfig.spellDistance * 1.5 && inviter->GetPlayerbotAI() && (sRandomPlayerbotMgr.IsFreeBot(bot) || !ai->HasActivePlayerMaster()))
     {
-        map<string, string> placeholders;
+        std::map<std::string, std::string> placeholders;
         placeholders["%name"] = inviter->GetName();
 
         if (urand(0, 3))
@@ -63,7 +62,7 @@ bool GuildAcceptAction::Execute(Event& event)
     {
         bot->GetSession()->HandleGuildAcceptOpcode(packet);
 
-        sPlayerbotAIConfig.logEvent(ai, "GuildAcceptAction", guild->GetName(), to_string(guild->GetMemberSize()));
+        sPlayerbotAIConfig.logEvent(ai, "GuildAcceptAction", guild->GetName(), std::to_string(guild->GetMemberSize()));
     }
     else
     {

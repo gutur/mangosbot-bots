@@ -1,10 +1,8 @@
 #pragma once
 
-#include "Config.h"
+#include "Config/Config.h"
 #include "Talentspec.h"
-#include "SharedDefines.h"
-
-using namespace std;
+#include "Globals/SharedDefines.h"
 
 class Player;
 class PlayerbotMgr;
@@ -33,10 +31,11 @@ class ConfigAccess
 {
 private:
     std::string m_filename;
+    std::string m_envVarPrefix;
     std::unordered_map<std::string, std::string> m_entries; // keys are converted to lower case.  values cannot be.
-public:
-    std::vector<string> GetValues(const std::string& name) const;
 
+public:
+    std::vector<std::string> GetValues(const std::string& name) const;
     std::mutex m_configLock;
 };
 
@@ -71,7 +70,7 @@ public:
 
     uint32 openGoSpell;
     bool randomBotAutologin;
-    bool botAutologin;
+    uint32 botAutologin;
     std::string randomBotMapsAsString;
     std::vector<uint32> randomBotMaps;
     std::list<uint32> randomBotQuestItems;
@@ -80,8 +79,8 @@ public:
     std::list<uint32> randomBotQuestIds;
     std::list<uint32> immuneSpellIds;
     std::list<std::pair<uint32, uint32>> freeAltBots;
-    std::list<string> toggleAlwaysOnlineAccounts;
-    std::list<string> toggleAlwaysOnlineChars;
+    std::list<std::string> toggleAlwaysOnlineAccounts;
+    std::list<std::string> toggleAlwaysOnlineChars;
     uint32 randomBotTeleportDistance;
     bool randomBotTeleportNearPlayer;
     uint32 randomBotTeleportNearPlayerMaxAmount;
@@ -122,7 +121,7 @@ public:
     uint32 randomBotMinLevel, randomBotMaxLevel;
     float randomChangeMultiplier;
     uint32 specProbability[MAX_CLASSES][10];
-    string premadeLevelSpec[MAX_CLASSES][10][91]; //lvl 10 - 100
+    std::string premadeLevelSpec[MAX_CLASSES][10][91]; //lvl 10 - 100
     uint32 classRaceProbabilityTotal;
     uint32 classRaceProbability[MAX_CLASSES][MAX_RACES];
     ClassSpecs classSpecs[MAX_CLASSES];
@@ -167,9 +166,69 @@ public:
     bool randomBotFormGuild;
     bool randomBotRandomPassword;
     bool inviteChat;
-    float guildFeedbackRate;
-    float guildSuggestRate;
-    float guildRepliesRate;
+
+    uint32 guildMaxBotLimit;
+
+    bool enableBroadcasts;
+    uint32 broadcastChanceMaxValue;
+
+    uint32 broadcastToGuildGlobalChance;
+    uint32 broadcastToWorldGlobalChance;
+    uint32 broadcastToGeneralGlobalChance;
+    uint32 broadcastToTradeGlobalChance;
+    uint32 broadcastToLFGGlobalChance;
+    uint32 broadcastToLocalDefenseGlobalChance;
+    uint32 broadcastToWorldDefenseGlobalChance;
+    uint32 broadcastToGuildRecruitmentGlobalChance;
+
+    uint32 broadcastChanceLootingItemPoor;
+    uint32 broadcastChanceLootingItemNormal;
+    uint32 broadcastChanceLootingItemUncommon;
+    uint32 broadcastChanceLootingItemRare;
+    uint32 broadcastChanceLootingItemEpic;
+    uint32 broadcastChanceLootingItemLegendary;
+    uint32 broadcastChanceLootingItemArtifact;
+
+    uint32 broadcastChanceQuestAccepted;
+    uint32 broadcastChanceQuestUpdateObjectiveCompleted;
+    uint32 broadcastChanceQuestUpdateObjectiveProgress;
+    uint32 broadcastChanceQuestUpdateFailedTimer;
+    uint32 broadcastChanceQuestUpdateComplete;
+    uint32 broadcastChanceQuestTurnedIn;
+
+    uint32 broadcastChanceKillNormal;
+    uint32 broadcastChanceKillElite;
+    uint32 broadcastChanceKillRareelite;
+    uint32 broadcastChanceKillWorldboss;
+    uint32 broadcastChanceKillRare;
+    uint32 broadcastChanceKillUnknown;
+    uint32 broadcastChanceKillPet;
+    uint32 broadcastChanceKillPlayer;
+
+    uint32 broadcastChanceLevelupGeneric;
+    uint32 broadcastChanceLevelupTenX;
+    uint32 broadcastChanceLevelupMaxLevel;
+
+    uint32 broadcastChanceSuggestInstance;
+    uint32 broadcastChanceSuggestQuest;
+    uint32 broadcastChanceSuggestGrindMaterials;
+    uint32 broadcastChanceSuggestGrindReputation;
+    uint32 broadcastChanceSuggestSell;
+    uint32 broadcastChanceSuggestSomething;
+
+    uint32 broadcastChanceSuggestSomethingToxic;
+
+    uint32 broadcastChanceSuggestToxicLinks;
+    std::string toxicLinksPrefix;
+    uint32 toxicLinksRepliesChance;
+
+    uint32 broadcastChanceSuggestThunderfury;
+    uint32 thunderfuryRepliesChance;
+
+    uint32 broadcastChanceGuildManagement;
+
+    uint32 guildRepliesRate;
+
     bool talentsInPublicNote;
     bool nonGmFreeSummon;
 
@@ -205,15 +264,17 @@ public:
     float jumpInPlaceChance;
     float jumpBackwardChance;
     float jumpHeightLimit;
+    float jumpVSpeed;
+    float jumpHSpeed;
 
     std::mutex m_logMtx;
 
-    std::list<string> allowedLogFiles;
-    std::list<string> debugFilter;
+    std::list<std::string> allowedLogFiles;
+    std::list<std::string> debugFilter;
 
     std::unordered_map <std::string, std::pair<FILE*, bool>> logFiles;
 
-    std::list<string> botCheats;
+    std::list<std::string> botCheats;
     uint32 botCheatMask = 0;
 
     struct worldBuff{
@@ -225,10 +286,11 @@ public:
         uint32 maxLevel = 0;
     };
 
-    vector<worldBuff> worldBuffs;
+    std::vector<worldBuff> worldBuffs;
 
     int commandServerPort;
     bool perfMonEnabled;
+    bool bExplicitDbStoreSave = false;
 
     std::string GetValue(std::string name);
     void SetValue(std::string name, std::string value);
@@ -237,15 +299,16 @@ public:
 
     std::string GetTimestampStr();
 
-    bool hasLog(string fileName) { return std::find(allowedLogFiles.begin(), allowedLogFiles.end(), fileName) != allowedLogFiles.end(); };
-    bool openLog(string fileName, char const* mode = "a");
-    bool isLogOpen(string fileName) { auto it = logFiles.find(fileName); return it != logFiles.end() && it->second.second;}
-    void log(string fileName, const char* str, ...);
+    bool hasLog(std::string fileName) { return std::find(allowedLogFiles.begin(), allowedLogFiles.end(), fileName) != allowedLogFiles.end(); };
+    bool openLog(std::string fileName, char const* mode = "a", bool haslog = false);
+    bool isLogOpen(std::string fileName) { auto it = logFiles.find(fileName); return it != logFiles.end() && it->second.second;}
+    void log(std::string fileName, const char* str, ...);
 
-    void logEvent(PlayerbotAI* ai, string eventName, string info1 = "", string info2 = "");
-    void logEvent(PlayerbotAI* ai, string eventName, ObjectGuid guid, string info2);
+    void logEvent(PlayerbotAI* ai, std::string eventName, std::string info1 = "", std::string info2 = "");
+    void logEvent(PlayerbotAI* ai, std::string eventName, ObjectGuid guid, std::string info2);
 
-    bool CanLogAction(PlayerbotAI* ai, string actionName, bool isExecute, string lastActionName);
+    bool CanLogAction(PlayerbotAI* ai, std::string actionName, bool isExecute, std::string lastActionName);
+
 private:
     Config config;
 };

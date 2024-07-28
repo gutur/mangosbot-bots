@@ -1,9 +1,9 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "ThreatValues.h"
 
-#include "../../ServerFacade.h"
-#include "ThreatManager.h"
+#include "playerbot/ServerFacade.h"
+#include "Combat/ThreatManager.h"
 
 using namespace ai;
 
@@ -31,8 +31,8 @@ uint8 ThreatValue::Calculate()
     if (qualifier == "aoe")
     {
         uint8 maxThreat = 0;
-        list<ObjectGuid> attackers = context->GetValue<list<ObjectGuid>>("possible attack targets")->Get();
-        for (list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); i++)
+        std::list<ObjectGuid> attackers = context->GetValue<std::list<ObjectGuid>>("possible attack targets")->Get();
+        for (std::list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); i++)
         {
             Unit* unit = ai->GetUnit(*i);
             if (!unit || !sServerFacade.IsAlive(unit))

@@ -1,5 +1,5 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "HireAction.h"
 
 using namespace ai;
@@ -40,7 +40,7 @@ bool HireAction::Execute(Event& event)
     uint32 moneyReq = m * 5000 * bot->GetLevel();
     if ((int)discount < (int)moneyReq)
     {
-        ostringstream out;
+        std::ostringstream out;
         out << "你不能雇佣我,我基本上都不认识你,确保你至少拥有 " << chat->formatMoney(moneyReq) << " 作为交易费用";
         ai->TellPlayer(requester, out.str());
         return false;

@@ -1,13 +1,13 @@
-#include "../Action.h"
+#include "playerbot/strategy/Action.h"
 #include "WorldBuffAction.h"
-#include "AiFactory.h"
-#include "PlayerbotAIConfig.h"
+#include "playerbot/AiFactory.h"
+#include "playerbot/PlayerbotAIConfig.h"
 
 using namespace ai;
 
 bool WorldBuffAction::Execute(Event& event)
 {    
-    string text = event.getParam();
+    std::string text = event.getParam();
 
     for (auto& wb : NeedWorldBuffs(bot))
     {
@@ -17,9 +17,9 @@ bool WorldBuffAction::Execute(Event& event)
     return false;
 }
 
-vector<uint32> WorldBuffAction::NeedWorldBuffs(Unit* unit)
+std::vector<uint32> WorldBuffAction::NeedWorldBuffs(Unit* unit)
 {
-    vector<uint32> retVec;
+    std::vector<uint32> retVec;
 
     if (sPlayerbotAIConfig.worldBuffs.empty())
         return retVec;

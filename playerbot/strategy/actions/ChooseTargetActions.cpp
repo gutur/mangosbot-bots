@@ -1,8 +1,9 @@
-#include "../Action.h"
+#include "playerbot/strategy/Action.h"
 #include "ChooseTargetActions.h"
-#include "MovementGenerator.h"
-#include "CreatureAI.h"
-#include "../../TravelMgr.h"
+#include "MotionGenerators/MovementGenerator.h"
+#include "AI/BaseAI/CreatureAI.h"
+#include "playerbot/TravelMgr.h"
+#include "playerbot/strategy/generic/PullStrategy.h"
 
 bool DpsAssistAction::isUseful()
 {
@@ -26,7 +27,7 @@ bool AttackAnythingAction::isUseful()
     if (!target)
         return false;
 
-    if (ai->ContainsStrategy(STRATEGY_TYPE_HEAL))
+    if (ai->ContainsStrategy(STRATEGY_TYPE_HEAL) && !ai->HasStrategy("offdps", BotState::BOT_STATE_COMBAT))
         return false;
 
     if(!target->IsPlayer() && bot->isInFront(target,target->GetAttackDistance(bot)*1.5f, M_PI_F*0.5f) && target->CanAttackOnSight(bot) && target->GetLevel() < bot->GetLevel() + 3.0) //Attack before being attacked.
@@ -53,20 +54,26 @@ bool ai::AttackAnythingAction::Execute(Event& event)
         {
             context->ClearExpiredValues("can free target", 10); //Clean up old free targets.
 
-            string grindName = grindTarget->GetName();
+            std::string grindName = grindTarget->GetName();
             if (!grindName.empty())
             {
-                sPlayerbotAIConfig.logEvent(ai, "AttackAnythingAction", grindName, to_string(grindTarget->GetEntry()));
+                sPlayerbotAIConfig.logEvent(ai, "AttackAnythingAction", grindName, std::to_string(grindTarget->GetEntry()));
 
                 if (ai->HasStrategy("pull", BotState::BOT_STATE_COMBAT))
                 {
-                    Event pullEvent("attack anything", grindTarget->GetObjectGuid());
-                    bool doAction = ai->DoSpecificAction("pull my target", pullEvent, true);
-                    
-                    if (doAction) {
-                        return true;
+                    if (PullStrategy* strategy = PullStrategy::Get(ai))
+                    {
+                        if (strategy->CanDoPullAction(grindTarget) && AI_VALUE2(uint32, "item count", "ammo"))
+                        {
+                            Event pullEvent("attack anything", grindTarget->GetObjectGuid());
+                            bool doAction = ai->DoSpecificAction("pull my target", pullEvent, true);
+
+                            if (doAction)
+                            {
+                                return true;
+                            }
+                        }
                     }
-                 
                 }
 
                 context->GetValue<ObjectGuid>("attack target")->Set(grindTarget->GetObjectGuid());
@@ -104,7 +111,7 @@ bool SelectNewTargetAction::Execute(Event& event)
 
     // Clear the target variables
     ObjectGuid attackTarget = AI_VALUE(ObjectGuid, "attack target");
-    list<ObjectGuid> possible = AI_VALUE(list<ObjectGuid>, "possible targets no los");
+    std::list<ObjectGuid> possible = AI_VALUE(std::list<ObjectGuid>, "possible targets no los");
     if (attackTarget && find(possible.begin(), possible.end(), attackTarget) == possible.end())
     {
         SET_AI_VALUE(ObjectGuid, "attack target", ObjectGuid());

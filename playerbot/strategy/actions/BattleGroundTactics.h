@@ -1,17 +1,17 @@
 #pragma once
 
 #include "MovementActions.h"
-#include "BattleGround.h"
-#include "BattleGroundMgr.h"
-#include "BattleGroundWS.h"
-#include "BattleGroundAV.h"
-#include "BattleGroundAB.h"
+#include "BattleGround/BattleGround.h"
+#include "BattleGround/BattleGroundMgr.h"
+#include "BattleGround/BattleGroundWS.h"
+#include "BattleGround/BattleGroundAV.h"
+#include "BattleGround/BattleGroundAB.h"
 #ifndef MANGOSBOT_ZERO
-#include "BattleGroundEY.h"
+#include "BattleGround/BattleGroundEY.h"
 #endif
 #ifdef MANGOSBOT_TWO
-#include "BattleGroundIC.h"
-#include "BattleGroundSA.h"
+#include "BattleGround/BattleGroundIC.h"
+#include "BattleGround/BattleGroundSA.h"
 #endif
 #include "CheckMountStateAction.h"
 
@@ -43,7 +43,7 @@ extern std::vector<BattleBotPath*> const vPaths_IC;
 class BGTactics : public MovementAction
 {
 public:
-    BGTactics(PlayerbotAI* ai, string name = "bg tactics") : MovementAction(ai, name) {}
+    BGTactics(PlayerbotAI* ai, std::string name = "bg tactics") : MovementAction(ai, name) {}
     virtual bool Execute(Event& event);
 private:
     bool moveToStart(bool force = false);
@@ -69,7 +69,7 @@ private:
 class ArenaTactics : public MovementAction
 {
 public:
-    ArenaTactics(PlayerbotAI* ai, string name = "arena tactics") : MovementAction(ai, name) {}
+    ArenaTactics(PlayerbotAI* ai, std::string name = "arena tactics") : MovementAction(ai, name) {}
     virtual bool Execute(Event& event);
 private:
     bool moveToCenter(BattleGround *bg);

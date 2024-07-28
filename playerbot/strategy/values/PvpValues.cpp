@@ -1,27 +1,27 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "PvpValues.h"
-#include "BattleGroundWS.h"
-#include "ServerFacade.h"
+#include "BattleGround/BattleGroundWS.h"
+#include "playerbot/ServerFacade.h"
 #ifndef MANGOSBOT_ZERO
-#include "BattleGroundEY.h"
+#include "BattleGround/BattleGroundEY.h"
 #endif
-#include "../../TravelMgr.h"
+#include "playerbot/TravelMgr.h"
 #include "SharedValueContext.h"
 
 using namespace ai;
 
-list<CreatureDataPair const*> BgMastersValue::Calculate()
+std::list<CreatureDataPair const*> BgMastersValue::Calculate()
 {
     BattleGroundTypeId bgTypeId = (BattleGroundTypeId)stoi(qualifier);
 
-    vector<uint32> entries;
-    map<Team,map<BattleGroundTypeId, list<uint32>>> battleMastersCache = sRandomPlayerbotMgr.getBattleMastersCache();
+    std::vector<uint32> entries;
+    std::map<Team, std::map<BattleGroundTypeId, std::list<uint32>>> battleMastersCache = sRandomPlayerbotMgr.getBattleMastersCache();
     entries.insert(entries.end(), battleMastersCache[TEAM_BOTH_ALLOWED][bgTypeId].begin(), battleMastersCache[TEAM_BOTH_ALLOWED][bgTypeId].end());
     entries.insert(entries.end(), battleMastersCache[ALLIANCE][bgTypeId].begin(), battleMastersCache[ALLIANCE][bgTypeId].end());
     entries.insert(entries.end(), battleMastersCache[HORDE][bgTypeId].begin(), battleMastersCache[HORDE][bgTypeId].end());
 
-    list<CreatureDataPair const*> bmGuids;
+    std::list<CreatureDataPair const*> bmGuids;
 
     for (auto entry : entries)
     {
@@ -48,7 +48,7 @@ CreatureDataPair const* BgMasterValue::NearestBm(bool allowDead)
 {
     WorldPosition botPos(bot);
 
-    list<CreatureDataPair const*> bmPairs = GAI_VALUE2(list<CreatureDataPair const*>, "bg masters", qualifier);
+    std::list<CreatureDataPair const*> bmPairs = GAI_VALUE2(std::list<CreatureDataPair const*>, "bg masters", qualifier);
 
     float rDist;
     CreatureDataPair const* rbmPair = nullptr;
@@ -144,7 +144,7 @@ BattleGroundTypeId RpgBgTypeValue::Calculate()
             if (bot->InBattleGroundQueueForBattleGroundQueueType(queueTypeId))
                 continue;
 
-            map<Team, map<BattleGroundTypeId, list<uint32>>> battleMastersCache = sRandomPlayerbotMgr.getBattleMastersCache();
+            std::map<Team, std::map<BattleGroundTypeId, std::list<uint32>>> battleMastersCache = sRandomPlayerbotMgr.getBattleMastersCache();
 
             for (auto& entry : battleMastersCache[TEAM_BOTH_ALLOWED][bgTypeId])
                 if (entry == guidPosition.GetEntry())

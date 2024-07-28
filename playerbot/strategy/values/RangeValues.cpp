@@ -1,5 +1,5 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "RangeValues.h"
 
 using namespace ai;
@@ -9,12 +9,12 @@ RangeValue::RangeValue(PlayerbotAI* ai)
 {
 }
 
-string RangeValue::Save()
+std::string RangeValue::Save()
 {
-    ostringstream out; out << value; return out.str();
+    std::ostringstream out; out << value; return out.str();
 }
 
-bool RangeValue::Load(string text)
+bool RangeValue::Load(std::string text)
 {
     value = atof(text.c_str());
     return true;

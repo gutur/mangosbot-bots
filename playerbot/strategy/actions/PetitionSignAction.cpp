@@ -1,5 +1,5 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "PetitionSignAction.h"
 #ifndef MANGOSBOT_ZERO
 #ifdef CMANGOS
@@ -10,7 +10,6 @@
 #endif
 #endif
 
-using namespace std;
 using namespace ai;
 
 bool PetitionSignAction::Execute(Event& event)
@@ -70,7 +69,7 @@ bool PetitionSignAction::Execute(Event& event)
 
         if (result)
         {
-            ai->TellError("抱歉,我已经签署了这份请愿");
+            ai->TellError("Sorry, I already signed this pettition");
             accept = false;
         }
         delete result;*/
@@ -88,7 +87,7 @@ bool PetitionSignAction::Execute(Event& event)
         WorldPacket data(MSG_PETITION_DECLINE);
         data << petitionGuid;
         bot->GetSession()->HandlePetitionDeclineOpcode(data);
-        sLog.outBasic("Bot #%d <%s> declines %s invite", bot->GetGUIDLow(), bot->GetName(), isArena ? "Arena" : "Guild");
+        sLog.outBasic("机器人 #%d <%s> 拒绝 %s 的邀请", bot->GetGUIDLow(), bot->GetName(), isArena ? "Arena" : "Guild");
         return false;
     }
     if (accept)
@@ -97,7 +96,7 @@ bool PetitionSignAction::Execute(Event& event)
         data << petitionGuid << unk;
         bot->GetSession()->HandlePetitionSignOpcode(data);
         bot->Say("谢谢邀请!", LANG_UNIVERSAL);
-        sLog.outBasic("机器人 #%d <%s> 接受 %s 的邀请.", bot->GetGUIDLow(), bot->GetName(), isArena ? "Arena" : "Guild");
+        sLog.outBasic("机器人 #%d <%s> accepts %s 的邀请", bot->GetGUIDLow(), bot->GetName(), isArena ? "Arena" : "Guild");
         return true;
     }
     return false;

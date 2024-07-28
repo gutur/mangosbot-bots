@@ -1,7 +1,7 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "VehicleActions.h"
-#include "../ItemVisitors.h"
+#include "playerbot/strategy/ItemVisitors.h"
 #ifdef MANGOSBOT_TWO
 #include "Entities/Vehicle.h"
 #endif
@@ -16,8 +16,8 @@ bool EnterVehicleAction::Execute(Event& event)
     if (transportInfo && transportInfo->IsOnVehicle())
         return false;
 
-    list<ObjectGuid> npcs = AI_VALUE(list<ObjectGuid>, "nearest vehicles");
-    for (list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
+    std::list<ObjectGuid> npcs = AI_VALUE(std::list<ObjectGuid>, "nearest vehicles");
+    for (std::list<ObjectGuid>::iterator i = npcs.begin(); i != npcs.end(); i++)
     {
         Unit* vehicle = ai->GetUnit(*i);
         if (!vehicle)
@@ -25,14 +25,14 @@ bool EnterVehicleAction::Execute(Event& event)
 
         if (!vehicle->IsFriend(bot))
         {
-            ostringstream out; out << "Vehicle is not friendy!";
+            std::ostringstream out; out << "Vehicle is not friendy!";
             bot->Say(out.str(), LANG_UNIVERSAL);
             continue;
         }
 
         if (!vehicle->GetVehicleInfo()->CanBoard(bot))
         {
-            ostringstream out; out << "Can't enter Vehicle!";
+            std::ostringstream out; out << "Can't enter Vehicle!";
             bot->Say(out.str(), LANG_UNIVERSAL);
             continue;
         }
@@ -49,7 +49,7 @@ bool EnterVehicleAction::Execute(Event& event)
         uint8 seat = 0;
         vehicle->GetVehicleInfo()->Board(bot, seat);
 
-        ostringstream out; out << "Entering Vehicle!";
+        std::ostringstream out; out << "Entering Vehicle!";
         bot->Say(out.str(), LANG_UNIVERSAL);
         continue;
 
@@ -62,8 +62,7 @@ bool EnterVehicleAction::Execute(Event& event)
         {
             seat = transportCheck->GetTransportSeat();
             // dismount because bots can enter vehicle on mount
-            WorldPacket emptyPacket;
-            bot->GetSession()->HandleCancelMountAuraOpcode(emptyPacket);
+            ai->Unmount();
             return true;
         }
 

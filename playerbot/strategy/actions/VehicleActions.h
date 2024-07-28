@@ -1,16 +1,16 @@
 #pragma once
 
-#include "../Action.h"
+#include "playerbot/strategy/Action.h"
 #include "MovementActions.h"
-#include "AiFactory.h"
-#include "PlayerbotAIConfig.h"
+#include "playerbot/AiFactory.h"
+#include "playerbot/PlayerbotAIConfig.h"
 
 namespace ai
 {
     class EnterVehicleAction : public MovementAction
     {
     public:
-        EnterVehicleAction(PlayerbotAI* ai, string name = "enter vehicle") : MovementAction(ai, name) {}
+        EnterVehicleAction(PlayerbotAI* ai, std::string name = "enter vehicle") : MovementAction(ai, name) {}
         virtual bool Execute(Event& event);
         //virtual bool isUseful();
     };
@@ -18,7 +18,7 @@ namespace ai
     class LeaveVehicleAction : public MovementAction
     {
     public:
-        LeaveVehicleAction(PlayerbotAI* ai, string name = "leave vehicle") : MovementAction(ai, name) {}
+        LeaveVehicleAction(PlayerbotAI* ai, std::string name = "leave vehicle") : MovementAction(ai, name) {}
         virtual bool Execute(Event& event);
         //virtual bool isUseful();
     };

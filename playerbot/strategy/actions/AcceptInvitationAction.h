@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Action.h"
+#include "playerbot/strategy/Action.h"
 
 namespace ai
 {
@@ -11,7 +11,6 @@ namespace ai
 
         virtual bool Execute(Event& event)
         {
-            Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
             Group* grp = bot->GetGroupInvite();
             if (!grp)
                 return false;
@@ -51,17 +50,17 @@ namespace ai
             ai->ChangeStrategy("-lfg,-bg", BotState::BOT_STATE_NON_COMBAT);
             ai->Reset();
 
-            sPlayerbotAIConfig.logEvent(ai, "AcceptInvitationAction", grp->GetLeaderName(), to_string(grp->GetMembersCount()));
+            sPlayerbotAIConfig.logEvent(ai, "AcceptInvitationAction", grp->GetLeaderName(), std::to_string(grp->GetMembersCount()));
 
             Player* master = inviter;
 
             if (master->GetPlayerbotAI()) //Copy formation from bot master.
             {
-                if (sPlayerbotAIConfig.inviteChat && sRandomPlayerbotMgr.IsFreeBot(bot))
+                if (sPlayerbotAIConfig.inviteChat && (sRandomPlayerbotMgr.IsFreeBot(bot) || !ai->HasActivePlayerMaster()))
                 {
-                    map<string, string> placeholders;
+                    std::map<std::string, std::string> placeholders;
                     placeholders["%name"] = master->GetName();
-                    string reply;
+                    std::string reply;
                     if (urand(0, 3))
                         reply = BOT_TEXT2("邀请我 %name!", placeholders);
                     else
@@ -80,7 +79,7 @@ namespace ai
                 value->Load(masterFormation->getName());
             }
 
-            ai->TellPlayer(requester, BOT_TEXT("hello"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+            ai->TellPlayer(inviter, BOT_TEXT("hello"), PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 
             ai->DoSpecificAction("reset raids", event, true);
             ai->DoSpecificAction("update gear", event, true);

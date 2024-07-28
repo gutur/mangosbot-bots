@@ -1,9 +1,9 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "CastTimeStrategy.h"
 
-#include "../../ServerFacade.h"
-#include "../actions/GenericSpellActions.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/strategy/actions/GenericSpellActions.h"
 
 using namespace ai;
 
@@ -12,7 +12,7 @@ float CastTimeMultiplier::GetValue(Action* action)
     if (action == NULL) return 1.0f;
 
     uint8 targetHealth = AI_VALUE2(uint8, "health", "current target");
-    string name = action->getName();
+    std::string name = action->getName();
 
     if (action->GetTarget() != AI_VALUE(Unit*, "current target"))
         return 1.0f;

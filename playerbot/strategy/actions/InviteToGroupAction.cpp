@@ -1,8 +1,8 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "InviteToGroupAction.h"
-#include "../../ServerFacade.h"
-#include "../values/Formations.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/strategy/values/Formations.h"
 
 namespace ai
 {
@@ -84,18 +84,18 @@ namespace ai
         if (requester->GetLevel() > bot->GetLevel() + 4 || bot->GetLevel() > requester->GetLevel() + 4)
             return false;
 
-        string param = event.getParam();
+        std::string param = event.getParam();
 
         if (!param.empty() && param != "40" && param != "25" && param != "20" && param != "10" && param != "5")
         {
-            ai->TellError(requester, BOT_TEXT2("Unknown group size. Valid sizes for lfg are 40, 25, 20, 10 and 5.", {}));
+            ai->TellError(requester, BOT_TEXT2("未知队伍规模. 寻求组队中有效的队伍规模是 40, 25, 20, 10 和 5.", {}));
             return false;
         }
 
         Group* group = requester->GetGroup();
 
-        unordered_map<Classes, unordered_map<BotRoles,uint32>> allowedClassNr;
-        unordered_map<BotRoles, uint32> allowedRoles;
+        std::unordered_map<Classes, std::unordered_map<BotRoles,uint32>> allowedClassNr;
+        std::unordered_map<BotRoles, uint32> allowedRoles;
 
         allowedRoles[BOT_ROLE_TANK] = 1;
         allowedRoles[BOT_ROLE_HEALER] = 1;
@@ -220,14 +220,14 @@ namespace ai
             if (!ai->DoSpecificAction("accept invitation", event, true))
                 return false;
 
-            map<string, string> placeholders;
+            std::map<std::string, std::string> placeholders;
             placeholders["%role"] = (role == BOT_ROLE_TANK ? "tank" : (role == BOT_ROLE_HEALER ? "healer" : "dps"));
-            placeholders["%spotsleft"] = to_string(allowedRoles[role] - 1);
+            placeholders["%spotsleft"] = std::to_string(allowedRoles[role] - 1);
 
             if(allowedRoles[role] > 1)
-                ai->TellPlayer(requester, BOT_TEXT2("以 %role 参加, 还剩%spotsleft 个 %role 名额.", placeholders));
+                ai->TellPlayer(requester, BOT_TEXT2("作为 %role 参加, 还差 %spotsleft %role.", placeholders));
             else
-                ai->TellPlayer(requester, BOT_TEXT2("以 %role 参加.", placeholders));
+                ai->TellPlayer(requester, BOT_TEXT2("作为 %role 参加.", placeholders));
 
             return true;
         }
@@ -239,13 +239,13 @@ namespace ai
     {
         if (!bot->GetGroup())  //Select a random formation to copy.
         {
-            vector<string> formations = { "melee","queue","chaos","circle","line","shield","arrow","near","far"};
+            std::vector<std::string> formations = { "melee","queue","chaos","circle","line","shield","arrow","near","far"};
             FormationValue* value = (FormationValue*)context->GetValue<Formation*>("formation");
-            string newFormation = formations[urand(0, formations.size() - 1)];
+            std::string newFormation = formations[urand(0, formations.size() - 1)];
             value->Load(newFormation);
         }
 
-        list<ObjectGuid> nearGuids = ai->GetAiObjectContext()->GetValue<list<ObjectGuid> >("nearest friendly players")->Get();
+        std::list<ObjectGuid> nearGuids = ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid> >("nearest friendly players")->Get();
         for (auto& i : nearGuids)
         {
             Player* player = sObjectMgr.GetPlayer(i);
@@ -294,15 +294,30 @@ namespace ai
             if (group && ai->GetGrouperType() > GrouperType::LEADER_5 && !group->IsRaidGroup() && bot->GetGroup()->GetMembersCount() > 3)
                 group->ConvertToRaid();
 
-            if (sPlayerbotAIConfig.inviteChat && sRandomPlayerbotMgr.IsFreeBot(bot))
+            Guild* guild = sGuildMgr.GetGuildById(bot->GetGuildId());
+            if (sPlayerbotAIConfig.inviteChat && (sRandomPlayerbotMgr.IsFreeBot(bot) || !ai->HasActivePlayerMaster()))
             {
-                map<string, string> placeholders;
-                placeholders["%player"] = player->GetName();
-
-                if(group && group->IsRaidGroup())
-                    bot->Say(BOT_TEXT2("join_raid", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));                    
+                if (guild && bot->IsInGuild(player))
+                {
+                    BroadcastHelper::BroadcastGuildGroupOrRaidInvite(
+                        ai,
+                        bot,
+                        player,
+                        group,
+                        guild
+                    );
+                }
                 else
-                    bot->Say(BOT_TEXT2("join_group", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+                {
+
+                    std::map<std::string, std::string> placeholders;
+                    placeholders["%player"] = player->GetName();
+
+                    if (group && group->IsRaidGroup())
+                        bot->Say(BOT_TEXT2("join_raid", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+                    else
+                        bot->Say(BOT_TEXT2("join_group", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+                }
             }
 
             return Invite(bot, player);
@@ -318,7 +333,7 @@ namespace ai
 
         if (bot->InBattleGround())
             return false;
-        
+
         if (bot->InBattleGroundQueue())
             return false;
 
@@ -343,13 +358,13 @@ namespace ai
                 return false;
         }
 
-        if (ai->HasActivePlayerMaster()) //Alts do not invite randomly          
+        if (ai->HasActivePlayerMaster()) //Alts do not invite randomly
            return false;
 
         return true;
     }
 
-    vector<Player*> InviteGuildToGroupAction::getGuildMembers()
+    std::vector<Player*> InviteGuildToGroupAction::getGuildMembers()
     {
         Guild* guild = sGuildMgr.GetGuildById(bot->GetGuildId());
 
@@ -395,10 +410,10 @@ namespace ai
 
             if (playerAi)
             {
-                if (playerAi->GetGrouperType() == GrouperType::SOLO && !playerAi->HasRealPlayerMaster()) //Do not invite solo players. 
+                if (playerAi->GetGrouperType() == GrouperType::SOLO && !playerAi->HasRealPlayerMaster()) //Do not invite solo players.
                     continue;
 
-                if (playerAi->HasActivePlayerMaster()) //Do not invite alts of active players. 
+                if (playerAi->HasActivePlayerMaster()) //Do not invite alts of active players.
                     continue;
 
                 if (player->GetLevel() > bot->GetLevel() + 5) //Invite higher levels that need money so they can grind money and help out.
@@ -421,26 +436,15 @@ namespace ai
                 group->ConvertToRaid();
             }
 
-            if (sPlayerbotAIConfig.inviteChat && sRandomPlayerbotMgr.IsFreeBot(bot))
+            if (sPlayerbotAIConfig.inviteChat && (sRandomPlayerbotMgr.IsFreeBot(bot) || !ai->HasActivePlayerMaster()))
             {
-                map<string, string> placeholders;
-                placeholders["%name"] = player->GetName();
-                placeholders["%place"] = WorldPosition(player).getAreaName(false, false);
-
-                if (group && group->IsRaidGroup())
-                {
-                    if (urand(0, 3))
-                        guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("嘿,有人想一起在 %place 下副本吗", placeholders), LANG_UNIVERSAL);
-                    else
-                        guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("嘿,%name,我在 %place 下副本,你想加入吗?", placeholders), LANG_UNIVERSAL);
-                }
-                else
-                {
-                    if (urand(0, 3))
-                        guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("嘿,有人想在 %place 组队吗?", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
-                    else
-                        guild->BroadcastToGuild(bot->GetSession(), BOT_TEXT2("嘿,%name,你想加入我的队伍吗?我正前往 %place", placeholders), (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
-                }
+                BroadcastHelper::BroadcastGuildGroupOrRaidInvite(
+                    ai,
+                    bot,
+                    player,
+                    group,
+                    guild
+                );
             }
 
             return Invite(bot, player);

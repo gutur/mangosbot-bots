@@ -1,12 +1,11 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "LootStrategyValue.h"
-#include "../values/ItemUsageValue.h"
+#include "playerbot/strategy/values/ItemUsageValue.h"
 
 using namespace ai;
-using namespace std;
 
-void LootStrategyValue::Set(string newValue)
+void LootStrategyValue::Set(std::string newValue)
 {
     //Backwards compatibility
     if (newValue == "normal")
@@ -39,9 +38,9 @@ bool LootStrategyValue::CanLoot(ItemQualifier& itemQualifier, PlayerbotAI* ai)
     if (usage == ItemUsage::ITEM_USAGE_FORCE_GREED)
         return true;
 
-    vector<string> strategies = StrSplit(AI_VALUE(string, "loot strategy"), ",");
+    std::vector<std::string> strategies = StrSplit(AI_VALUE(std::string, "loot strategy"), ",");
     
-    for (string& strategy : strategies) //equip,quest,skill,disenchant,use,vendor,trash
+    for (std::string& strategy : strategies) //equip,quest,skill,disenchant,use,vendor,trash
     {
         if (strategy == "equip" && usage == ItemUsage::ITEM_USAGE_EQUIP)
             return true;

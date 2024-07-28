@@ -1,6 +1,6 @@
-#include "botpch.h"
-#include "../../playerbot.h"
-#include "../NamedObjectContext.h"
+
+#include "playerbot/playerbot.h"
+#include "playerbot/strategy/NamedObjectContext.h"
 #include "WarriorActions.h"
 #include "WarriorTriggers.h"
 #include "WarriorAiObjectContext.h"

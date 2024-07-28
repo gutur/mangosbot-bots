@@ -1,15 +1,15 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "AttackerWithoutAuraTargetValue.h"
-#include "../../PlayerbotAIConfig.h"
+#include "playerbot/PlayerbotAIConfig.h"
 
 using namespace ai;
 
 Unit* AttackerWithoutAuraTargetValue::Calculate()
 {
-    list<ObjectGuid> attackers = ai->GetAiObjectContext()->GetValue<list<ObjectGuid>>("possible attack targets")->Get();
+    std::list<ObjectGuid> attackers = ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid>>("possible attack targets")->Get();
     Unit* target = ai->GetAiObjectContext()->GetValue<Unit*>("current target")->Get();
-    for (list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); ++i)
+    for (std::list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); ++i)
     {
         Unit* unit = ai->GetUnit(*i);
         if (!unit || unit == target)

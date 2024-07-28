@@ -1,6 +1,6 @@
-#include "botpch.h"
+
 #include "QuestRewardActions.h"
-#include "../values/QuestValues.h"
+#include "playerbot/strategy/values/QuestValues.h"
 
 using namespace ai;
 
@@ -21,7 +21,7 @@ bool QuestRewardAction::Execute(Event& event)
     }
     else if (event.getParam() == "?") {
         auto currentQuestRewardOption = static_cast<QuestRewardOptionType>(AI_VALUE(uint8, "quest reward"));
-        ostringstream out;
+        std::ostringstream out;
         out << "Current: |cff00ff00";
         switch (currentQuestRewardOption) {
         case QuestRewardOptionType::QUEST_REWARD_OPTION_AUTO:

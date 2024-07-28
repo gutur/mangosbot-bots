@@ -1,7 +1,7 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "WaitForAttackAction.h"
-#include "../generic/CombatStrategy.h"
+#include "playerbot/strategy/generic/CombatStrategy.h"
 
 using namespace ai;
 

@@ -1,15 +1,15 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "RpgSubActions.h"
 #include "ChooseRpgTargetAction.h"
-#include "../../PlayerbotAIConfig.h"
-#include "../values/PossibleRpgTargetsValue.h"
-#include "../values/Formations.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/strategy/values/PossibleRpgTargetsValue.h"
+#include "playerbot/strategy/values/Formations.h"
 #include "EmoteAction.h"
-#include "GossipDef.h"
+#include "Entities/GossipDef.h"
 #include "GuildCreateActions.h"
-#include "SocialMgr.h"
-#include "../../TravelMgr.h"
+#include "Social/SocialMgr.h"
+#include "playerbot/TravelMgr.h"
 
 
 using namespace ai;
@@ -23,12 +23,12 @@ void RpgHelper::BeforeExecute()
     setFacing(guidP());
 }
 
-void RpgHelper::AfterExecute(bool doDelay, bool waitForGroup, string nextAction)
+void RpgHelper::AfterExecute(bool doDelay, bool waitForGroup, std::string nextAction)
 {
     if ((ai->HasRealPlayerMaster() || bot->GetGroup() || !urand(0,5)) && nextAction == "rpg") 
         nextAction = "rpg cancel"; 
     
-    SET_AI_VALUE(string, "next rpg action", nextAction);
+    SET_AI_VALUE(std::string, "next rpg action", nextAction);
 
     if(doDelay)
         setDelay(waitForGroup);
@@ -139,14 +139,11 @@ bool RpgTaxiAction::Execute(Event& event)
 
     GuidPosition guidP = rpg->guidP();
 
-    WorldPacket emptyPacket;
-    bot->GetSession()->HandleCancelMountAuraOpcode(emptyPacket);
-    bot->UpdateSpeed(MOVE_RUN, true);
-    bot->UpdateSpeed(MOVE_RUN, false);
+    ai->Unmount();
 
     uint32 node = sObjectMgr.GetNearestTaxiNode(guidP.getX(), guidP.getY(), guidP.getZ(), guidP.getMapId(), bot->GetTeam());
 
-    vector<uint32> nodes;
+    std::vector<uint32> nodes;
     for (uint32 i = 0; i < sTaxiPathStore.GetNumRows(); ++i)
     {
         TaxiPathEntry const* entry = sTaxiPathStore.LookupEntry(i);
@@ -276,14 +273,14 @@ bool RpgTradeUsefulAction::Execute(Event& event)
     if (!player)
         return false;
 
-    list<Item*> items = AI_VALUE(list<Item*>, "items useful to give");
+    std::list<Item*> items = AI_VALUE(std::list<Item*>, "items useful to give");
 
     if (items.empty())
         return false;
 
     Item* item = items.front();
 
-    ostringstream param;
+    std::ostringstream param;
 
     param << chat->formatWorldobject(player);
     param << " ";
@@ -306,9 +303,9 @@ bool RpgTradeUsefulAction::Execute(Event& event)
         if (IsTradingItem(item->GetEntry())) //Did we manage to add the item to the trade?
         {
             if (bot->GetGroup() && bot->GetGroup()->IsMember(guidP))
-                ai->TellPlayerNoFacing(GetMaster(), "拿着 " + chat->formatItem(item) + " 你比我更适合他, " + player->GetName() + ".", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
+                ai->TellPlayerNoFacing(GetMaster(), "You can use this " + chat->formatItem(item) + " better than me, " + player->GetName() + ".", PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
             else
-                bot->Say("拿着" + chat->formatItem(item) + " 吧, " + player->GetName() + ",你比我更适合他.", (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
+                bot->Say("You can use this " + chat->formatItem(item) + " better than me, " + player->GetName() + ".", (bot->GetTeam() == ALLIANCE ? LANG_COMMON : LANG_ORCISH));
 
             if (!urand(0, 4) || items.size() < 2) //Complete the trade if we have no more items to trade.
             {
@@ -363,6 +360,7 @@ bool RpgDuelAction::Execute(Event& event)
 
 bool RpgItemAction::Execute(Event& event)
 {
+    Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     GuidPosition guidP = AI_VALUE(GuidPosition, "rpg target"), objectGuidP;
 
     if (sServerFacade.isMoving(bot))
@@ -372,20 +370,32 @@ bool RpgItemAction::Execute(Event& event)
         return true;
     }
 
-    Unit* unit = nullptr;
-
+    GameObject* gameObjectTarget = nullptr;
+    Unit* unitTarget = nullptr;
     if (guidP.IsUnit())
-        unit = guidP.GetUnit();
+    {
+        unitTarget = guidP.GetUnit();
+    }
+    else if (guidP.IsGameObject())
+    {
+        gameObjectTarget = guidP.GetGameObject();
+    }
 
-    list<Item*> questItems = AI_VALUE2(list<Item*>, "inventory items", "quest");
+    std::list<Item*> questItems = AI_VALUE2(std::list<Item*>, "inventory items", "quest");
 
     bool used = false;
-
-    for (auto item : questItems)
+    for (Item* item : questItems)
     {
-        if (AI_VALUE2(bool, "can use item on", Qualified::MultiQualify({ to_string(item->GetProto()->ItemId),guidP.to_string() }, ",")))
+        if (AI_VALUE2(bool, "can use item on", Qualified::MultiQualify({ std::to_string(item->GetProto()->ItemId),guidP.to_string() }, ",")))
         {
-            used = UseItem(GetMaster(), item, guidP.IsGameObject() ? guidP : ObjectGuid(), nullptr, unit);
+            if (gameObjectTarget)
+            {
+                used = UseItem(requester, item->GetEntry(), gameObjectTarget);
+            }
+            else
+            {
+                used = UseItem(requester, item->GetEntry(), unitTarget);
+            }
         }
     }
 

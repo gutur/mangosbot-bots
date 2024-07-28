@@ -1,18 +1,18 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "TrainerAction.h"
-#include "../../ServerFacade.h"
-#include "../values/BudgetValues.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/strategy/values/BudgetValues.h"
 
 using namespace ai;
 
-void TrainerAction::Learn(uint32 cost, TrainerSpell const* tSpell, ostringstream& msg)
+void TrainerAction::Learn(uint32 cost, TrainerSpell const* tSpell, std::ostringstream& msg)
 {
     if (sPlayerbotAIConfig.autoTrainSpells != "free" &&  !ai->HasCheat(BotCheatMask::gold))
     {
         if (AI_VALUE2(uint32, "free money for", (uint32)NeedMoneyFor::spells) < cost)
         {
-            msg << " - 太贵了.";
+            msg << " - 太贵了";
             return;
         }
 
@@ -58,7 +58,7 @@ void TrainerAction::Learn(uint32 cost, TrainerSpell const* tSpell, ostringstream
     if (!learned) bot->learnSpell(tSpell->spell, false);
 #endif
 
-    sPlayerbotAIConfig.logEvent(ai, "TrainerAction", proto->SpellName[0], to_string(proto->Id));
+    sPlayerbotAIConfig.logEvent(ai, "TrainerAction", proto->SpellName[0], std::to_string(proto->Id));
 
     msg << " - 已经学习";
 }
@@ -132,7 +132,7 @@ void TrainerAction::Iterate(Player* requester, Creature* creature, TrainerSpellA
         uint32 cost = uint32(floor(tSpell->spellCost *  fDiscountMod));
         totalCost += cost;
 
-        ostringstream out;
+        std::ostringstream out;
         out << chat->formatSpell(pSpellInfo) << chat->formatMoney(cost);
 
         if (action)
@@ -149,13 +149,13 @@ void TrainerAction::Iterate(Player* requester, Creature* creature, TrainerSpellA
     if(hasHeader)
         TellFooter(requester, totalCost);
     else if (!ai->GetMaster() || sServerFacade.GetDistance2d(bot, ai->GetMaster()) < sPlayerbotAIConfig.reactDistance || ai->HasStrategy("debug", BotState::BOT_STATE_NON_COMBAT))
-        ai->TellPlayerNoFacing(requester, "No spells can be learned from this trainer");
+        ai->TellPlayerNoFacing(requester, "这个训练师没有可以学习的技能");
 }
 
 bool TrainerAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    string text = event.getParam();
+    std::string text = event.getParam();
     Creature* creature = nullptr;
 
     if (event.getSource() == "rpg action")
@@ -201,7 +201,7 @@ bool TrainerAction::Execute(Event& event)
     if (spell)
         spells.insert(spell);
 
-    if (text.find("learn") != string::npos || sRandomPlayerbotMgr.IsFreeBot(bot) || (sPlayerbotAIConfig.autoTrainSpells != "no" && (creature->GetCreatureInfo()->TrainerType != TRAINER_TYPE_TRADESKILLS || !ai->HasActivePlayerMaster()))) //Todo rewrite to only exclude start primary profession skills and make config dependent.
+    if (text.find("learn") != std::string::npos || sRandomPlayerbotMgr.IsFreeBot(bot) || (sPlayerbotAIConfig.autoTrainSpells != "no" && (creature->GetCreatureInfo()->TrainerType != TRAINER_TYPE_TRADESKILLS || !ai->HasActivePlayerMaster()))) //Todo rewrite to only exclude start primary profession skills and make config dependent.
         Iterate(requester, creature, &TrainerAction::Learn, spells);
     else
         Iterate(requester, creature, NULL, spells);
@@ -211,7 +211,7 @@ bool TrainerAction::Execute(Event& event)
 
 void TrainerAction::TellHeader(Player* requester, Creature* creature)
 {
-    ostringstream out; out << "--- 可以从 " << creature->GetName() << " 处学习的技能---";
+    std::ostringstream out; out << "--- 可以从 " << creature->GetName() << "处学习的技能 ---";
     ai->TellPlayer(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
 }
 
@@ -219,7 +219,7 @@ void TrainerAction::TellFooter(Player* requester, uint32 totalCost)
 {
     if (totalCost)
     {
-        ostringstream out; out << "总费用: " << chat->formatMoney(totalCost);
+        std::ostringstream out; out << "总费用: " << chat->formatMoney(totalCost);
         ai->TellPlayer(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);
     }
 }

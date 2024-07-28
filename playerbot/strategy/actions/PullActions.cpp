@@ -1,9 +1,9 @@
-#include "botpch.h"
-#include "../../playerbot.h"
-#include "../generic/PullStrategy.h"
-#include "../values/AttackersValue.h"
+
+#include "playerbot/playerbot.h"
+#include "playerbot/strategy/generic/PullStrategy.h"
+#include "playerbot/strategy/values/AttackersValue.h"
 #include "PullActions.h"
-#include "../values/PositionValue.h"
+#include "playerbot/strategy/values/PositionValue.h"
 
 using namespace ai;
 
@@ -20,7 +20,7 @@ bool PullRequestAction::Execute(Event& event)
     Unit* target = GetTarget(event);
     if (!target)
     {
-        ai->TellPlayerNoFacing(requester, "你没有目标.");
+        ai->TellPlayerNoFacing(requester, "你没有目标");
         return false;
     }
 
@@ -28,19 +28,19 @@ bool PullRequestAction::Execute(Event& event)
     const float distanceToPullTarget = target->GetDistance(ai->GetBot());
     if (distanceToPullTarget > maxPullDistance)
     {
-        ai->TellPlayerNoFacing(requester, "目标距离太远.");
+        ai->TellPlayerNoFacing(requester, "目标距离太远");
         return false;
     }
 
     if (!AttackersValue::IsValid(target, bot, nullptr, false))
     {
-        ai->TellPlayerNoFacing(requester, "目标不能被拉走.");
+        ai->TellPlayerNoFacing(requester, "目标不能被拉走");
         return false;
     }
 
     if (!strategy->CanDoPullAction(target))
     {
-        ostringstream out; out << "不能执行拉怪指令 '" << strategy->GetPullActionName() << "'";
+        std::ostringstream out; out << "不能执行拉怪指令 '" << strategy->GetPullActionName() << "'";
         ai->TellPlayerNoFacing(requester, out.str());
         return false;
     }
@@ -53,6 +53,10 @@ bool PullRequestAction::Execute(Event& event)
     posMap["pull"] = pullPosition;
 
     strategy->RequestPull(target);
+
+    // Force change combat state to have a faster reaction time
+    ai->OnCombatStarted();
+
     return true;
 }
 
@@ -117,7 +121,7 @@ bool PullStartAction::Execute(Event& event)
 }
 
 
-PullAction::PullAction(PlayerbotAI* ai, string name) : CastSpellAction(ai, name)
+PullAction::PullAction(PlayerbotAI* ai, std::string name) : CastSpellAction(ai, name)
 {
     InitPullAction();
 }
@@ -144,7 +148,7 @@ bool PullAction::Execute(Event& event)
                     return false;
                 }
 
-                string actionName = strategy->GetPullActionName();
+                std::string actionName = strategy->GetPullActionName();
 
                 // Execute the pull action
                 SET_AI_VALUE(Unit*, "current target", GetTarget());
@@ -174,7 +178,7 @@ bool PullAction::isPossible()
     PullStrategy* strategy = PullStrategy::Get(ai);
     if (strategy)
     {
-        string spellName = strategy->GetSpellName();
+        std::string spellName = strategy->GetSpellName();
         Unit* target = strategy->GetTarget();
         if (!spellName.empty() && target)
         {
@@ -194,7 +198,7 @@ void PullAction::InitPullAction()
     PullStrategy* strategy = PullStrategy::Get(ai);
     if (strategy)
     {
-        string spellName = strategy->GetSpellName();
+        std::string spellName = strategy->GetSpellName();
         if (!spellName.empty())
         {
             SetSpellName(spellName);

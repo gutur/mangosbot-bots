@@ -1,7 +1,7 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "ListQuestsActions.h"
-#include "../../TravelMgr.h"
+#include "playerbot/TravelMgr.h"
 
 using namespace ai;
 
@@ -50,7 +50,7 @@ void ListQuestsAction::ListQuests(Player* requester, QuestListFilter filter, Que
 
     ai->TellPlayer(requester, "--- 总结 ---");
     std::ostringstream out;
-    out << "Total: " << (completeCount + incompleteCount) << " / 25 (未完成: " << incompleteCount << ", 完成: " << completeCount << ")";
+    out << "总共: " << (completeCount + incompleteCount) << " / 25 (未完成: " << incompleteCount << ", 完成: " << completeCount << ")";
     ai->TellPlayer(requester, out);
 }
 
@@ -89,9 +89,9 @@ int ListQuestsAction::ListQuests(Player* requester, bool completed, bool silent,
 
                 if (QuestDestination->GetQuestTemplate()->GetQuestId() == questId)
                 {
-                    ostringstream out;
+                    std::ostringstream out;
 
-                    out << "[进行中] 前往 " << target->getPosition()->distance(botPos);
+                    out << "[Active] 出发 " << target->getPosition()->distance(botPos);
 
                     out << " 至 " << QuestDestination->getTitle();
 
@@ -102,8 +102,8 @@ int ListQuestsAction::ListQuests(Player* requester, bool completed, bool silent,
 
         if (travelDetail == QUEST_TRAVEL_DETAIL_SUMMARY)
         {
-            vector<TravelDestination*> allDestinations = sTravelMgr.getQuestTravelDestinations(bot, questId, true, true, -1);
-            vector<TravelDestination*> availDestinations = sTravelMgr.getQuestTravelDestinations(bot, questId, ai->GetMaster(), false, -1);
+            std::vector<TravelDestination*> allDestinations = sTravelMgr.getQuestTravelDestinations(bot, questId, true, true, -1);
+            std::vector<TravelDestination*> availDestinations = sTravelMgr.getQuestTravelDestinations(bot, questId, ai->GetMaster(), false, -1);
 
             uint32 desTot = allDestinations.size();
             uint32 desAvail = availDestinations.size();
@@ -119,7 +119,7 @@ int ListQuestsAction::ListQuests(Player* requester, bool completed, bool silent,
             for (auto dest : availDestinations)
                 apoints += dest->getPoints().size();
 
-            ostringstream out;
+            std::ostringstream out;
 
             out << desAvail << "/" << desTot << " 目标地点 " << apoints << "/" << tpoints << " 点. ";
             if (desFull > 0)
@@ -132,7 +132,7 @@ int ListQuestsAction::ListQuests(Player* requester, bool completed, bool silent,
         else if (travelDetail == QUEST_TRAVEL_DETAIL_FULL)
         {
             uint32 limit = 0;
-            vector<TravelDestination*> allDestinations = sTravelMgr.getQuestTravelDestinations(bot, questId, true, true, -1);
+            std::vector<TravelDestination*> allDestinations = sTravelMgr.getQuestTravelDestinations(bot, questId, true, true, -1);
 
             std::sort(allDestinations.begin(), allDestinations.end(), [botPos](TravelDestination* i, TravelDestination* j) {return i->distanceTo(botPos) < j->distanceTo(botPos); });
 
@@ -141,7 +141,7 @@ int ListQuestsAction::ListQuests(Player* requester, bool completed, bool silent,
                 if (limit > 5)
                     continue;
 
-                ostringstream out;
+                std::ostringstream out;
 
                 uint32 tpoints = dest->getPoints(true).size();
                 uint32 apoints = dest->getPoints().size();
@@ -156,7 +156,7 @@ int ListQuestsAction::ListQuests(Player* requester, bool completed, bool silent,
                 out << " 点.";
 
                 if (!dest->isActive(bot))
-                    out << " 未激活.";
+                    out << " 未激活";
 
                 ai->TellPlayer(requester, out);
 

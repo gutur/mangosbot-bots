@@ -1,6 +1,6 @@
-#include "botpch.h"
-#include "../../playerbot.h"
-#include "../Strategy.h"
+
+#include "playerbot/playerbot.h"
+#include "playerbot/strategy/Strategy.h"
 #include "DeadStrategy.h"
 
 using namespace ai;

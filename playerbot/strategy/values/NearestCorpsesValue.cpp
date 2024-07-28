@@ -1,11 +1,11 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "NearestCorpsesValue.h"
 
-#include "../../ServerFacade.h"
-#include "GridNotifiers.h"
-#include "GridNotifiersImpl.h"
-#include "CellImpl.h"
+#include "playerbot/ServerFacade.h"
+#include "Grids/GridNotifiers.h"
+#include "Grids/GridNotifiersImpl.h"
+#include "Grids/CellImpl.h"
 
 using namespace ai;
 using namespace MaNGOS;
@@ -24,7 +24,7 @@ private:
     float i_range;
 };
 
-void NearestCorpsesValue::FindUnits(list<Unit*> &targets)
+void NearestCorpsesValue::FindUnits(std::list<Unit*> &targets)
 {
     AnyDeadUnitInObjectRangeCheck u_check(bot,  range);
     UnitListSearcher<AnyDeadUnitInObjectRangeCheck> searcher(targets, u_check);

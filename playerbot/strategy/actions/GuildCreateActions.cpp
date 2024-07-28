@@ -1,7 +1,7 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "GuildCreateActions.h"
-#include "../../RandomPlayerbotFactory.h"
+#include "playerbot/RandomPlayerbotFactory.h"
 #ifndef MANGOSBOT_ZERO
 #ifdef CMANGOS
 #include "Arena/ArenaTeam.h"
@@ -10,24 +10,23 @@
 #include "ArenaTeam.h"
 #endif
 #endif
-#include "ServerFacade.h"
-#include "TravelMgr.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/TravelMgr.h"
 
-using namespace std;
 using namespace ai;
 
 bool BuyPetitionAction::Execute(Event& event)
 {
-    list<ObjectGuid> vendors = ai->GetAiObjectContext()->GetValue<list<ObjectGuid> >("nearest npcs")->Get();
+    std::list<ObjectGuid> vendors = ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid> >("nearest npcs")->Get();
     bool vendored = false, result = false;
-    for (list<ObjectGuid>::iterator i = vendors.begin(); i != vendors.end(); ++i)
+    for (std::list<ObjectGuid>::iterator i = vendors.begin(); i != vendors.end(); ++i)
     {
         ObjectGuid vendorguid = *i;
         Creature* pCreature = bot->GetNPCIfCanInteractWith(vendorguid, UNIT_NPC_FLAG_PETITIONER);
         if (!pCreature)
             continue;
 
-        string guildName = RandomPlayerbotFactory::CreateRandomGuildName();
+        std::string guildName = RandomPlayerbotFactory::CreateRandomGuildName();
         if (guildName.empty())
             continue;
 
@@ -113,7 +112,7 @@ bool BuyPetitionAction::canBuyPetition(Player* bot)
 bool PetitionOfferAction::Execute(Event& event)
 {
     uint32 petitionEntry = 5863; //GUILD_CHARTER
-    list<Item*> petitions = AI_VALUE2(list<Item*>, "inventory items", chat->formatQItem(5863));
+    std::list<Item*> petitions = AI_VALUE2(std::list<Item*>, "inventory items", chat->formatQItem(5863));
 
     if (petitions.empty())
         return false;
@@ -168,7 +167,7 @@ bool PetitionOfferNearbyAction::Execute(Event& event)
 {
     uint32 found = 0;
 
-    list<ObjectGuid> nearGuids = ai->GetAiObjectContext()->GetValue<list<ObjectGuid> >("nearest friendly players")->Get();
+    std::list<ObjectGuid> nearGuids = ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid> >("nearest friendly players")->Get();
     for (auto& i : nearGuids)
     {
         Player* player = sObjectMgr.GetPlayer(i);
@@ -196,9 +195,9 @@ bool PetitionOfferNearbyAction::Execute(Event& event)
         if (sServerFacade.GetDistance2d(bot, player) > sPlayerbotAIConfig.sightDistance)
             continue;
 
-        if (sPlayerbotAIConfig.inviteChat && sServerFacade.GetDistance2d(bot, player) < sPlayerbotAIConfig.spellDistance && sRandomPlayerbotMgr.IsFreeBot(bot))
+        if (sPlayerbotAIConfig.inviteChat && sServerFacade.GetDistance2d(bot, player) < sPlayerbotAIConfig.spellDistance && (sRandomPlayerbotMgr.IsFreeBot(bot) || !ai->HasActivePlayerMaster()))
         {
-            map<string, string> placeholders;
+            std::map<std::string, std::string> placeholders;
             placeholders["%name"] = player->GetName();
 
             if(urand(0,3))
@@ -223,15 +222,15 @@ bool PetitionOfferNearbyAction::Execute(Event& event)
 bool PetitionTurnInAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    list<ObjectGuid> vendors = ai->GetAiObjectContext()->GetValue<list<ObjectGuid> >("nearest npcs")->Get();
+    std::list<ObjectGuid> vendors = ai->GetAiObjectContext()->GetValue<std::list<ObjectGuid> >("nearest npcs")->Get();
     bool vendored = false, result = false;
 
-    list<Item*> petitions = AI_VALUE2(list<Item*>, "inventory items", chat->formatQItem(5863));
+    std::list<Item*> petitions = AI_VALUE2(std::list<Item*>, "inventory items", chat->formatQItem(5863));
 
     if (petitions.empty())
         return false;
 
-    for (list<ObjectGuid>::iterator i = vendors.begin(); i != vendors.end(); ++i)
+    for (std::list<ObjectGuid>::iterator i = vendors.begin(); i != vendors.end(); ++i)
     {
         ObjectGuid vendorguid = *i;
         Creature* pCreature = bot->GetNPCIfCanInteractWith(vendorguid, UNIT_NPC_FLAG_PETITIONER);
@@ -273,6 +272,8 @@ bool PetitionTurnInAction::Execute(Event& event)
 
     //Select a new target to travel to. 
     TravelTarget newTarget = TravelTarget(ai);
+
+    ai->TellDebug(requester, "Handing in guild petition", "debug travel");
 
     bool foundTarget = SetNpcFlagTarget(requester, &newTarget, { UNIT_NPC_FLAG_PETITIONER });
 
@@ -323,6 +324,8 @@ bool BuyTabardAction::Execute(Event& event)
 
     //Select a new target to travel to. 
     TravelTarget newTarget = TravelTarget(ai);
+
+    ai->TellDebug(requester, "Buying a tabard", "debug travel");
 
     bool foundTarget = SetNpcFlagTarget(requester, &newTarget, { UNIT_NPC_FLAG_TABARDDESIGNER }, "Tabard Vendor", { 5976 });
 

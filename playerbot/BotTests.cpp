@@ -1,4 +1,4 @@
-#include "PlayerbotAIConfig.h"
+#include "playerbot/PlayerbotAIConfig.h"
 #include "BotTests.h"
 #include <fstream>
 
@@ -14,7 +14,7 @@ void LogAnalysis::RunAnalysis()
 
 void LogAnalysis::AnalysePid()
 {
-    string m_logsDir = sConfig.GetStringDefault("LogsDir");
+    std::string m_logsDir = sConfig.GetStringDefault("LogsDir");
     if (!m_logsDir.empty())
     {
         if ((m_logsDir.at(m_logsDir.length() - 1) != '/') && (m_logsDir.at(m_logsDir.length() - 1) != '\\'))
@@ -22,7 +22,7 @@ void LogAnalysis::AnalysePid()
     }
     std::ifstream in(m_logsDir+"activity_pid.csv", std::ifstream::in);
 
-    vector<uint32> activeBots, totalBots, avgDiff;
+    std::vector<uint32> activeBots, totalBots, avgDiff;
     
     uint32 runTime, maxBots = 0, start=0;
 
@@ -83,7 +83,7 @@ void LogAnalysis::AnalysePid()
     std::stringstream ss;
     ss << hour.count() << " Hours : " << mins.count() << " Minutes : " << secs.count() << " Seconds ";
     
-    ostringstream out;
+    std::ostringstream out;
 
     out << sPlayerbotAIConfig.GetTimestampStr()  << "," << "PID" << "," << ss.str().c_str() << "," << aDiff << "," << aBots << "," << maxBots;
 
@@ -95,7 +95,7 @@ void LogAnalysis::AnalysePid()
 
 void LogAnalysis::AnalyseEvents()
 {
-    string m_logsDir = sConfig.GetStringDefault("LogsDir");
+    std::string m_logsDir = sConfig.GetStringDefault("LogsDir");
     if (!m_logsDir.empty())
     {
         if ((m_logsDir.at(m_logsDir.length() - 1) != '/') && (m_logsDir.at(m_logsDir.length() - 1) != '\\'))
@@ -106,7 +106,7 @@ void LogAnalysis::AnalyseEvents()
     if (in.fail())
         return;
 
-    map<string, uint32> eventCount, eventMin;
+    std::map<std::string, uint32> eventCount, eventMin;
 
     eventMin["AcceptInvitationAction"] = 1;
     eventMin["AcceptQuestAction"] = 1;
@@ -118,7 +118,7 @@ void LogAnalysis::AnalyseEvents()
     eventMin["EquipAction"] = 1;
     eventMin["LeaveGroupAction"] = 1;
     eventMin["QueryItemUsageAction"] = 1;
-    eventMin["QuestObjectiveCompletedAction"] = 1;
+    eventMin["QuestUpdateAddKillAction"] = 1;
     eventMin["ReviveFromCorpseAction"] = 1;
     eventMin["StoreLootAction"] = 1;
     eventMin["SellAction"] = 1;
@@ -143,7 +143,7 @@ void LogAnalysis::AnalyseEvents()
         eventCount[tokens[2]]++;
     } while (in.good());
 
-    ostringstream out;
+    std::ostringstream out;
 
     out << sPlayerbotAIConfig.GetTimestampStr() << "," << "EVENT";
 
@@ -160,7 +160,7 @@ void LogAnalysis::AnalyseEvents()
 
 void LogAnalysis::AnalyseQuests()
 {
-    string m_logsDir = sConfig.GetStringDefault("LogsDir");
+    std::string m_logsDir = sConfig.GetStringDefault("LogsDir");
     if (!m_logsDir.empty())
     {
         if ((m_logsDir.at(m_logsDir.length() - 1) != '/') && (m_logsDir.at(m_logsDir.length() - 1) != '\\'))
@@ -172,7 +172,7 @@ void LogAnalysis::AnalyseQuests()
     if (in.fail())
         return;
 
-    map<string, uint32> questId, questStartCount, questObjective, questCompletedCount, questEndCount;
+    std::map<std::string, uint32> questId, questStartCount, questObjective, questCompletedCount, questEndCount;
 
     do
     {
@@ -184,17 +184,17 @@ void LogAnalysis::AnalyseQuests()
 
         Tokens tokens = StrSplit(line, ",");
 
-        if (tokens.size() == 10) //Some quest names have a "," so add an extra element. 
+        if (tokens.size() == 10) //Some quest names have a "," so add an extra element.
         {
             tokens[7] = tokens[7] + tokens[8];
             tokens[8] = tokens[9];
-        } 
+        }
         else if (tokens.size() == 11)
         {
             tokens[7] = tokens[7] + tokens[8] + tokens[9];
             tokens[8] = tokens[10];
         }
-        
+
 
         for(auto& token : tokens)
             token.erase(std::remove(token.begin(), token.end(), '\"'), token.end());
@@ -204,7 +204,7 @@ void LogAnalysis::AnalyseQuests()
             questId[tokens[7]] = stoi(tokens[8]);
             questStartCount[tokens[7]]++;
         }
-        else if (tokens[2] == "QueryItemUsageAction" || tokens[3] == "QuestObjectiveCompletedAction")
+        else if (tokens[2] == "QueryItemUsageAction" || tokens[3] == "QuestUpdateAddKillAction")
         {
             questId[tokens[7]] = questId[tokens[7]];
             questObjective[tokens[7]]++;
@@ -218,7 +218,7 @@ void LogAnalysis::AnalyseQuests()
         }
     } while (in.good());
 
-    ostringstream out;
+    std::ostringstream out;
 
     out << sPlayerbotAIConfig.GetTimestampStr() << "," << "QUEST";
 
@@ -242,7 +242,7 @@ void LogAnalysis::AnalyseQuests()
 
 void LogAnalysis::AnalyseCounts()
 {
-    string m_logsDir = sConfig.GetStringDefault("LogsDir");
+    std::string m_logsDir = sConfig.GetStringDefault("LogsDir");
     if (!m_logsDir.empty())
     {
         if ((m_logsDir.at(m_logsDir.length() - 1) != '/') && (m_logsDir.at(m_logsDir.length() - 1) != '\\'))
@@ -255,7 +255,7 @@ void LogAnalysis::AnalyseCounts()
 
     uint32 maxShow = 10;
 
-    map<string, string> countType;
+    std::map<std::string, std::string> countType;
     countType["TalkToQuestGiverAction"] = "Quest completed";
     countType["EquipAction"] = "Item equiped";
     countType["StoreLootAction"] = "Item looted";
@@ -268,7 +268,7 @@ void LogAnalysis::AnalyseCounts()
     countType["AttackAnythingAction"] = "Mob attacked";
     countType["XpGainAction"] = "Mob killed";
 
-    map<string,map<string, uint32>> counts;
+    std::map<std::string, std::map<std::string, uint32>> counts;
 
     do
     {
@@ -302,15 +302,15 @@ void LogAnalysis::AnalyseCounts()
     for (auto& count : counts)
     {
 
-        vector<pair<string, uint32>> list;
-        ostringstream out;        
+        std::vector<std::pair<std::string, uint32>> list;
+        std::ostringstream out;
 
         out << sPlayerbotAIConfig.GetTimestampStr() << "," << "COUNT-" << count.first;
 
         for (auto type : count.second)
             list.push_back(make_pair(type.first, type.second));
 
-        std::sort(list.begin(), list.end(), [](pair<string, uint32> i, pair<string, uint32> j) { return i.second > j.second; });
+        std::sort(list.begin(), list.end(), [](std::pair<std::string, uint32> i, std::pair<std::string, uint32> j) { return i.second > j.second; });
 
         for(auto& l:list)
             out << ",{" << l.first << "," << l.second << "}";

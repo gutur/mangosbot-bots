@@ -1,7 +1,7 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "RpgStrategy.h"
-#include "../actions/RpgSubActions.h"
+#include "playerbot/strategy/actions/RpgSubActions.h"
 
 using namespace ai;
 
@@ -9,8 +9,8 @@ float RpgActionMultiplier::GetValue(Action* action)
 {
     if (action == NULL) return 1.0f;
 
-    string nextAction = AI_VALUE(string, "next rpg action");
-    string name = action->getName();
+    std::string nextAction = AI_VALUE(std::string, "next rpg action");
+    std::string name = action->getName();
 
     if (dynamic_cast<RpgEnabled*>(action))
     {
@@ -180,7 +180,7 @@ void RpgCraftStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
 
     triggers.push_back(new TriggerNode(
         "rpg craft",
-        NextAction::array(0, new NextAction("rpg craft", 1.001f), NULL)));
+        NextAction::array(0, new NextAction("rpg craft", ai->HasCheat(BotCheatMask::item) ? 1.001f : 1.010f), NULL)));
 
     triggers.push_back(new TriggerNode(
         "rpg item",
@@ -198,12 +198,12 @@ void RpgJumpStrategy::InitNonCombatTriggers(std::list<TriggerNode*>& triggers)
         NextAction::array(0, new NextAction("jump::random", ACTION_PASSTROUGH), NULL)));
 }
 
-void RpgJumpStrategy::InitCombatTriggers(list<TriggerNode *> &triggers)
+void RpgJumpStrategy::InitCombatTriggers(std::list<TriggerNode *> &triggers)
 {
     InitNonCombatTriggers(triggers);
 }
 
-void RpgJumpStrategy::InitReactionTriggers(list<TriggerNode *> &triggers)
+void RpgJumpStrategy::InitReactionTriggers(std::list<TriggerNode *> &triggers)
 {
     InitNonCombatTriggers(triggers);
 }

@@ -1,11 +1,11 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "CheckMountStateAction.h"
-#include "../values/PositionValue.h"
-#include "../../ServerFacade.h"
-#include "../values/MountValues.h"
-#include "BattleGroundWS.h"
-#include "../../TravelMgr.h"
+#include "playerbot/strategy/values/PositionValue.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/strategy/values/MountValues.h"
+#include "BattleGround/BattleGroundWS.h"
+#include "playerbot/TravelMgr.h"
 
 using namespace ai;
 
@@ -185,10 +185,10 @@ bool CheckMountStateAction::Execute(Event& event)
             }
 
             //Mounting in safe place.
-            if (!ai->HasStrategy("guard", ai->GetState()) && !ai->HasStrategy("stay", ai->GetState()) && !AI_VALUE(list<ObjectGuid>, "possible rpg targets").empty() && urand(0, 100) > 50)
+            if (!ai->HasStrategy("guard", ai->GetState()) && !ai->HasStrategy("stay", ai->GetState()) && !AI_VALUE(std::list<ObjectGuid>, "possible rpg targets").empty() && urand(0, 100) > 50)
             {
                 if (ai->HasStrategy("debug mount", BotState::BOT_STATE_NON_COMBAT) && !IsMounted)
-                    ai->TellPlayerNoFacing(requester, "骑乘中.靠近角色扮演目标.");
+                    ai->TellPlayerNoFacing(requester, "骑乘中.接近了角色扮演目标.");
 
                 return Mount(requester);
             }
@@ -299,7 +299,7 @@ bool CheckMountStateAction::isUseful()
     if (!bot->GetMap()->IsMountAllowed() && bot->GetMapId() != 531)
         return false;
 
-    if (AI_VALUE(vector<MountValue>, "mount list").empty())
+    if (AI_VALUE(std::vector<MountValue>, "mount list").empty())
         return false;
 
     return true;
@@ -325,7 +325,7 @@ bool CheckMountStateAction::CanFly() const
         return false;
 #endif
 
-    for (auto& mount : AI_VALUE(vector<MountValue>, "mount list"))
+    for (auto& mount : AI_VALUE(std::vector<MountValue>, "mount list"))
         if (mount.GetSpeed(true))
             return true;
 
@@ -389,7 +389,7 @@ bool CheckMountStateAction::Mount(Player* requester)
 
     uint32 currentSpeed = AI_VALUE2(uint32, "current mount speed", "self target");
 
-    vector<MountValue> mountList = AI_VALUE(vector<MountValue>, "mount list");
+    std::vector<MountValue> mountList = AI_VALUE(std::vector<MountValue>, "mount list");
 
     std::shuffle(mountList.begin(), mountList.end(), *GetRandomGenerator());
     std::sort(mountList.begin(), mountList.end(), [canFly](MountValue i, MountValue j) {return i.GetSpeed(canFly) > j.GetSpeed(canFly); });
@@ -439,7 +439,7 @@ bool CheckMountStateAction::Mount(Player* requester)
                 continue;
             }
 
-            if (UseItemAuto(requester, mount.GetItem()))
+            if (UseItem(requester, mount.GetItem()->GetEntry()))
             {
                 SetDuration(3000U); // 3s
                 didMount = true;
@@ -461,7 +461,7 @@ bool CheckMountStateAction::Mount(Player* requester)
 
             if (ai->CastSpell(mount.GetSpellId(), bot))
             {
-                sPlayerbotAIConfig.logEvent(ai, "CheckMountStateAction", sServerFacade.LookupSpellInfo(mount.GetSpellId())->SpellName[0], to_string(mount.GetSpeed(canFly)));
+                sPlayerbotAIConfig.logEvent(ai, "CheckMountStateAction", sServerFacade.LookupSpellInfo(mount.GetSpellId())->SpellName[0], std::to_string(mount.GetSpeed(canFly)));
                 SetDuration(GetSpellRecoveryTime(sServerFacade.LookupSpellInfo(mount.GetSpellId())));
                 didMount = true;
             }
@@ -490,19 +490,16 @@ bool CheckMountStateAction::UnMount() const
         return false;
 
     if (bot->IsFlying() && WorldPosition(bot).currentHeight() > 10.0f)
+    {
         return false;
+    }
 
     if (bot->IsMounted())
     {
-        WorldPacket emptyPacket;
-        bot->GetSession()->HandleCancelMountAuraOpcode(emptyPacket);
-        bot->UpdateSpeed(MOVE_RUN, true);
-        bot->UpdateSpeed(MOVE_RUN, false);
-
-        if (bot->IsFlying())
-            bot->GetMotionMaster()->MoveFall();
+        ai->Unmount();
     }
-    else
-        ai->RemoveShapeshift();
+
+    ai->RemoveShapeshift();
+
     return true;
 }

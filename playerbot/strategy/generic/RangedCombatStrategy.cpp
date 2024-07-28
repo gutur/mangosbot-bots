@@ -1,10 +1,10 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "RangedCombatStrategy.h"
 
 using namespace ai;
 
-void RangedCombatStrategy::InitCombatTriggers(list<TriggerNode*> &triggers)
+void RangedCombatStrategy::InitCombatTriggers(std::list<TriggerNode*> &triggers)
 {
     triggers.push_back(new TriggerNode(
         "enemy too close for spell",

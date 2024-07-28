@@ -1,15 +1,15 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "NearestNonBotPlayersValue.h"
 
-#include "GridNotifiers.h"
-#include "GridNotifiersImpl.h"
-#include "CellImpl.h"
+#include "Grids/GridNotifiers.h"
+#include "Grids/GridNotifiersImpl.h"
+#include "Grids/CellImpl.h"
 
 using namespace ai;
 using namespace MaNGOS;
 
-void NearestNonBotPlayersValue::FindUnits(list<Unit*> &targets)
+void NearestNonBotPlayersValue::FindUnits(std::list<Unit*> &targets)
 {
     AnyUnitInObjectRangeCheck u_check(bot, range);
     UnitListSearcher<AnyUnitInObjectRangeCheck> searcher(targets, u_check);

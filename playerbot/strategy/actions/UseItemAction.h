@@ -1,7 +1,7 @@
 #pragma once
 #include "GenericActions.h"
-#include "../../ServerFacade.h"
-#include "../../RandomItemMgr.h"
+#include "playerbot/ServerFacade.h"
+#include "playerbot/RandomItemMgr.h"
 
 namespace ai
 {
@@ -17,36 +17,38 @@ namespace ai
         bool itemCheats;
     };
 
-    class UseItemAction : public ChatCommandAction 
+    class UseAction : public ChatCommandAction, public Qualified
     {
     public:
-        UseItemAction(PlayerbotAI* ai, string name = "use", bool selfOnly = false, uint32 duration = sPlayerbotAIConfig.reactDelay) : ChatCommandAction(ai, name, duration), selfOnly(selfOnly) {}
+        UseAction(PlayerbotAI* ai, std::string name = "use", uint32 duration = sPlayerbotAIConfig.reactDelay) : ChatCommandAction(ai, name, duration), Qualified() {}
 
     public:
-        virtual bool isPossible() override;
-
         // Used when this action is executed as a reaction
         virtual bool ShouldReactionInterruptCast() const override { return true; }
 
     protected:
         virtual bool Execute(Event& event) override;
-        bool UseItemAuto(Player* requester, Item* item);
-        bool UseItemOnGameObject(Player* requester, Item* item, ObjectGuid go);
-        bool UseItemOnItem(Player* requester, Item* item, Item* itemTarget);
-        bool UseItemOnTarget(Player* requester, Item* item, Unit* target);
-        bool UseItem(Player* requester, Item* item, ObjectGuid go, Item* itemTarget, Unit* unitTarget = nullptr);
-        bool UseGameObject(Player* requester, ObjectGuid guid);
-        bool SocketItem(Player* requester, Item * item, Item * gem, bool replace = false);
-        void TellConsumableUse(Player* requester, Item* item, string action, float percent);
+        bool UseItem(Player* requester, uint32 itemId, Unit* target = nullptr);
+        bool UseItem(Player* requester, uint32 itemId, GameObject* target);
+        bool UseItem(Player* requester, uint32 itemId, Item* target);
+        bool UseGameObject(Player* requester, Event& event, GameObject* gameObject);
+        
+        //void TellConsumableUse(Player* requester, Item* item, std::string action, float percent);
+
+        bool HasItemCooldown(uint32 itemId) const;
 
     private:
-        bool selfOnly;
+        bool UseItemInternal(Player* requester, uint32 itemId, Unit* target, GameObject* gameObjectTarget, Item* itemTarget);
+        bool UseQuestGiverItem(Player* requester, Item* item);
+#ifndef MANGOSBOT_ZERO
+        bool UseGemItem(Player* requester, Item* item, Item* gem, bool replace = false);
+#endif
     };
 
-    class UseItemIdAction : public UseItemAction, public Qualified
+    class UseItemIdAction : public UseAction
     {
     public:
-        UseItemIdAction(PlayerbotAI* ai, string name = "use id", bool selfOnly = false, uint32 duration = sPlayerbotAIConfig.reactDelay) : UseItemAction(ai, name, selfOnly, duration), Qualified() {}
+        UseItemIdAction(PlayerbotAI* ai, std::string name = "use id", uint32 duration = sPlayerbotAIConfig.reactDelay) : UseAction(ai, name, duration) {}
         virtual bool isPossible() override;
         virtual bool isUseful() override;
 
@@ -54,35 +56,33 @@ namespace ai
         virtual bool Execute(Event& event) override;
         virtual uint32 GetItemId() { return getQualifier().empty() ? 0 : getMultiQualifierInt(getQualifier(),0, ","); }
         virtual Unit* GetTarget() override { return nullptr; }
-        bool HasSpellCooldown(const uint32 itemId);
-        bool CastItemSpell(uint32 itemId, Unit* target, GameObject* goTarget);
     };
 
     class UseTargetedItemIdAction : public UseItemIdAction
     {
     public:
-        UseTargetedItemIdAction(PlayerbotAI* ai, string name, bool selfOnly = false, uint32 duration = sPlayerbotAIConfig.reactDelay) : UseItemIdAction(ai, name, selfOnly, duration) {}
+        UseTargetedItemIdAction(PlayerbotAI* ai, std::string name, uint32 duration = sPlayerbotAIConfig.reactDelay) : UseItemIdAction(ai, name, duration) {}
         virtual Unit* GetTarget() override { return Action::GetTarget(); }
         virtual uint32 GetItemId() override { return  0; }
     };
 
-    class UseSpellItemAction : public UseItemAction 
+    class UseSpellItemAction : public UseAction 
     {
     public:
-        UseSpellItemAction(PlayerbotAI* ai, string name, bool selfOnly = false) : UseItemAction(ai, name, selfOnly) {}
+        UseSpellItemAction(PlayerbotAI* ai, std::string name) : UseAction(ai, name) {}
         virtual bool isUseful() override;
     };
 
     class UsePotionAction : public UseItemIdAction
     {
     public:
-        UsePotionAction(PlayerbotAI* ai, string name, SpellEffects effect) : UseItemIdAction(ai, name), effect(effect) {}
+        UsePotionAction(PlayerbotAI* ai, std::string name, SpellEffects effect) : UseItemIdAction(ai, name), effect(effect) {}
 
         bool isUseful() override { return UseItemIdAction::isUseful() && AI_VALUE2(bool, "combat", "self target"); }
 
         virtual uint32 GetItemId() override
         {
-            list<Item*> items = AI_VALUE2(list<Item*>, "inventory items", getName());
+            std::list<Item*> items = AI_VALUE2(std::list<Item*>, "inventory items", getName());
             if (items.empty())
             {
                 return sRandomItemMgr.GetRandomPotion(bot->GetLevel(), effect);
@@ -151,10 +151,10 @@ namespace ai
         UseManaPotionAction(PlayerbotAI* ai) : UsePotionAction(ai, "mana potion", SPELL_EFFECT_ENERGIZE) {}
     };
 
-    class UseHearthStoneAction : public UseItemAction
+    class UseHearthStoneAction : public UseAction
     {
     public:
-        UseHearthStoneAction(PlayerbotAI* ai) : UseItemAction(ai, "hearthstone", true, 10000U) {}
+        UseHearthStoneAction(PlayerbotAI* ai) : UseAction(ai, "hearthstone", 10000U) {}
 
         virtual bool Execute(Event& event) override;
 
@@ -173,7 +173,7 @@ namespace ai
 
         uint32 GetItemId() override
         {
-            list<Item*> items = AI_VALUE2(list<Item*>, "inventory items", getName());
+            std::list<Item*> items = AI_VALUE2(std::list<Item*>, "inventory items", getName());
             if (items.empty())
             {
                 const uint32 level = bot->GetLevel();
@@ -269,10 +269,10 @@ namespace ai
         uint32 GetItemId() override { return 11951; }
     };
 
-    class UseRandomRecipeAction : public UseItemAction
+    class UseRandomRecipeAction : public UseAction
     {
     public:
-        UseRandomRecipeAction(PlayerbotAI* ai) : UseItemAction(ai, "random recipe", true, 3000U) {}
+        UseRandomRecipeAction(PlayerbotAI* ai) : UseAction(ai, "random recipe", 3000U) {}
 
         virtual bool isUseful() override;
         virtual bool isPossible() override {return AI_VALUE2(uint32,"item count", "recipe") > 0; }
@@ -283,10 +283,10 @@ namespace ai
         bool ShouldReactionInterruptMovement() const override { return true; }
     };
 
-    class UseRandomQuestItemAction : public UseItemAction
+    class UseRandomQuestItemAction : public UseAction
     {
     public:
-        UseRandomQuestItemAction(PlayerbotAI* ai) : UseItemAction(ai, "use random quest item", true) {}
+        UseRandomQuestItemAction(PlayerbotAI* ai) : UseAction(ai, "use random quest item") {}
 
         virtual bool isUseful() override;
         virtual bool isPossible() override { return AI_VALUE2(uint32, "item count", "quest") > 0;}
@@ -361,8 +361,8 @@ namespace ai
             if (!bot->InBattleGround() || bot->GetLevel() < 60 || !bot->IsInCombat())
                 return false;
 
-            list<ObjectGuid> units = *context->GetValue<list<ObjectGuid> >("nearest npcs no los");
-            for (list<ObjectGuid>::iterator i = units.begin(); i != units.end(); i++)
+            std::list<ObjectGuid> units = *context->GetValue<std::list<ObjectGuid> >("nearest npcs no los");
+            for (std::list<ObjectGuid>::iterator i = units.begin(); i != units.end(); i++)
             {
                 Unit* unit = ai->GetUnit(*i);
                 if (!unit)
@@ -412,7 +412,7 @@ namespace ai
     class UseBandageAction : public UseTargetedItemIdAction
     {
     public:
-        UseBandageAction(PlayerbotAI* ai) : UseTargetedItemIdAction(ai, "use bandage", false, 8000U) {}
+        UseBandageAction(PlayerbotAI* ai) : UseTargetedItemIdAction(ai, "use bandage", 8000U) {}
 
         virtual bool isUseful() override
         {
@@ -441,7 +441,7 @@ namespace ai
             return true;
         }
 
-        virtual string GetTargetName() override { return "self target"; }
+        virtual std::string GetTargetName() override { return "self target"; }
 
         virtual uint32 GetItemId() override
         {
@@ -475,7 +475,7 @@ namespace ai
     public:
         ThrowGrenadeAction(PlayerbotAI* ai) : UseTargetedItemIdAction(ai, "throw grenade") {}
 
-        virtual string GetTargetName() override { return "current target"; }
+        virtual std::string GetTargetName() override { return "current target"; }
 
         virtual bool isUseful() override
         {
@@ -571,5 +571,158 @@ namespace ai
         }
 
         virtual uint32 GetItemId() override { return 5634; }
+    };
+
+    class DrinkAction : public UseAction
+    {
+    public:
+        DrinkAction(PlayerbotAI* ai) : UseAction(ai, "drink") {}
+
+        bool Execute(Event& event) override
+        {
+            if (sServerFacade.IsInCombat(bot))
+                return false;
+
+            if (!bot->HasMana())
+                return false;
+
+            if (ai->HasCheat(BotCheatMask::item))
+            {
+                if (bot->IsNonMeleeSpellCasted(true))
+                    return false;
+
+                bot->clearUnitState(UNIT_STAT_CHASE);
+                bot->clearUnitState(UNIT_STAT_FOLLOW);
+
+                if (ai->GetBot()->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE)
+                {
+                    ai->StopMoving();
+                }
+
+                if (sServerFacade.isMoving(bot))
+                {
+                    ai->StopMoving();
+                    SetDuration(sPlayerbotAIConfig.globalCoolDown);
+                    return false;
+                }
+
+                bot->addUnitState(UNIT_STAND_STATE_SIT);
+                ai->InterruptSpell();
+
+                const float mpMissingPct = 100.0f - bot->GetPowerPercent();
+                const float multiplier = bot->InBattleGround() ? 20000.0f : 27000.0f;
+                const float drinkDuration = multiplier * (mpMissingPct / 100.0f);
+
+                const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(24355);
+                if (!pSpellInfo)
+                    return false;
+
+                ai->Unmount();
+
+                ai->CastSpell(24355, bot);
+                SetDuration(drinkDuration);
+                bot->RemoveSpellCooldown(*pSpellInfo);
+
+                // Eat and drink at the same time
+                if (AI_VALUE2(uint8, "health", "self target") < sPlayerbotAIConfig.lowHealth)
+                {
+                    const SpellEntry* pSpellInfo2 = sServerFacade.LookupSpellInfo(24005);
+                    if (pSpellInfo2)
+                    {
+                        ai->AddAura(bot, 24005);
+                        bot->RemoveSpellCooldown(*pSpellInfo2);
+                    }
+                }
+
+                return true;
+            }
+
+            return UseAction::Execute(event);
+        }
+
+        bool isUseful() override
+        {
+            return UseAction::isUseful() && bot->HasMana() && (AI_VALUE2(uint8, "mana", "self target") < 85);
+        }
+
+        bool isPossible() override
+        {
+            return !sServerFacade.IsInCombat(bot) && UseAction::isPossible();
+        }
+    };
+
+    class EatAction : public UseAction
+    {
+    public:
+        EatAction(PlayerbotAI* ai) : UseAction(ai, "food") {}
+
+        bool Execute(Event& event) override
+        {
+            if (sServerFacade.IsInCombat(bot))
+                return false;
+
+            if (ai->HasCheat(BotCheatMask::item))
+            {
+                if (bot->IsNonMeleeSpellCasted(true))
+                    return false;
+
+                bot->clearUnitState(UNIT_STAT_CHASE);
+                bot->clearUnitState(UNIT_STAT_FOLLOW);
+
+                if (ai->GetBot()->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE)
+                {
+                    ai->StopMoving();
+                }
+
+                if (sServerFacade.isMoving(bot))
+                {
+                    ai->StopMoving();
+                    SetDuration(sPlayerbotAIConfig.globalCoolDown);
+                    return false;
+                }
+
+                bot->addUnitState(UNIT_STAND_STATE_SIT);
+                ai->InterruptSpell();
+
+                const float hpMissingPct = 100.0f - bot->GetHealthPercent();
+                const float multiplier = bot->InBattleGround() ? 20000.0f : 27000.0f;
+                const float eatDuration = multiplier * (hpMissingPct / 100.0f);
+
+                const SpellEntry* pSpellInfo = sServerFacade.LookupSpellInfo(24005);
+                if (!pSpellInfo)
+                    return false;
+
+                ai->Unmount();
+
+                ai->CastSpell(24005, bot);
+                SetDuration(eatDuration);
+                bot->RemoveSpellCooldown(*pSpellInfo);
+
+                // Eat and drink at the same time
+                if (bot->HasMana() && (AI_VALUE2(uint8, "mana", "self target") < 85))
+                {
+                    const SpellEntry* pSpellInfo2 = sServerFacade.LookupSpellInfo(24355);
+                    if (pSpellInfo2)
+                    {
+                        ai->AddAura(bot, 24355);
+                        bot->RemoveSpellCooldown(*pSpellInfo2);
+                    }
+                }
+
+                return true;
+            }
+
+            return UseAction::Execute(event);
+        }
+
+        bool isUseful() override
+        {
+            return UseAction::isUseful() && (AI_VALUE2(uint8, "health", "self target") < sPlayerbotAIConfig.lowHealth);
+        }
+
+        bool isPossible() override
+        {
+            return !sServerFacade.IsInCombat(bot) && UseAction::isPossible();
+        }
     };
 }

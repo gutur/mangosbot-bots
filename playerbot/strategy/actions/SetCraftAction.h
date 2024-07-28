@@ -1,5 +1,5 @@
 #pragma once
-#include "../values/CraftValues.h"
+#include "playerbot/strategy/values/CraftValues.h"
 #include "GenericActions.h"
 
 namespace ai
@@ -15,6 +15,6 @@ namespace ai
         void TellCraft(Player* requester);
 
     private:
-        static map<uint32, SkillLineAbilityEntry const*> skillSpells;
+        static std::map<uint32, SkillLineAbilityEntry const*> skillSpells;
     };
 }

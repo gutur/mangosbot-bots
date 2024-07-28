@@ -1,17 +1,17 @@
-#include "botpch.h"
-#include "../../playerbot.h"
-#include "EmoteAction.h"
-#include "../../PlayerbotTextMgr.h"
 
-#include "../../PlayerbotAIConfig.h"
-#include "../../ServerFacade.h"
+#include "playerbot/playerbot.h"
+#include "EmoteAction.h"
+#include "playerbot/PlayerbotTextMgr.h"
+
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
 using namespace ai;
 
-map<string, uint32> EmoteActionBase::emotes;
-map<string, uint32> EmoteActionBase::textEmotes;
+std::map<std::string, uint32> EmoteActionBase::emotes;
+std::map<std::string, uint32> EmoteActionBase::textEmotes;
 char *strstri(const char *haystack, const char *needle);
 
-EmoteActionBase::EmoteActionBase(PlayerbotAI* ai, string name) : Action(ai, name)
+EmoteActionBase::EmoteActionBase(PlayerbotAI* ai, std::string name) : Action(ai, name)
 {
     if (emotes.empty()) InitEmotes();
 }
@@ -133,9 +133,9 @@ Unit* EmoteActionBase::GetTarget()
 {
     Unit* target = NULL;
 
-    list<ObjectGuid> nfp = *context->GetValue<list<ObjectGuid> >("nearest friendly players");
-    vector<Unit*> targets;
-    for (list<ObjectGuid>::iterator i = nfp.begin(); i != nfp.end(); ++i)
+    std::list<ObjectGuid> nfp = *context->GetValue<std::list<ObjectGuid> >("nearest friendly players");
+    std::vector<Unit*> targets;
+    for (std::list<ObjectGuid>::iterator i = nfp.begin(); i != nfp.end(); ++i)
     {
         Unit* unit = ai->GetUnit(*i);
         if (unit && sServerFacade.GetDistance2d(bot, unit) < sPlayerbotAIConfig.tooCloseDistance) targets.push_back(unit);
@@ -151,8 +151,8 @@ bool EmoteActionBase::ReceiveEmote(Player* requester, Player* source, uint32 emo
 {
     uint32 emoteId = 0;
     uint32 textEmote = 0;
-    string emoteText;
-    string emoteYell;
+    std::string emoteText;
+    std::string emoteYell;
     switch (emote)
     {
     case TEXTEMOTE_BONK:
@@ -227,7 +227,7 @@ bool EmoteActionBase::ReceiveEmote(Player* requester, Player* source, uint32 emo
     case TEXTEMOTE_NOSEPICK:
     case TEXTEMOTE_SNIFF:
     case TEXTEMOTE_STINK:
-        emoteText = "不是我!只是说......";
+        emoteText = "不是我!只是说..";
         emoteId = EMOTE_ONESHOT_POINT;
         textEmote = TEXTEMOTE_POINT;
         break;
@@ -237,14 +237,14 @@ bool EmoteActionBase::ReceiveEmote(Player* requester, Player* source, uint32 emo
         emoteText = "哦... 我不应该这么快笑吗?";
         break;
     case TEXTEMOTE_CHICKEN:
-        emoteText = "很快就会知道谁是胆小鬼!";
+        emoteText = "我们很快就会知道谁是胆小鬼!";
         emoteId = EMOTE_ONESHOT_RUDE;
         textEmote = TEXTEMOTE_RUDE;
         break;
     case TEXTEMOTE_APOLOGIZE:
         emoteId = EMOTE_ONESHOT_POINT;
         textEmote = TEXTEMOTE_APOLOGIZE;
-        emoteText = "你当然应该道歉!";
+        emoteText = "你他妈当然应该道歉!";
         break;
     case TEXTEMOTE_APPLAUD:
     case TEXTEMOTE_CLAP:
@@ -274,7 +274,7 @@ bool EmoteActionBase::ReceiveEmote(Player* requester, Player* source, uint32 emo
     case TEXTEMOTE_BORED:
         emoteId = EMOTE_ONESHOT_NO;
         textEmote = TEXTEMOTE_NO;
-        emoteText = "我的工作描述不包括娱乐你..";
+        emoteText = "我的工作不包括娱乐你..";
         break;
     case TEXTEMOTE_BOW:
     case TEXTEMOTE_CURTSEY:
@@ -332,7 +332,7 @@ bool EmoteActionBase::ReceiveEmote(Player* requester, Player* source, uint32 emo
     case TEXTEMOTE_BYE:
         emoteId = EMOTE_ONESHOT_WAVE;
         textEmote = TEXTEMOTE_WAVE;
-        emoteText = "嗯...等等!你要去哪儿?";
+        emoteText = "嗯...等等!你要去哪儿?!";
         break;
     case TEXTEMOTE_CACKLE:
     case TEXTEMOTE_LAUGH:
@@ -391,7 +391,7 @@ bool EmoteActionBase::ReceiveEmote(Player* requester, Player* source, uint32 emo
     case TEXTEMOTE_DRINK:
         emoteId = EMOTE_ONESHOT_EAT;
         textEmote = TEXTEMOTE_EAT;
-        emoteText = "我希望你带够了给全班的食物...";
+        emoteText = "我希望你带够了给所有人的食物...";
         break;
     case TEXTEMOTE_GLOAT:
     case TEXTEMOTE_MOCK:
@@ -665,7 +665,7 @@ bool EmoteAction::Execute(Event& event)
         uint32 text_emote;
         uint32 emote_num;
         uint32 namlen;
-        string nam;
+        std::string nam;
         p.rpos(0);
         p >> source >> text_emote >> emote_num >> namlen;
         if (namlen > 1)
@@ -710,7 +710,7 @@ bool EmoteAction::Execute(Event& event)
             if ((pSource->GetObjectGuid() != bot->GetObjectGuid()) && (pSource->GetSelectionGuid() == bot->GetObjectGuid() || (urand(0, 1) && sServerFacade.IsInFront(pSource, bot, 10.0f, M_PI_F))))
             {
                 sLog.outDetail("Bot #%d %s:%d <%s> received SMSG_EMOTE %d from player #%d <%s>", bot->GetGUIDLow(), bot->GetTeam() == ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName(), emoteId, pSource->GetGUIDLow(), pSource->GetName());
-                vector<uint32> types;
+                std::vector<uint32> types;
                 for (int32 i = sEmotesTextStore.GetNumRows(); i >= 0; --i)
                 {
                     EmotesTextEntry const* em = sEmotesTextStore.LookupEntry(uint32(i));
@@ -773,7 +773,7 @@ bool EmoteAction::Execute(Event& event)
             return false;
     }
 
-    string param = event.getParam();
+    std::string param = event.getParam();
     if ((!isReact && param.empty()) || emote)
     {
         time_t lastEmote = AI_VALUE2(time_t, "last emote", qualifier);
@@ -806,7 +806,7 @@ bool EmoteAction::Execute(Event& event)
     if (param.empty() || emotes.find(param) == emotes.end())
     {
         int index = rand() % emotes.size();
-        for (map<string, uint32>::iterator i = emotes.begin(); i != emotes.end() && index; ++i, --index)
+        for (std::map<std::string, uint32>::iterator i = emotes.begin(); i != emotes.end() && index; ++i, --index)
             emote = i->second;
     }
     else
@@ -867,7 +867,7 @@ bool TalkAction::Execute(Event& event)
 
 uint32 TalkAction::GetRandomEmote(Unit* unit, bool textEmote)
 {
-    vector<uint32> types;
+    std::vector<uint32> types;
     if (textEmote)
     {
         if (!urand(0, 20))

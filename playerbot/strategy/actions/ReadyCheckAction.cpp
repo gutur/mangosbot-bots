@@ -1,16 +1,16 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "ReadyCheckAction.h"
-#include "../../PlayerbotAIConfig.h"
-#include "ServerFacade.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
 
 using namespace ai;
 
-string formatPercent(string name, uint8 value, float percent)
+std::string formatPercent(std::string name, uint8 value, float percent)
 {
-    ostringstream out;
+    std::ostringstream out;
 
-    string color;
+    std::string color;
     if (percent > 75)
         color = "|cff00ff00";
     else if (percent > 50)
@@ -26,13 +26,13 @@ class ReadyChecker
 {
 public:
     virtual bool Check(Player* requester, PlayerbotAI *ai, AiObjectContext* context) = 0;
-    virtual string GetName() = 0;
+    virtual std::string GetName() = 0;
     virtual bool PrintAlways() { return true; }
 
-    static list<ReadyChecker*> checkers;
+    static std::list<ReadyChecker*> checkers;
 };
 
-list<ReadyChecker*> ReadyChecker::checkers;
+std::list<ReadyChecker*> ReadyChecker::checkers;
 
 class HealthChecker : public ReadyChecker
 {
@@ -42,7 +42,7 @@ public:
         return AI_VALUE2(uint8, "health", "self target") > sPlayerbotAIConfig.almostFullHealth;
     }
 
-    virtual string GetName() { return "HP"; }
+    virtual std::string GetName() { return "HP"; }
 };
 
 class ManaChecker : public ReadyChecker
@@ -52,7 +52,7 @@ public:
     {
         return !AI_VALUE2(bool, "has mana", "self target") || AI_VALUE2(uint8, "mana", "self target") > sPlayerbotAIConfig.mediumHealth;
     }
-    virtual string GetName() { return "MP"; }
+    virtual std::string GetName() { return "MP"; }
 };
 
 class DistanceChecker : public ReadyChecker
@@ -74,7 +74,7 @@ public:
     }
 
     virtual bool PrintAlways() { return false; }
-    virtual string GetName() { return "Far away"; }
+    virtual std::string GetName() { return "Far away"; }
 };
 
 class HunterChecker : public ReadyChecker
@@ -108,30 +108,30 @@ public:
     }
 
     virtual bool PrintAlways() { return false; }
-    virtual string GetName() { return "Far away"; }
+    virtual std::string GetName() { return "Far away"; }
 };
 
 
 class ItemCountChecker : public ReadyChecker
 {
 public:
-    ItemCountChecker(string item, string name) { this->item = item; this->name = name; }
+    ItemCountChecker(std::string item, std::string name) { this->item = item; this->name = name; }
 
     bool Check(Player* requester, PlayerbotAI *ai, AiObjectContext* context) override
     {
         return AI_VALUE2(uint32, "item count", item) > 0;
     }
 
-    virtual string GetName() { return name; }
+    virtual std::string GetName() { return name; }
 
 private:
-    string item, name;
+    std::string item, name;
 };
 
 class ManaPotionChecker : public ItemCountChecker
 {
 public:
-    ManaPotionChecker(string item, string name) : ItemCountChecker(item, name) {}
+    ManaPotionChecker(std::string item, std::string name) : ItemCountChecker(item, name) {}
 
     bool Check(Player* requester, PlayerbotAI *ai, AiObjectContext* context) override
     {
@@ -171,31 +171,31 @@ bool ReadyCheckAction::ReadyCheck(Player* requester)
     }
 
     bool result = true;
-    for (list<ReadyChecker*>::iterator i = ReadyChecker::checkers.begin(); i != ReadyChecker::checkers.end(); ++i)
+    for (std::list<ReadyChecker*>::iterator i = ReadyChecker::checkers.begin(); i != ReadyChecker::checkers.end(); ++i)
     {
         ReadyChecker* checker = *i;
         bool ok = checker->Check(requester, ai, context);
         result = result && ok;
     }
 
-    ostringstream out;
+    std::ostringstream out;
 
     uint32 hp = AI_VALUE2(uint32, "item count", "healing potion");
-    out << formatPercent("生命药剂.", hp, 100.0 * hp / 5);
+    out << formatPercent("生命药剂", hp, 100.0 * hp / 5);
 
     out << ", ";
     uint32 food = AI_VALUE2(uint32, "item count", "food");
-    out << formatPercent("食物.", food, 100.0 * food / 20);
+    out << formatPercent("食物", food, 100.0 * food / 20);
 
     if (AI_VALUE2(bool, "has mana", "self target"))
     {
         out << ", ";
         uint32 mp = AI_VALUE2(uint32, "item count", "mana potion");
-        out << formatPercent("法力药剂.", mp, 100.0 * mp / 5);
+        out << formatPercent("法力药剂", mp, 100.0 * mp / 5);
 
         out << ", ";
         uint32 water = AI_VALUE2(uint32, "item count", "water");
-        out << formatPercent("水.", water, 100.0 * water / 20);
+        out << formatPercent("水", water, 100.0 * water / 20);
     }
 
     ai->TellPlayer(requester, out, PlayerbotSecurityLevel::PLAYERBOT_SECURITY_ALLOW_ALL, false);

@@ -1,5 +1,5 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "WarlockTriggers.h"
 #include "WarlockActions.h"
 
@@ -70,8 +70,22 @@ bool DrainSoulTrigger::IsActive()
 
 bool CorruptionOnAttackerTrigger::IsActive()
 {
-    Unit* target = GetTarget();
-    return target && target->IsAlive() && !ai->HasAura("corruption", target, false, true) && !ai->HasAura("seed of corruption", target, false, true);
+    if (DebuffOnAttackerTrigger::IsActive())
+    {
+        return !ai->HasAura("seed of corruption", GetTarget(), false, true);
+	}
+
+	return false;
+}
+
+bool SeedOfCorruptionOnAttackerTrigger::IsActive()
+{
+    if (DebuffOnAttackerTrigger::IsActive())
+    {
+        return AI_VALUE(uint8, "attackers count") >= 3;
+    }
+
+    return false;
 }
 
 bool NoCurseTrigger::IsActive()
@@ -93,9 +107,9 @@ bool NoCurseTrigger::IsActive()
 
 bool NoCurseOnAttackerTrigger::IsActive()
 {
-    list<ObjectGuid> attackers = AI_VALUE(list<ObjectGuid>, "possible attack targets");
+    std::list<ObjectGuid> attackers = AI_VALUE(std::list<ObjectGuid>, "possible attack targets");
     Unit* currentTarget = AI_VALUE(Unit*, "current target");
-    for (list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); ++i)
+    for (std::list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); ++i)
     {
         Unit* attacker = ai->GetUnit(*i);
         if (attacker && attacker != currentTarget)
@@ -130,8 +144,8 @@ bool FearPvpTrigger::IsActive()
 			{
                 // Check if the bot has feared anyone
                 bool alreadyFeared = false;
-                list<ObjectGuid> attackers = AI_VALUE(list<ObjectGuid>, "attackers");
-                for (list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); ++i)
+                std::list<ObjectGuid> attackers = AI_VALUE(std::list<ObjectGuid>, "attackers");
+                for (std::list<ObjectGuid>::iterator i = attackers.begin(); i != attackers.end(); ++i)
                 {
                     Unit* attacker = ai->GetUnit(*i);
                     if (ai->HasAura("fear", attacker, false, true))
@@ -202,4 +216,40 @@ bool NoSpecificPetTrigger::IsActive()
     }
 
     return true;
+}
+
+uint32 SoulstoneTrigger::GetItemId()
+{
+    uint32 itemId = 0;
+    const uint32 level = bot->GetLevel();
+    if (level >= 18 && level < 30)
+    {
+        itemId = 5232;
+    }
+    else if (level >= 30 && level < 40)
+    {
+        itemId = 16892;
+    }
+    else if (level >= 40 && level < 50)
+    {
+        itemId = 16893;
+    }
+    else if (level >= 50 && level < 60)
+    {
+        itemId = 16895;
+    }
+    else if (level >= 60 && level < 70)
+    {
+        itemId = 16896;
+    }
+    else if (level >= 70 && level < 76)
+    {
+        itemId = 22116;
+    }
+    else if (level >= 76)
+    {
+        itemId = 36895;
+    }
+
+    return itemId;
 }

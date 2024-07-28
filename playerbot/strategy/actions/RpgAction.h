@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../Action.h"
+#include "playerbot/strategy/Action.h"
 #include "MovementActions.h"
 
 namespace ai
 {
     class RpgAction : public MovementAction {
     public:
-        RpgAction(PlayerbotAI* ai, string name = "rpg") : MovementAction(ai, name) {}
+        RpgAction(PlayerbotAI* ai, std::string name = "rpg") : MovementAction(ai, name) {}
 
         virtual bool Execute(Event& event);
         virtual bool isUseful();

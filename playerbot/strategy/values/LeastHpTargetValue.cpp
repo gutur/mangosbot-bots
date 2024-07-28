@@ -1,10 +1,9 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "LeastHpTargetValue.h"
 #include "TargetValue.h"
 
 using namespace ai;
-using namespace std;
 
 class FindLeastHpTargetStrategy : public FindNonCcTargetStrategy
 {

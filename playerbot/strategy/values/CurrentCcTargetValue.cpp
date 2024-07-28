@@ -1,5 +1,5 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "CurrentCcTargetValue.h"
 
 using namespace ai;
@@ -7,7 +7,7 @@ using namespace ai;
 class FindCurrentCcTargetStrategy : public FindTargetStrategy
 {
 public:
-    FindCurrentCcTargetStrategy(PlayerbotAI* ai, string spell) : FindTargetStrategy(ai)
+    FindCurrentCcTargetStrategy(PlayerbotAI* ai, std::string spell) : FindTargetStrategy(ai)
     {
         this->spell = spell;
     }
@@ -20,7 +20,7 @@ public:
     }
 
 private:
-    string spell;
+    std::string spell;
 };
 
 

@@ -1,23 +1,23 @@
 #pragma once
 
-#include "../Action.h"
+#include "playerbot/strategy/Action.h"
 #include "QuestAction.h"
 #include "UseItemAction.h"
 
 namespace ai
 {
-   class ImbueWithStoneAction : public Action
+   class ImbueWithStoneAction : public UseAction
    {
    public:
-      ImbueWithStoneAction(PlayerbotAI* ai) : Action(ai, "apply stone") {}
+      ImbueWithStoneAction(PlayerbotAI* ai) : UseAction(ai, "apply stone") {}
       bool Execute(Event& event) override;
       bool isUseful() override;
    };
 
-   class ImbueWithOilAction : public Action
+   class ImbueWithOilAction : public UseAction
    {
    public:
-      ImbueWithOilAction(PlayerbotAI* ai) : Action(ai, "apply oil") {}
+      ImbueWithOilAction(PlayerbotAI* ai) : UseAction(ai, "apply oil") {}
       bool Execute(Event& event) override;
       bool isUseful() override;
    };

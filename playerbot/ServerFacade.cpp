@@ -1,13 +1,13 @@
-#include "../botpch.h"
-#include "playerbot.h"
-#include "PlayerbotAIConfig.h"
-#include "ServerFacade.h"
 
-#include "../../modules/Bots/ahbot/AhBot.h"
-#include "DatabaseEnv.h"
+#include "playerbot/playerbot.h"
+#include "playerbot/PlayerbotAIConfig.h"
+#include "playerbot/ServerFacade.h"
+
+#include "ahbot/AhBot.h"
+#include "Database/DatabaseEnv.h"
 #include "PlayerbotAI.h"
 
-#include "../../modules/Bots/ahbot/AhBotConfig.h"
+#include "ahbot/AhBotConfig.h"
 #include "MotionGenerators/TargetedMovementGenerator.h"
 
 ServerFacade::ServerFacade() {}
@@ -173,9 +173,9 @@ bool ServerFacade::isMoving(Unit *unit)
 #endif
 #ifdef CMANGOS
 #ifdef MANGOSBOT_ONE
-    return !unit->IsStopped() || unit->IsFalling() || unit->IsJumping() || (!unit->GetMotionMaster()->empty() && unit->GetMotionMaster()->GetCurrentMovementGeneratorType() != IDLE_MOTION_TYPE);
+    return !unit->IsStopped() || unit->IsFalling() || unit->IsJumping();
 #else
-    return !unit->IsStopped() || unit->IsFalling() || (!unit->GetMotionMaster()->empty() && unit->GetMotionMaster()->GetCurrentMovementGeneratorType() != IDLE_MOTION_TYPE);
+    return !unit->IsStopped() || unit->IsFalling();
 #endif
 #endif
 }

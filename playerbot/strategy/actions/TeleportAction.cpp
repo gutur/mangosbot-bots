@@ -1,16 +1,16 @@
-#include "botpch.h"
-#include "../../playerbot.h"
+
+#include "playerbot/playerbot.h"
 #include "TeleportAction.h"
-#include "../values/LastMovementValue.h"
-#include "../../ServerFacade.h"
+#include "playerbot/strategy/values/LastMovementValue.h"
+#include "playerbot/ServerFacade.h"
 
 using namespace ai;
 
 bool TeleportAction::Execute(Event& event)
 {
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
-    list<ObjectGuid> gos = *context->GetValue<list<ObjectGuid> >("nearest game objects");
-    for (list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
+    std::list<ObjectGuid> gos = *context->GetValue<std::list<ObjectGuid> >("nearest game objects no los");
+    for (std::list<ObjectGuid>::iterator i = gos.begin(); i != gos.end(); i++)
     {
         GameObject* go = ai->GetGameObject(*i);
         if (!go)
@@ -28,7 +28,7 @@ bool TeleportAction::Execute(Event& event)
         if (!bot->GetGameObjectIfCanInteractWith(go->GetObjectGuid(), MAX_GAMEOBJECT_TYPE))
             continue;
 
-        ostringstream out; out << "进行传送 " << goInfo->name;
+        std::ostringstream out; out << "进行传送 " << goInfo->name;
         ai->TellPlayerNoFacing(requester, out.str());
 
         ai->ChangeStrategy("-follow,+stay", BotState::BOT_STATE_NON_COMBAT);
