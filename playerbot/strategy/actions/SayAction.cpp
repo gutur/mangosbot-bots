@@ -209,6 +209,8 @@ void ChatReplyAction::ChatReplyDo(Player* bot, uint32 type, uint32 guid1, uint32
             {
                 verb_pos = i;
                 verb_type = 2; // present
+                if (verb_pos == 0)
+                    is_quest = 1;
             }
             else if (word[i] == "will")
             {

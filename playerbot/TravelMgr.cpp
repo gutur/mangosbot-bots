@@ -121,9 +121,9 @@ string QuestRelationTravelDestination::getTitle() {
     ostringstream out;
 
     if (relation == 0)
-        out << "任务发布";
+        out << "任务发布者";
     else
-        out << "提交任务";
+        out << "任务提交者";
 
     out << " " << ChatHelper::formatWorldEntry(entry);
     return out.str();
@@ -214,14 +214,14 @@ bool QuestObjectiveTravelDestination::isActive(Player* bot) {
 string QuestObjectiveTravelDestination::getTitle() {
     ostringstream out;
 
-    out << "数量需求: " << objective;
+    out << "任务目标: " << objective;
 
     if (GetQuestTemplate()->ReqItemCount[objective] > 0)
-        out << " 去拾取 " << ChatHelper::formatItem(sObjectMgr.GetItemPrototype(GetQuestTemplate()->ReqItemId[objective]), 0, 0) << " ---来自";
+        out << " 拾取 " << ChatHelper::formatItem(sObjectMgr.GetItemPrototype(GetQuestTemplate()->ReqItemId[objective]), 0, 0) << " 来自";
     else if (entry > 0)
-        out << " 去击杀";
+        out << " 击杀";
     else
-        out << " 去使用";
+        out << " 使用";
 
     out << " " << ChatHelper::formatWorldEntry(entry);
     return out.str();
@@ -754,12 +754,12 @@ void TravelMgr::loadAreaLevels()
     if (!areaLevels.empty())
         return;
 
-    PlayerbotDatabase.PExecute("CREATE TABLE IF NOT EXISTS `ai_playerbot_zone_level` (`id` bigint(20) NOT NULL ,`level` bigint(20) NOT NULL,PRIMARY KEY(`id`))");
+    WorldDatabase.PExecute("CREATE TABLE IF NOT EXISTS `ai_playerbot_zone_level` (`id` bigint(20) NOT NULL ,`level` bigint(20) NOT NULL,PRIMARY KEY(`id`))");
 
     string query = "SELECT id, level FROM ai_playerbot_zone_level";
 
     {
-        auto result = PlayerbotDatabase.PQuery(query.c_str());
+        auto result = WorldDatabase.PQuery(query.c_str());
 
         vector<uint32> loadedAreas;
 
@@ -790,7 +790,7 @@ void TravelMgr::loadAreaLevels()
                 {
                     int32 level = sTravelMgr.getAreaLevel(area->ID);
 
-                    PlayerbotDatabase.PExecute("INSERT INTO `ai_playerbot_zone_level` (`id`, `level`) VALUES ('%d', '%d')", area->ID, level);
+                    WorldDatabase.PExecute("INSERT INTO `ai_playerbot_zone_level` (`id`, `level`) VALUES ('%d', '%d')", area->ID, level);
                 }
             }
         }
@@ -2567,6 +2567,17 @@ vector<WorldPosition*> TravelMgr::getNextPoint(WorldPosition* center, vector<Wor
     vector<uint32> weights;
 
     std::transform(retVec.begin(), retVec.end(), std::back_inserter(weights), [center](WorldPosition* point) { return 200000 / (1 + point->distance(*center)); });
+
+    //If any weight is 0 add 1 to all weights.
+    for (auto& w : weights)
+    {
+        if (w > 0)
+            continue;
+
+        std::for_each(weights.begin(), weights.end(), [](uint32& d) { d += 1; });
+        break;
+
+    }
 
     std::mt19937 gen(time(0));
 

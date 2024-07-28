@@ -42,16 +42,6 @@ bool ChangeNonCombatStrategyAction::Execute(Event& event)
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     string text = event.getParam();
     text = text.empty() ? getName() : text;
-    uint32 account = sObjectMgr.GetPlayerAccountIdByGUID(bot->GetObjectGuid());
-    if (sPlayerbotAIConfig.IsInRandomAccountList(account) && ai->GetMaster() && ai->GetMaster()->GetSession()->GetSecurity() < SEC_GAMEMASTER)
-    {
-        if (text.find("loot") != string::npos || text.find("gather") != string::npos)
-        {
-            ai->TellError("你可以更改任何策略,除了拾取和采集.");
-            return false;
-        }
-    }
-
 
     ai->ChangeStrategy(text, BotState::BOT_STATE_NON_COMBAT);
     if (event.getSource() == "nc")
@@ -116,17 +106,6 @@ bool ChangeAllStrategyAction::Execute(Event& event)
     Player* requester = event.getOwner() ? event.getOwner() : GetMaster();
     string text = event.getParam();
     string strategyName = text.empty() ? strategy : text;
-
-    uint32 account = sObjectMgr.GetPlayerAccountIdByGUID(bot->GetObjectGuid());
-    if (sPlayerbotAIConfig.IsInRandomAccountList(account) && ai->GetMaster() && ai->GetMaster()->GetSession()->GetSecurity() < SEC_GAMEMASTER)
-    {
-        if (strategyName.find("loot") != string::npos || strategyName.find("gather") != string::npos)
-        {
-            ai->TellError("你可以更改任何策略,除了拾取和采集.");
-            return false;
-        }
-    }
-
 
     ai->ChangeStrategy(strategyName, BotState::BOT_STATE_ALL);
 

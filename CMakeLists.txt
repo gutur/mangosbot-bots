@@ -116,16 +116,14 @@ file(GLOB Playerbot_DeathKnight ${CMAKE_CURRENT_SOURCE_DIR}/playerbot/strategy/d
     LIST(APPEND LIBRARY_SRCS ${Playerbot_DeathKnight})
 
 # Define ENABLE_PLAYERBOTS if need
-if (BUILD_PLAYERBOT OR PLAYERBOTS OR BUILD_IKE3_BOTS OR BUILD_MANGOSBOTS)
+if (BUILD_PLAYERBOT OR PLAYERBOTS OR BUILD_IKE3_BOTS OR BUILD_PLAYERBOTS)
   add_definitions(-DENABLE_PLAYERBOTS)
-  if (BUILD_MANGOSBOTS)
-	add_definitions(-DENABLE_MANGOSBOTS)
+  # TO DO: Used by AhBot.cpp, remove it after cmangos merge is done 
+  if (BUILD_PLAYERBOTS)
+    add_definitions(-DENABLE_MANGOSBOTS)
   endif()
 endif()
-# Define Achievements USE_ACHIEVEMENTS if need
-if (BUILD_ACHIEVEMENTS)
-  add_definitions(-DUSE_ACHIEVEMENTS)
-endif()
+
 # Define BUILD_ELUNA if need
 if (BUILD_ELUNA)
   add_definitions(-DBUILD_ELUNA -DCLASSIC -DCMANGOS)
@@ -151,12 +149,9 @@ if ( ${CMAKE_PROJECT_NAME} MATCHES "WoTLK")
   add_definitions(-DMANGOSBOT_TWO)
 endif()
 
-# Define ENABLE_IMMERSIVE if need
-if (BUILD_IMMERSIVE)
-  add_definitions(-DENABLE_IMMERSIVE)
-endif()
-if (IMMERSIVE)
-  add_definitions(-DENABLE_IMMERSIVE)
+# Define ENABLE_MODULES if need
+if (BUILD_MODULES)
+  add_definitions(-DENABLE_MODULES)
 endif()
 
 include_directories(

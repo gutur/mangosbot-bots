@@ -120,7 +120,7 @@ PlayerbotAI::PlayerbotAI() : PlayerbotAIBase(), bot(NULL), aiObjectContext(NULL)
 PlayerbotAI::PlayerbotAI(Player* bot) :
     PlayerbotAIBase(), chatHelper(this), chatFilter(this), security(bot), master(NULL), faceTargetUpdateDelay(0), jumpTime(0), fallAfterJump(false)
 {
-	this->bot = bot;    
+    this->bot = bot;
     if (!bot->isTaxiCheater() && HasCheat(BotCheatMask::taxi))
         bot->SetTaxiCheater(true);
 
@@ -754,6 +754,11 @@ void PlayerbotAI::UpdateTalentSpec(PlayerTalentSpec spec)
     }
 
     aiObjectContext->GetValue<PlayerTalentSpec>("talent spec")->Set(spec);
+}
+
+bool PlayerbotAI::CanEnterArea(const AreaTrigger* at)
+{
+    return sRandomPlayerbotMgr.IsRandomBot(GetBot());
 }
 
 bool PlayerbotAI::IsStateActive(BotState state) const
@@ -4011,6 +4016,62 @@ bool PlayerbotAI::IsHealSpell(const SpellEntry* spell)
     return false;
 }
 
+bool PlayerbotAI::IsMiningNode(const GameObject* go)
+{
+    if (go)
+    {
+        const GameObjectInfo* goInfo = go->GetGOInfo();
+        if (goInfo)
+        {
+            const LockEntry* lockInfo = sLockStore.LookupEntry(goInfo->GetLockId());
+            if (lockInfo)
+            {
+                for (int i = 0; i < 8; ++i)
+                {
+                    if (lockInfo->Type[i] == LOCK_KEY_SKILL)
+                    {
+                        const uint32 skillId = SkillByLockType(LockType(lockInfo->Index[i]));
+                        if (skillId == SKILL_MINING)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+bool PlayerbotAI::IsHerb(const GameObject* go)
+{
+    if (go)
+    {
+        const GameObjectInfo* goInfo = go->GetGOInfo();
+        if (goInfo)
+        {
+            const LockEntry* lockInfo = sLockStore.LookupEntry(goInfo->GetLockId());
+            if (lockInfo)
+            {
+                for (int i = 0; i < 8; ++i)
+                {
+                    if (lockInfo->Type[i] == LOCK_KEY_SKILL)
+                    {
+                        const uint32 skillId = SkillByLockType(LockType(lockInfo->Index[i]));
+                        if (skillId == SKILL_HERBALISM)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
 bool IsAlliance(uint8 race)
 {
     return race == RACE_HUMAN || race == RACE_DWARF || race == RACE_NIGHTELF ||
@@ -4260,10 +4321,7 @@ ActivePiorityType PlayerbotAI::GetPriorityType()
     if (bot->IsBeingTeleported() || !bot->IsInWorld() || !bot->GetMap()->HasRealPlayers())
         return ActivePiorityType::IN_INACTIVE_MAP;
 
-    ContinentArea currentArea = sMapMgr.GetContinentInstanceId(bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY());
-    if (currentArea == MAP_NO_AREA)
-        return ActivePiorityType::IN_ACTIVE_MAP;
-    if (!bot->GetMap()->HasActiveAreas(currentArea))
+    if (!bot->GetMap()->HasActiveZone(bot->GetZoneId()))
         return ActivePiorityType::IN_ACTIVE_MAP;
 
     return ActivePiorityType::IN_ACTIVE_AREA;
@@ -5948,6 +6006,7 @@ bool PlayerbotAI::CanMove()
         (sServerFacade.UnitIsDead(bot) && !bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)) ||
         bot->IsBeingTeleported() ||
         bot->hasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL) ||
+        bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CLIENT_CONTROL_LOST) ||
         IsJumping() ||
 #ifdef MANGOSBOT_ONE
         bot->IsFalling() ||
